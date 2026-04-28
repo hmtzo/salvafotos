@@ -1,42 +1,51 @@
 // =====================================================================
-// AUTENTICAÇÃO - SALVAFOTOS SINDICOMPANY
+// MIDDLEWARE - HUB SINDICOMPANY
 // =====================================================================
-// Para ADICIONAR um colaborador: adicione uma linha no objeto USERS abaixo
-// no formato 'usuario': 'senha',
-// Depois faça `git push` e o deploy é automático.
+// Protege todas as rotas exceto /login.html, /api/* e arquivos publicos.
+// Verifica cookie sf_auth (setado pela API /api/login).
 // =====================================================================
 
-const USERS = {
-  'sindicompany': 'Sindi@2026',
-};
+const DEFAULT_PASSWORD = '123Mudar@@2026';
+const USERS = new Set([
+  'luciane@sindicompany.com.br',
+  'juliana@sindicompany.com.br',
+  'raquel@sindicompany.com.br',
+  'mkt@sindicompany.com.br',
+  'junior@sindicompany.com.br',
+  'felipe.fernandes@sindicompany.com.br',
+  'comercial@sindicompany.com.br',
+  'orcamentos@sindicompany.com.br',
+]);
 
 export const config = {
-  matcher: '/((?!_next/static|_next/image|favicon).*)',
+  matcher: '/((?!api/|_next/|_vercel/|favicon|logo|login\\.html).*)',
 };
 
 export default function middleware(request) {
-  const auth = request.headers.get('authorization');
+  const url = new URL(request.url);
 
-  if (auth && auth.startsWith('Basic ')) {
+  // Verifica cookie sf_auth
+  const cookies = request.headers.get('cookie') || '';
+  const match = cookies.match(/(?:^|;\s*)sf_auth=([^;]+)/);
+
+  if (match) {
     try {
-      const decoded = atob(auth.slice(6));
+      const decoded = atob(match[1]);
       const idx = decoded.indexOf(':');
-      const user = decoded.slice(0, idx);
-      const pass = decoded.slice(idx + 1);
-      if (USERS[user] && USERS[user] === pass) {
-        return; // autenticado, libera o acesso
+      if (idx > 0) {
+        const user = decoded.slice(0, idx).toLowerCase();
+        const pass = decoded.slice(idx + 1);
+        if (USERS.has(user) && pass === DEFAULT_PASSWORD) {
+          return; // autenticado, libera
+        }
       }
-    } catch (e) { /* falha no decode -> 401 */ }
+    } catch (e) { /* cookie invalido -> redireciona */ }
   }
 
-  return new Response(
-    'Acesso restrito a colaboradores Sindicompany.\n\nUse o login e senha fornecidos pela empresa.',
-    {
-      status: 401,
-      headers: {
-        'WWW-Authenticate': 'Basic realm="Sindicompany - Acesso restrito a colaboradores"',
-        'Content-Type': 'text/plain; charset=utf-8',
-      },
-    }
-  );
+  // Sem cookie valido -> redireciona pro login preservando a URL solicitada
+  const loginUrl = new URL('/login.html', url.origin);
+  if (url.pathname !== '/' && url.pathname !== '/login.html') {
+    loginUrl.searchParams.set('next', url.pathname + url.search);
+  }
+  return Response.redirect(loginUrl, 302);
 }
