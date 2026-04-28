@@ -35,8 +35,8 @@ DIRETRIZES:
 
 Responda diretamente. Sem preâmbulos como "ótima pergunta!".`;
 
-// Modelo grátis e rápido. Alternativas: 'gemini-2.5-flash' (qualidade maior, ainda grátis)
-const MODEL = 'gemini-2.0-flash';
+// Modelo grátis e rápido (mais recente, melhor qualidade)
+const MODEL = 'gemini-2.5-flash';
 
 export default async function handler(request) {
   if (request.method !== 'POST') {
