@@ -3,112 +3,521 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>WhatsApp Fotos + Legendas</title>
+<title>ChatPic — Extraia fotos do WhatsApp com legendas</title>
+<meta name="description" content="Extraia fotos, vídeos e áudios de conversas do WhatsApp com legendas, data e remetente. 100% privado, processado no seu navegador.">
+<meta property="og:title" content="ChatPic — Extraia fotos do WhatsApp com legendas">
+<meta property="og:description" content="Suas fotos do WhatsApp organizadas com legendas. Privado, gratuito, sem cadastro.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%2310b981'/%3E%3Cpath d='M30 35l20 25 20-25M50 60v15' stroke='white' stroke-width='6' stroke-linecap='round' stroke-linejoin='round' fill='none'/%3E%3C/svg%3E">
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 <style>
+  :root {
+    --bg: #0a0a0f;
+    --bg-elev: #12121a;
+    --bg-card: #16161f;
+    --border: #25252f;
+    --border-bright: #34343f;
+    --text: #f5f5f7;
+    --text-dim: #9ca3af;
+    --text-muted: #6b7280;
+    --accent: #10b981;
+    --accent-bright: #34d399;
+    --accent-dim: #059669;
+    --accent-glow: rgba(16, 185, 129, 0.15);
+    --danger: #ef4444;
+    --warn: #f59e0b;
+    --info: #3b82f6;
+    --radius: 14px;
+    --radius-lg: 20px;
+    --shadow: 0 4px 24px rgba(0,0,0,0.4);
+    --shadow-lg: 0 20px 60px rgba(0,0,0,0.5);
+  }
   * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
   body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    background: linear-gradient(135deg, #075E54 0%, #128C7E 100%);
-    min-height: 100vh; padding: 24px; color: #1a1a1a;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
   }
-  .container { max-width: 920px; margin: 0 auto; }
-  header { text-align: center; color: #fff; margin-bottom: 28px; }
-  header h1 { font-size: 28px; margin-bottom: 6px; }
-  header p { opacity: 0.9; font-size: 15px; }
-  .card { background: #fff; border-radius: 16px; padding: 28px; box-shadow: 0 8px 32px rgba(0,0,0,0.15); margin-bottom: 18px; }
+  /* Background gradient mesh */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse at 20% 0%, rgba(16, 185, 129, 0.12), transparent 50%),
+      radial-gradient(ellipse at 80% 100%, rgba(59, 130, 246, 0.08), transparent 50%),
+      radial-gradient(ellipse at 50% 50%, rgba(139, 92, 246, 0.05), transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+  .container { max-width: 1100px; margin: 0 auto; padding: 0 24px; position: relative; z-index: 1; }
+
+  /* ====== NAV ====== */
+  nav {
+    padding: 22px 0;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .logo {
+    display: flex; align-items: center; gap: 10px;
+    font-weight: 700; font-size: 18px; letter-spacing: -0.02em;
+  }
+  .logo-mark {
+    width: 32px; height: 32px; border-radius: 9px;
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dim) 100%);
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 4px 16px var(--accent-glow);
+  }
+  .logo-mark svg { width: 18px; height: 18px; color: white; }
+  .nav-links { display: flex; gap: 28px; align-items: center; font-size: 14px; }
+  .nav-links a { color: var(--text-dim); text-decoration: none; transition: color 0.2s; }
+  .nav-links a:hover { color: var(--text); }
+  .badge-privacy {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--accent-glow); color: var(--accent-bright);
+    padding: 6px 12px; border-radius: 100px; font-size: 12px; font-weight: 500;
+    border: 1px solid rgba(16, 185, 129, 0.2);
+  }
+  .badge-privacy::before {
+    content: ''; width: 6px; height: 6px; border-radius: 50%;
+    background: var(--accent-bright);
+    box-shadow: 0 0 8px var(--accent-bright);
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
+
+  /* ====== HERO ====== */
+  .hero { padding: 60px 0 40px; text-align: center; }
+  .hero-eyebrow {
+    display: inline-block;
+    font-size: 13px; font-weight: 500;
+    color: var(--accent-bright);
+    background: var(--accent-glow);
+    padding: 6px 14px; border-radius: 100px;
+    margin-bottom: 24px;
+    border: 1px solid rgba(16, 185, 129, 0.2);
+  }
+  h1 {
+    font-size: clamp(36px, 6vw, 64px);
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1.05;
+    margin-bottom: 20px;
+    background: linear-gradient(180deg, #ffffff 0%, #a1a1aa 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  h1 .highlight {
+    background: linear-gradient(135deg, var(--accent-bright) 0%, var(--info) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .hero-sub {
+    font-size: clamp(16px, 2vw, 19px);
+    color: var(--text-dim);
+    max-width: 620px; margin: 0 auto;
+  }
+
+  /* ====== CARD ====== */
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 32px;
+    margin-bottom: 20px;
+    box-shadow: var(--shadow);
+    backdrop-filter: blur(10px);
+  }
+  .card-header { margin-bottom: 24px; }
+  .card-title {
+    font-size: 20px; font-weight: 700; letter-spacing: -0.01em;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .card-title-num {
+    width: 28px; height: 28px; border-radius: 8px;
+    background: var(--accent-glow); color: var(--accent-bright);
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 700;
+    border: 1px solid rgba(16, 185, 129, 0.2);
+  }
+  .card-sub { color: var(--text-dim); font-size: 14px; margin-top: 6px; margin-left: 38px; }
+
+  /* ====== STEPS ====== */
+  .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  .step {
+    background: var(--bg-elev);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px;
+    transition: all 0.2s;
+  }
+  .step:hover { border-color: var(--border-bright); transform: translateY(-2px); }
+  .step-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px; color: var(--accent-bright);
+    margin-bottom: 8px; font-weight: 500;
+  }
+  .step-title { font-weight: 600; font-size: 14px; margin-bottom: 4px; }
+  .step-desc { font-size: 13px; color: var(--text-dim); }
+  @media (max-width: 700px) { .steps { grid-template-columns: 1fr; } }
+
+  /* ====== DROP ZONE ====== */
   .drop-zone {
-    border: 3px dashed #128C7E; border-radius: 12px; padding: 40px 24px;
-    text-align: center; cursor: pointer; transition: all 0.2s; background: #f0fdfa;
+    border: 2px dashed var(--border-bright);
+    border-radius: var(--radius);
+    padding: 56px 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: linear-gradient(180deg, var(--bg-elev) 0%, transparent 100%);
+    position: relative;
+    overflow: hidden;
   }
-  .drop-zone:hover, .drop-zone.dragover { background: #ccfbf1; border-color: #075E54; }
-  .drop-zone svg { width: 48px; height: 48px; color: #128C7E; margin-bottom: 10px; }
-  .drop-zone p { font-size: 15px; color: #075E54; font-weight: 500; }
-  .drop-zone p.small { font-size: 13px; color: #555; margin-top: 6px; font-weight: 400; }
+  .drop-zone::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: radial-gradient(circle at center, var(--accent-glow), transparent 70%);
+    opacity: 0; transition: opacity 0.3s;
+  }
+  .drop-zone:hover, .drop-zone.dragover {
+    border-color: var(--accent);
+    background: var(--bg-elev);
+  }
+  .drop-zone:hover::before, .drop-zone.dragover::before { opacity: 1; }
+  .drop-zone > * { position: relative; }
+  .drop-icon {
+    width: 64px; height: 64px;
+    margin: 0 auto 16px;
+    background: var(--accent-glow);
+    border-radius: 16px;
+    display: flex; align-items: center; justify-content: center;
+    border: 1px solid rgba(16, 185, 129, 0.2);
+  }
+  .drop-icon svg { width: 28px; height: 28px; color: var(--accent-bright); }
+  .drop-title { font-size: 18px; font-weight: 600; margin-bottom: 6px; }
+  .drop-sub { font-size: 14px; color: var(--text-dim); }
+  .drop-sub kbd {
+    background: var(--bg-card); padding: 2px 8px;
+    border: 1px solid var(--border-bright); border-radius: 6px;
+    font-family: 'JetBrains Mono', monospace; font-size: 12px;
+  }
   input[type=file] { display: none; }
-
-  .options { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 20px; }
-  .option {
-    display: flex; align-items: flex-start; gap: 10px;
-    padding: 12px; background: #f8fafc; border-radius: 10px;
-    cursor: pointer; border: 2px solid transparent; transition: all 0.15s;
+  .file-selected {
+    display: inline-flex; align-items: center; gap: 10px;
+    background: var(--accent-glow); color: var(--accent-bright);
+    padding: 10px 16px; border-radius: 100px; margin-top: 12px;
+    font-size: 14px; font-weight: 500;
+    border: 1px solid rgba(16, 185, 129, 0.3);
   }
-  .option:hover { border-color: #128C7E; }
-  .option input { margin-top: 3px; cursor: pointer; }
-  .option-text strong { display: block; font-size: 14px; }
-  .option-text span { font-size: 12px; color: #666; }
 
-  button.primary {
-    width: 100%; padding: 14px; background: #128C7E; color: #fff;
-    border: none; border-radius: 10px; font-size: 16px; font-weight: 600;
-    cursor: pointer; margin-top: 20px; transition: background 0.15s;
+  /* ====== TOGGLES ====== */
+  .options {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;
   }
-  button.primary:hover:not(:disabled) { background: #075E54; }
-  button.primary:disabled { background: #94a3b8; cursor: not-allowed; }
+  @media (max-width: 700px) { .options { grid-template-columns: 1fr; } }
+  .toggle {
+    display: flex; align-items: center; gap: 14px;
+    padding: 16px;
+    background: var(--bg-elev);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    cursor: pointer; transition: all 0.15s;
+    user-select: none;
+  }
+  .toggle:hover { border-color: var(--border-bright); }
+  .toggle input { position: absolute; opacity: 0; pointer-events: none; }
+  .toggle-switch {
+    flex-shrink: 0;
+    width: 38px; height: 22px;
+    background: var(--border-bright);
+    border-radius: 100px;
+    position: relative; transition: background 0.2s;
+  }
+  .toggle-switch::after {
+    content: '';
+    position: absolute; top: 2px; left: 2px;
+    width: 18px; height: 18px;
+    background: white;
+    border-radius: 50%;
+    transition: transform 0.2s;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  }
+  .toggle input:checked ~ .toggle-switch {
+    background: var(--accent);
+  }
+  .toggle input:checked ~ .toggle-switch::after { transform: translateX(16px); }
+  .toggle-label { flex: 1; }
+  .toggle-label strong { display: block; font-size: 14px; font-weight: 600; }
+  .toggle-label span { font-size: 12px; color: var(--text-dim); }
+  .toggle:has(input:checked) { border-color: rgba(16, 185, 129, 0.3); }
 
-  .status { margin-top: 18px; padding: 12px 14px; border-radius: 10px; background: #f1f5f9; font-size: 14px; display: none; }
+  /* ====== BUTTON ====== */
+  .btn-primary {
+    width: 100%; padding: 16px;
+    background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dim) 100%);
+    color: white; border: none;
+    border-radius: var(--radius);
+    font-family: inherit; font-size: 16px; font-weight: 600;
+    cursor: pointer;
+    margin-top: 24px;
+    transition: all 0.15s;
+    box-shadow: 0 4px 20px rgba(16, 185, 129, 0.25);
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+  }
+  .btn-primary:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 28px rgba(16, 185, 129, 0.4);
+  }
+  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; box-shadow: none; }
+  .btn-primary svg { width: 18px; height: 18px; }
+
+  /* ====== STATUS ====== */
+  .status {
+    margin-top: 20px; padding: 16px;
+    border-radius: var(--radius);
+    background: var(--bg-elev);
+    border: 1px solid var(--border);
+    font-size: 14px; display: none;
+  }
   .status.show { display: block; }
-  .status.error { background: #fee2e2; color: #991b1b; }
-  .status.success { background: #d1fae5; color: #065f46; }
-  .progress { width: 100%; height: 6px; background: #e2e8f0; border-radius: 3px; overflow: hidden; margin-top: 8px; }
-  .progress-bar { height: 100%; background: #128C7E; width: 0%; transition: width 0.2s; }
+  .status.error { background: rgba(239, 68, 68, 0.08); border-color: rgba(239, 68, 68, 0.3); color: #fca5a5; }
+  .status.success { background: var(--accent-glow); border-color: rgba(16, 185, 129, 0.3); color: var(--accent-bright); }
+  .progress {
+    width: 100%; height: 4px;
+    background: var(--border);
+    border-radius: 100px; overflow: hidden;
+    margin-top: 12px;
+  }
+  .progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent) 0%, var(--accent-bright) 100%);
+    width: 0%; transition: width 0.3s;
+    border-radius: 100px;
+  }
 
-  .stats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-top: 18px; }
-  .stat { background: #f8fafc; padding: 12px; border-radius: 10px; text-align: center; }
-  .stat-value { font-size: 22px; font-weight: 700; color: #128C7E; }
-  .stat-value.warn { color: #d97706; }
-  .stat-label { font-size: 11px; color: #64748b; margin-top: 2px; }
+  /* ====== STATS ====== */
+  .stats {
+    display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px;
+    margin-top: 20px;
+  }
+  @media (max-width: 700px) { .stats { grid-template-columns: repeat(2, 1fr); } }
+  .stat {
+    background: var(--bg-elev);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    text-align: center;
+    transition: all 0.2s;
+  }
+  .stat:hover { border-color: var(--border-bright); }
+  .stat-value {
+    font-size: 28px; font-weight: 800;
+    background: linear-gradient(135deg, var(--accent-bright) 0%, var(--info) 100%);
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent;
+    letter-spacing: -0.02em;
+  }
+  .stat-value.warn {
+    background: linear-gradient(135deg, var(--warn) 0%, #fb923c 100%);
+    -webkit-background-clip: text; background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .stat-label { font-size: 11px; color: var(--text-muted); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 500; }
 
-  details { margin-top: 16px; background: #fffbeb; border-radius: 10px; padding: 12px 14px; border-left: 4px solid #f59e0b; }
-  details summary { cursor: pointer; font-weight: 600; font-size: 14px; color: #92400e; }
-  details ul { margin: 8px 0 0 20px; font-size: 12px; color: #555; max-height: 180px; overflow-y: auto; }
-  details code { font-size: 11px; background: #fff; padding: 1px 6px; border-radius: 4px; }
+  /* ====== DETAILS / DIAGNOSTICS ====== */
+  details {
+    margin-top: 16px;
+    background: rgba(245, 158, 11, 0.05);
+    border: 1px solid rgba(245, 158, 11, 0.2);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+  }
+  details summary { cursor: pointer; font-weight: 600; font-size: 14px; color: var(--warn); display: flex; align-items: center; gap: 8px; }
+  details ul { margin: 12px 0 0 20px; font-size: 13px; color: var(--text-dim); max-height: 200px; overflow-y: auto; }
+  details code { font-family: 'JetBrains Mono', monospace; font-size: 12px; background: var(--bg-card); padding: 2px 6px; border-radius: 4px; color: var(--text); }
 
-  .preview { margin-top: 18px; max-height: 360px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 10px; }
+  /* ====== PREVIEW TABLE ====== */
+  .preview {
+    margin-top: 20px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    background: var(--bg-elev);
+  }
+  .preview-header {
+    padding: 14px 18px;
+    background: var(--bg-card);
+    border-bottom: 1px solid var(--border);
+    font-size: 14px; font-weight: 600;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .preview-table-wrap { max-height: 400px; overflow-y: auto; }
   .preview table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  .preview th { background: #f1f5f9; padding: 10px; text-align: left; position: sticky; top: 0; font-weight: 600; }
-  .preview td { padding: 9px 10px; border-top: 1px solid #e2e8f0; vertical-align: top; }
-  .preview td.caption { max-width: 360px; word-break: break-word; }
-  .preview tr.no-cap td { background: #fef2f2; }
+  .preview th {
+    background: var(--bg-card);
+    padding: 12px 14px; text-align: left;
+    position: sticky; top: 0;
+    font-weight: 600; font-size: 12px;
+    color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em;
+    border-bottom: 1px solid var(--border);
+  }
+  .preview td {
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+    color: var(--text-dim);
+  }
+  .preview td.caption { max-width: 360px; word-break: break-word; color: var(--text); }
+  .preview tr.no-cap td { background: rgba(239, 68, 68, 0.04); }
+  .preview tr:last-child td { border-bottom: none; }
+  .preview code { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--accent-bright); }
 
-  .help { background: #f0fdfa; border-left: 4px solid #128C7E; padding: 12px 16px; border-radius: 8px; font-size: 13px; line-height: 1.6; }
-  .help strong { color: #075E54; }
-  .help ol { margin-left: 20px; margin-top: 4px; }
-  footer { text-align: center; color: #fff; opacity: 0.8; font-size: 12px; margin-top: 20px; }
+  /* ====== FEATURES GRID ====== */
+  .features {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;
+    margin-top: 60px;
+  }
+  @media (max-width: 800px) { .features { grid-template-columns: 1fr; } }
+  .feature {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+  }
+  .feature-icon {
+    width: 40px; height: 40px;
+    background: var(--accent-glow);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 14px;
+    border: 1px solid rgba(16, 185, 129, 0.2);
+  }
+  .feature-icon svg { width: 20px; height: 20px; color: var(--accent-bright); }
+  .feature h3 { font-size: 16px; font-weight: 600; margin-bottom: 6px; }
+  .feature p { font-size: 14px; color: var(--text-dim); }
+
+  /* ====== FOOTER ====== */
+  footer {
+    margin-top: 80px; padding: 32px 0;
+    border-top: 1px solid var(--border);
+    text-align: center;
+    color: var(--text-muted); font-size: 13px;
+  }
+  footer a { color: var(--text-dim); text-decoration: none; }
+  footer a:hover { color: var(--accent-bright); }
+
+  /* utility */
+  .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
 </style>
 </head>
 <body>
 <div class="container">
-  <header>
-    <h1>📸 WhatsApp Fotos + Legendas</h1>
-    <p>Extraia fotos da conversa exportada com legenda, data e remetente</p>
-  </header>
+  <nav>
+    <div class="logo">
+      <div class="logo-mark">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+      </div>
+      ChatPic
+    </div>
+    <div class="nav-links">
+      <a href="#como-funciona">Como funciona</a>
+      <a href="#privacidade">Privacidade</a>
+      <span class="badge-privacy">100% offline</span>
+    </div>
+  </nav>
+
+  <section class="hero">
+    <span class="hero-eyebrow">✨ Grátis · Sem cadastro · Privado</span>
+    <h1>Suas fotos do WhatsApp,<br><span class="highlight">organizadas com legenda</span></h1>
+    <p class="hero-sub">Extraia fotos, vídeos e áudios de qualquer conversa exportada do WhatsApp e renomeie cada arquivo com sua legenda, data e remetente — em segundos.</p>
+  </section>
+
+  <div class="card" id="como-funciona">
+    <div class="card-header">
+      <div class="card-title"><span class="card-title-num">1</span> Exporte sua conversa</div>
+      <div class="card-sub">No WhatsApp Android, abra a conversa e siga 3 passos rápidos:</div>
+    </div>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">PASSO 01</div>
+        <div class="step-title">Abra a conversa</div>
+        <div class="step-desc">Toque nos 3 pontinhos no canto superior direito</div>
+      </div>
+      <div class="step">
+        <div class="step-num">PASSO 02</div>
+        <div class="step-title">Mais → Exportar conversa</div>
+        <div class="step-desc">Escolha a opção <strong>Incluir mídia</strong></div>
+      </div>
+      <div class="step">
+        <div class="step-num">PASSO 03</div>
+        <div class="step-title">Salve o .zip</div>
+        <div class="step-desc">Compartilhe pra você (Drive, e-mail) e baixe</div>
+      </div>
+    </div>
+  </div>
 
   <div class="card">
-    <div class="help">
-      <strong>Como exportar (Android):</strong>
-      <ol>
-        <li>Abra a conversa → 3 pontinhos (canto superior direito)</li>
-        <li>Mais → <strong>Exportar conversa</strong> → <strong>Incluir mídia</strong></li>
-        <li>Arraste o <code>.zip</code> aqui embaixo</li>
-      </ol>
+    <div class="card-header">
+      <div class="card-title"><span class="card-title-num">2</span> Envie o arquivo</div>
+      <div class="card-sub">Tudo é processado no seu navegador — nada é enviado para servidor.</div>
     </div>
 
-    <label for="fileInput" class="drop-zone" id="dropZone" style="margin-top:18px;">
-      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
-      <p>Arraste o <strong>.zip</strong> da conversa aqui ou clique para selecionar</p>
-      <p class="small">100% offline · seus dados não saem do navegador</p>
+    <label for="fileInput" class="drop-zone" id="dropZone">
+      <div class="drop-icon">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+      </div>
+      <div class="drop-title" id="dropTitle">Arraste seu arquivo .zip aqui</div>
+      <div class="drop-sub">ou clique para selecionar &nbsp;·&nbsp; também aceita <kbd>.txt</kbd></div>
     </label>
     <input type="file" id="fileInput" accept=".zip,.txt">
+  </div>
 
-    <div class="options">
-      <label class="option"><input type="checkbox" id="optRename" checked><span class="option-text"><strong>Renomear fotos</strong><span>data + legenda no nome</span></span></label>
-      <label class="option"><input type="checkbox" id="optCsv" checked><span class="option-text"><strong>Gerar planilha CSV</strong><span>arquivo, legenda, data, remetente</span></span></label>
-      <label class="option"><input type="checkbox" id="optVideos" checked><span class="option-text"><strong>Incluir vídeos</strong></span></label>
-      <label class="option"><input type="checkbox" id="optAudios"><span class="option-text"><strong>Incluir áudios</strong><span>.opus, .mp3, .m4a</span></span></label>
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title"><span class="card-title-num">3</span> Configure e processe</div>
+      <div class="card-sub">Escolha como quer receber os arquivos de volta.</div>
     </div>
 
-    <button class="primary" id="processBtn" disabled>Processar arquivo</button>
+    <div class="options">
+      <label class="toggle">
+        <input type="checkbox" id="optRename" checked>
+        <span class="toggle-switch"></span>
+        <span class="toggle-label"><strong>Renomear com a legenda</strong><span>nome do arquivo = legenda</span></span>
+      </label>
+      <label class="toggle">
+        <input type="checkbox" id="optDatePrefix">
+        <span class="toggle-switch"></span>
+        <span class="toggle-label"><strong>Incluir data no nome</strong><span>prefixo AAAA-MM-DD_HHhMM</span></span>
+      </label>
+      <label class="toggle">
+        <input type="checkbox" id="optCsv" checked>
+        <span class="toggle-switch"></span>
+        <span class="toggle-label"><strong>Gerar planilha CSV</strong><span>arquivo, legenda, data, remetente</span></span>
+      </label>
+      <label class="toggle">
+        <input type="checkbox" id="optVideos" checked>
+        <span class="toggle-switch"></span>
+        <span class="toggle-label"><strong>Incluir vídeos</strong><span>.mp4, .mov, .3gp</span></span>
+      </label>
+      <label class="toggle">
+        <input type="checkbox" id="optAudios">
+        <span class="toggle-switch"></span>
+        <span class="toggle-label"><strong>Incluir áudios</strong><span>.opus, .mp3, .m4a</span></span>
+      </label>
+    </div>
+
+    <button class="btn-primary" id="processBtn" disabled>
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+      <span id="btnText">Processar arquivo</span>
+    </button>
 
     <div class="status" id="status">
       <div id="statusText">Aguardando…</div>
@@ -124,21 +533,56 @@
     </div>
 
     <div id="diagnostics"></div>
-    <div class="preview" id="preview" style="display:none;"></div>
+    <div class="preview" id="preview" style="display:none;">
+      <div class="preview-header">
+        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+        Prévia (primeiros 100 arquivos)
+      </div>
+      <div class="preview-table-wrap" id="previewTable"></div>
+    </div>
   </div>
 
-  <footer>100% offline · seus dados não saem do seu computador</footer>
+  <section class="features" id="privacidade">
+    <div class="feature">
+      <div class="feature-icon">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+      </div>
+      <h3>100% privado</h3>
+      <p>Seu arquivo nunca sai do navegador. Sem upload, sem servidor, sem rastreamento.</p>
+    </div>
+    <div class="feature">
+      <div class="feature-icon">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+      </div>
+      <h3>Rápido</h3>
+      <p>Processa milhares de fotos em segundos, direto na sua máquina.</p>
+    </div>
+    <div class="feature">
+      <div class="feature-icon">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2a4 4 0 014-4h6m-3-3l3 3-3 3M3 12a9 9 0 1118 0 9 9 0 01-18 0z"/></svg>
+      </div>
+      <h3>Organizado</h3>
+      <p>Renomeia com a legenda, gera CSV e separa em pastas por tipo.</p>
+    </div>
+  </section>
+
+  <footer>
+    <p>Feito com cuidado para preservar suas memórias · <a href="#">Sem cadastro</a> · <a href="#">Sem anúncios</a></p>
+  </footer>
 </div>
 
 <script>
 const fileInput = document.getElementById('fileInput');
 const dropZone = document.getElementById('dropZone');
+const dropTitle = document.getElementById('dropTitle');
 const processBtn = document.getElementById('processBtn');
+const btnText = document.getElementById('btnText');
 const statusEl = document.getElementById('status');
 const statusText = document.getElementById('statusText');
 const progressBar = document.getElementById('progressBar');
 const statsEl = document.getElementById('stats');
 const previewEl = document.getElementById('preview');
+const previewTable = document.getElementById('previewTable');
 const diagEl = document.getElementById('diagnostics');
 
 let selectedFile = null;
@@ -153,52 +597,25 @@ fileInput.addEventListener('change', e => { if (e.target.files[0]) handleFile(e.
 
 function handleFile(f) {
   selectedFile = f;
-  dropZone.querySelector('p').innerHTML = `<strong>${f.name}</strong> (${(f.size/1024/1024).toFixed(1)} MB)`;
+  dropTitle.innerHTML = `<span class="file-selected">✓ ${f.name} <span style="opacity:0.7;font-weight:400">(${(f.size/1024/1024).toFixed(1)} MB)</span></span>`;
   processBtn.disabled = false;
   showStatus('Pronto para processar', '');
 }
-function showStatus(msg, type) { statusEl.className = 'status show' + (type ? ' ' + type : ''); statusText.textContent = msg; }
+function showStatus(msg, type) { statusEl.className = 'status show' + (type ? ' ' + type : ''); statusText.style.whiteSpace = 'pre-wrap'; statusText.style.fontFamily = msg.includes('\n') ? 'JetBrains Mono, monospace' : 'inherit'; statusText.style.fontSize = msg.includes('\n') ? '12px' : '14px'; statusText.textContent = msg; }
 function setProgress(pct) { progressBar.style.width = pct + '%'; }
 
-// ==========================================================================
-// PARSER ROBUSTO — cobre todas as variações conhecidas do export do WhatsApp
-// ==========================================================================
-//
-// Formatos de linha de mensagem suportados:
-//   Android PT-BR:  "28/04/2026 14:32 - Fulano: texto"
-//   Android (vírgula): "28/04/2026, 14:32 - Fulano: texto"
-//   iOS:            "[28/04/2026, 14:32:45] Fulano: texto"
-//   12h:            "28/04/2026, 2:32 PM - Fulano: ..."
-//   Variações: -, –, — (dash), com/sem segundos, com/sem vírgula
-//
-// Marcadores de anexo suportados:
-//   "IMG-20260428-WA0001.jpg (arquivo anexado)"          [Android PT]
-//   "IMG-20260428-WA0001.jpg (file attached)"             [Android EN]
-//   "<anexado: IMG-20260428-WA0001.jpg>"                  [Android novo]
-//   "<attached: 00000001-PHOTO-2026-04-28-14-32-45.jpg>"  [iOS EN]
-//
-// Caracteres invisíveis (LRM ‎, RLM ‏, etc) são removidos antes de processar.
-
-// Limpa caracteres invisíveis Unicode comuns em exports
+// =============================================================================
+// PARSER ROBUSTO — cobre todas as variações do export do WhatsApp
+// =============================================================================
 function cleanInvisible(s) {
   return s.replace(/[​-‏‪-‮⁦-⁩﻿]/g, '');
 }
-
-// Detecta início de mensagem. Captura: data, hora, remetente, corpo
-// Aceita formato com ou sem colchetes
 const RE_BRACKET = /^\[(\d{1,2}\/\d{1,2}\/\d{2,4}),?\s+(\d{1,2}:\d{2}(?::\d{2})?(?:\s*[AaPp][Mm])?)\]\s*([^:]+?):\s?(.*)$/;
 const RE_PLAIN   = /^(\d{1,2}\/\d{1,2}\/\d{2,4}),?\s+(\d{1,2}:\d{2}(?::\d{2})?(?:\s*[AaPp][Mm])?)\s*[-–—]\s*([^:]+?):\s?(.*)$/;
-
-// Detecta "linha de evento do sistema" (sem remetente, ex: "Mensagens são protegidas...")
-// Não nos importa, mas precisamos identificar pra não quebrar parsing
 const RE_BRACKET_SYS = /^\[(\d{1,2}\/\d{1,2}\/\d{2,4}),?\s+(\d{1,2}:\d{2}(?::\d{2})?(?:\s*[AaPp][Mm])?)\]\s*(.*)$/;
 const RE_PLAIN_SYS   = /^(\d{1,2}\/\d{1,2}\/\d{2,4}),?\s+(\d{1,2}:\d{2}(?::\d{2})?(?:\s*[AaPp][Mm])?)\s*[-–—]\s*(.*)$/;
-
-// Anexo: tenta múltiplos formatos
 const RE_ATTACH_ANGLE = /<(?:anexado|attached|adjunto|allegato|anexo)[:：]?\s*([^>]+?\.[A-Za-z0-9]{2,5})\s*>/i;
 const RE_ATTACH_PAREN = /([\w.\-+()\s]+?\.(?:jpg|jpeg|png|gif|webp|heic|mp4|3gp|mov|avi|mkv|opus|mp3|m4a|ogg|wav|aac|pdf|docx?|xlsx?|pptx?|txt|vcf))\s*[\(\（](?:arquivo anexado|file attached|archivo adjunto|file allegato|adjunto)[\)\）]/i;
-
-// Extensões reconhecidas
 const PHOTO_EXT = ['jpg','jpeg','png','gif','webp','heic'];
 const VIDEO_EXT = ['mp4','3gp','mov','avi','mkv'];
 const AUDIO_EXT = ['opus','mp3','m4a','ogg','wav','aac'];
@@ -208,7 +625,6 @@ function parseChat(text) {
   const lines = text.split(/\r?\n/);
   const messages = [];
   let cur = null;
-
   for (const raw of lines) {
     const line = raw;
     let m = line.match(RE_BRACKET) || line.match(RE_PLAIN);
@@ -217,7 +633,6 @@ function parseChat(text) {
       cur = { date: m[1], time: m[2], sender: m[3].trim(), body: m[4] || '' };
       continue;
     }
-    // checa se é linha de sistema (sem remetente) — fecha mensagem anterior mas não vira nova
     const sys = line.match(RE_BRACKET_SYS) || line.match(RE_PLAIN_SYS);
     if (sys && !line.includes(': ')) {
       if (cur) { messages.push(cur); cur = null; }
@@ -227,34 +642,24 @@ function parseChat(text) {
   }
   if (cur) messages.push(cur);
 
-  // mapeia filename -> metadados
   const byFile = {};
   for (const msg of messages) {
     let attachMatch = msg.body.match(RE_ATTACH_ANGLE) || msg.body.match(RE_ATTACH_PAREN);
     if (!attachMatch) continue;
-
     const filename = attachMatch[1].trim();
     const fullMatch = attachMatch[0];
     const idx = msg.body.indexOf(fullMatch);
     let caption = msg.body.slice(idx + fullMatch.length).replace(/^\s*[\n\r]+/, '').trim();
-    // se a legenda começou ANTES do anexo na mesma mensagem (raro, mas acontece)
     const before = msg.body.slice(0, idx).trim();
     if (!caption && before) caption = before;
-
-    byFile[filename] = {
-      filename, caption,
-      date: msg.date, time: msg.time, sender: msg.sender
-    };
-    // também indexa pelo basename (caso tenha path)
+    byFile[filename] = { filename, caption, date: msg.date, time: msg.time, sender: msg.sender };
     const base = filename.split(/[\\\/]/).pop();
     if (base !== filename) byFile[base] = byFile[filename];
   }
-
   return { byFile, messageCount: messages.length };
 }
 
 function parseDateBR(dateStr, timeStr) {
-  // dd/mm/yyyy ou dd/mm/yy. Também aceita mm/dd/yyyy se primeiro número > 12
   let parts = dateStr.split('/');
   let [a, b, y] = parts;
   let d, m;
@@ -262,28 +667,27 @@ function parseDateBR(dateStr, timeStr) {
   else if (parseInt(b) > 12) { m = a; d = b; }
   else { d = a; m = b; }
   const yyyy = y.length === 2 ? '20' + y : y;
-  // normaliza hora 12h -> 24h
   let t = timeStr.trim();
   const ampm = t.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?\s*([AaPp])[Mm]$/);
   if (ampm) {
-    let hh = parseInt(ampm[1]);
-    const mm = ampm[2];
+    let hh = parseInt(ampm[1]); const mm = ampm[2];
     const isPM = /p/i.test(ampm[4]);
     if (isPM && hh < 12) hh += 12;
     if (!isPM && hh === 12) hh = 0;
     t = String(hh).padStart(2,'0') + ':' + mm;
   } else {
-    // remove segundos se houver
     const m24 = t.match(/^(\d{1,2}):(\d{2})/);
     if (m24) t = m24[1].padStart(2,'0') + ':' + m24[2];
   }
   return { iso: `${yyyy}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`, time: t.replace(':','h') };
 }
 
-function slugify(s, max=50) {
+function filenamify(s, max=120) {
   if (!s) return '';
-  return s.normalize('NFD').replace(/[̀-ͯ]/g,'')
-    .replace(/[^a-zA-Z0-9\s-]/g,' ').trim().replace(/\s+/g,'-').replace(/-+/g,'-').toLowerCase().slice(0, max).replace(/-+$/,'');
+  return s.replace(/[<>:"/\\|?*\x00-\x1f]/g,'')
+          .replace(/\s*\n\s*/g, ' — ')
+          .replace(/\s+/g,' ')
+          .trim().slice(0, max).replace(/[.\s]+$/,'');
 }
 
 function csvEscape(v) {
@@ -292,9 +696,14 @@ function csvEscape(v) {
   return v;
 }
 
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
+}
+
 processBtn.addEventListener('click', async () => {
   if (!selectedFile) return;
   processBtn.disabled = true;
+  btnText.textContent = 'Processando…';
   statsEl.style.display = 'none';
   previewEl.style.display = 'none';
   diagEl.innerHTML = '';
@@ -307,36 +716,69 @@ processBtn.addEventListener('click', async () => {
 
     if (isTxt) {
       chatText = await selectedFile.text();
-      showStatus('Modo somente-texto: gerando apenas planilha CSV', '');
+      showStatus('Modo texto: gerando apenas planilha CSV', '');
     } else {
       showStatus('Lendo arquivo .zip…', '');
-      const zip = await JSZip.loadAsync(selectedFile);
+      // tenta carregar com decodeFileName customizado para suportar UTF-8 em nomes
+      const zip = await JSZip.loadAsync(selectedFile, {
+        decodeFileName: (bytes) => {
+          try { return new TextDecoder('utf-8', {fatal: false}).decode(bytes); }
+          catch { return new TextDecoder('latin1').decode(bytes); }
+        }
+      });
       setProgress(15);
-      let chatFile = null;
-      const candidates = [];
+      const allFiles = [];
+      const txtCandidates = [];
       zip.forEach((path, file) => {
         if (file.dir) return;
-        if (/\.txt$/i.test(path)) candidates.push({path, file});
         zipFiles.push({path, file});
+        allFiles.push(path);
+        if (/\.txt$/i.test(path)) txtCandidates.push({path, file});
       });
-      // prioriza nomes mais comuns
-      chatFile = candidates.find(c => /(_chat|chat|whatsapp.*chat|conversa).*\.txt$/i.test(c.path))
-              || candidates.find(c => /\.txt$/i.test(c.path));
-      if (!chatFile) throw new Error('Nenhum arquivo .txt encontrado no zip. Esse não parece ser um export do WhatsApp.');
+
+      if (allFiles.length === 0) throw new Error('O zip está vazio ou corrompido.');
+
+      // estratégia 1: arquivos com nome típico de chat
+      let chatFile = txtCandidates.find(c => /(_chat|chat|whatsapp|conversa)/i.test(c.path.split('/').pop()));
+      // estratégia 2: qualquer .txt
+      if (!chatFile && txtCandidates.length) chatFile = txtCandidates[0];
+      // estratégia 3: detectar por conteúdo — qualquer arquivo cujo início pareça um chat do WhatsApp
+      if (!chatFile) {
+        showStatus('Procurando o arquivo de conversa por conteúdo…', '');
+        for (const {path, file} of zipFiles) {
+          // pula mídias claramente não-texto
+          if (/\.(jpg|jpeg|png|gif|webp|heic|mp4|3gp|mov|avi|mkv|opus|mp3|m4a|ogg|wav|aac|pdf|zip)$/i.test(path)) continue;
+          try {
+            const head = await file.async('string');
+            const sample = head.slice(0, 4000);
+            if (RE_BRACKET.test(sample.split('\n')[0]) || RE_PLAIN.test(sample.split('\n')[0])
+                || /\d{1,2}\/\d{1,2}\/\d{2,4}[\s,]+\d{1,2}:\d{2}/.test(sample)) {
+              chatFile = {path, file};
+              break;
+            }
+          } catch(e) {}
+        }
+      }
+
+      if (!chatFile) {
+        const list = allFiles.slice(0, 30).map(p => '  • ' + p).join('\n');
+        throw new Error(`Não encontrei o arquivo de conversa do WhatsApp dentro do zip.\n\nArquivos encontrados (${allFiles.length}):\n${list}${allFiles.length>30?'\n  …':''}\n\nDica: confira se você marcou "Incluir mídia" ao exportar e se o zip não foi modificado.`);
+      }
       chatText = await chatFile.file.async('string');
+      console.log('Chat detectado em:', chatFile.path);
     }
 
     setProgress(30);
     showStatus('Lendo conversa…', '');
     const { byFile, messageCount } = parseChat(chatText);
-    const captionedFiles = Object.keys(byFile).length;
 
     if (messageCount === 0) {
-      throw new Error('Não consegui interpretar nenhuma mensagem no arquivo de texto. Formato desconhecido — me mande as 3 primeiras linhas do _chat.txt para eu ajustar.');
+      throw new Error('Não consegui interpretar nenhuma mensagem. Formato desconhecido.');
     }
     setProgress(45);
 
     const optRename = document.getElementById('optRename').checked;
+    const optDatePrefix = document.getElementById('optDatePrefix').checked;
     const optCsv    = document.getElementById('optCsv').checked;
     const optVideos = document.getElementById('optVideos').checked;
     const optAudios = document.getElementById('optAudios').checked;
@@ -350,7 +792,6 @@ processBtn.addEventListener('click', async () => {
     const usedNames = new Set();
 
     if (isTxt) {
-      // Modo só texto: lista todas as legendas encontradas
       for (const fname of Object.keys(byFile)) {
         const meta = byFile[fname];
         const ext = (fname.split('.').pop()||'').toLowerCase();
@@ -380,7 +821,6 @@ processBtn.addEventListener('click', async () => {
         const base = path.split('/').pop();
         const ext = (base.split('.').pop()||'').toLowerCase();
         const meta = byFile[base] || byFile[path] || null;
-
         let type = PHOTO_EXT.includes(ext) ? 'foto' : VIDEO_EXT.includes(ext) ? 'video' : AUDIO_EXT.includes(ext) ? 'audio' : 'outro';
         if (type==='foto') photos++; else if (type==='video') videos++; else if (type==='audio') audios++;
 
@@ -393,21 +833,20 @@ processBtn.addEventListener('click', async () => {
         if (m.date && m.time) { try { isoDate = parseDateBR(m.date, m.time).iso; } catch(e){} }
 
         if (optRename) {
+          const captionName = filenamify(m.caption);
           let prefix = '';
-          if (m.date && m.time) {
-            try {
-              const d = parseDateBR(m.date, m.time);
-              prefix = `${d.iso}_${d.time}`;
-            } catch(e){}
+          if (optDatePrefix && m.date && m.time) {
+            try { const d = parseDateBR(m.date, m.time); prefix = `${d.iso}_${d.time}`; } catch(e){}
           }
-          const slug = slugify(m.caption);
-          const senderSlug = slug ? '' : slugify(m.sender, 20);
-          const parts = [prefix, slug || senderSlug].filter(Boolean);
-          newName = (parts.length ? parts.join('_') + '.' + ext : base);
+          let core;
+          if (captionName) core = prefix ? `${prefix} ${captionName}` : captionName;
+          else if (prefix) core = prefix;
+          else { const senderName = filenamify(m.sender, 30); core = senderName || base.replace(/\.[^.]+$/,''); }
+          newName = core + '.' + ext;
           let candidate = newName, n = 1;
           while (usedNames.has(candidate)) {
             const dot = newName.lastIndexOf('.');
-            candidate = newName.slice(0,dot) + '-' + (++n) + newName.slice(dot);
+            candidate = newName.slice(0,dot) + ' (' + (++n) + ')' + newName.slice(dot);
           }
           newName = candidate;
           usedNames.add(newName);
@@ -441,27 +880,24 @@ processBtn.addEventListener('click', async () => {
     setTimeout(()=>URL.revokeObjectURL(url), 1000);
 
     setProgress(100);
-    showStatus(`✓ Pronto! ${messageCount} mensagens lidas, ${photos} fotos, ${videos} vídeos, ${withCaption} com legenda${unmatched?`, ${unmatched} sem match`:''}.`, 'success');
+    showStatus(`✓ Pronto! ${messageCount.toLocaleString('pt-BR')} mensagens · ${photos} fotos · ${withCaption} com legenda${unmatched?` · ${unmatched} sem match`:''}`, 'success');
 
-    document.getElementById('statPhotos').textContent = photos;
-    document.getElementById('statVideos').textContent = videos;
-    document.getElementById('statAudios').textContent = audios;
-    document.getElementById('statCaptions').textContent = withCaption;
-    document.getElementById('statUnmatched').textContent = unmatched;
+    document.getElementById('statPhotos').textContent = photos.toLocaleString('pt-BR');
+    document.getElementById('statVideos').textContent = videos.toLocaleString('pt-BR');
+    document.getElementById('statAudios').textContent = audios.toLocaleString('pt-BR');
+    document.getElementById('statCaptions').textContent = withCaption.toLocaleString('pt-BR');
+    document.getElementById('statUnmatched').textContent = unmatched.toLocaleString('pt-BR');
     statsEl.style.display = 'grid';
 
-    // Diagnóstico
-    let diagHTML = '';
     if (unmatched > 0) {
-      diagHTML += `<details open><summary>⚠️ ${unmatched} arquivo(s) não casaram com nenhuma mensagem do chat</summary>
-        <p style="font-size:12px;margin-top:6px;color:#555;">Esses arquivos foram incluídos sem legenda. Pode ser stickers, mídias deletadas no chat mas que sobraram no zip, ou um formato de linha que o parser não reconheceu.</p>
-        <ul>${unmatchedList.slice(0,30).map(n=>`<li><code>${n}</code></li>`).join('')}${unmatchedList.length>30?`<li>… e mais ${unmatchedList.length-30}</li>`:''}</ul></details>`;
+      diagEl.innerHTML = `<details open><summary>⚠ ${unmatched} arquivo(s) não casaram com mensagem do chat</summary>
+        <p style="font-size:13px;margin-top:8px;color:var(--text-dim);">Foram incluídos sem legenda. Geralmente são stickers, mídias deletadas no chat, ou um formato que o parser não reconheceu.</p>
+        <ul>${unmatchedList.slice(0,30).map(n=>`<li><code>${escapeHtml(n)}</code></li>`).join('')}${unmatchedList.length>30?`<li>… e mais ${unmatchedList.length-30}</li>`:''}</ul></details>`;
     }
-    diagEl.innerHTML = diagHTML;
 
     if (previewRows.length) {
-      previewEl.innerHTML = '<table><thead><tr><th>Data</th><th>Remetente</th><th>Legenda</th><th>Novo nome</th></tr></thead><tbody>' +
-        previewRows.map(r => `<tr class="${r.hasCap?'':'no-cap'}"><td style="white-space:nowrap">${r.date} ${r.time}</td><td>${r.sender}</td><td class="caption">${r.caption ? escapeHtml(r.caption) : '<em style="color:#94a3b8">sem legenda</em>'}</td><td><code style="font-size:11px">${escapeHtml(r.newName)}</code></td></tr>`).join('') +
+      previewTable.innerHTML = '<table><thead><tr><th>Data</th><th>Remetente</th><th>Legenda</th><th>Novo nome</th></tr></thead><tbody>' +
+        previewRows.map(r => `<tr class="${r.hasCap?'':'no-cap'}"><td style="white-space:nowrap">${r.date} ${r.time}</td><td>${escapeHtml(r.sender)}</td><td class="caption">${r.caption ? escapeHtml(r.caption) : '<em style="color:var(--text-muted)">sem legenda</em>'}</td><td><code>${escapeHtml(r.newName)}</code></td></tr>`).join('') +
         '</tbody></table>';
       previewEl.style.display = 'block';
     }
@@ -471,36 +907,22 @@ processBtn.addEventListener('click', async () => {
     setProgress(0);
   } finally {
     processBtn.disabled = false;
+    btnText.textContent = 'Processar arquivo';
   }
 });
 
-function escapeHtml(s) {
-  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
-}
-
-// =====================
-// Auto-teste embutido — roda sample de cada formato no carregamento e loga no console
-// =====================
+// Self-test
 (function selfTest(){
   const samples = {
-    'Android PT (sem vírgula)': `28/04/2026 14:32 - Heitor: IMG-20260428-WA0001.jpg (arquivo anexado)
-Pedido do cliente João
-28/04/2026 14:33 - Heitor: VID-20260428-WA0002.mp4 (arquivo anexado)`,
-    'Android PT (com vírgula)': `28/04/2026, 14:32 - Heitor: IMG-001.jpg (arquivo anexado)
-legenda aqui`,
-    'iOS PT (colchetes)': `[28/04/2026, 14:32:45] Heitor: <anexado: 00000001-PHOTO-2026-04-28-14-32-45.jpg>
-legenda no iOS`,
-    'Android novo (angle)': `28/04/2026 14:32 - Heitor: <anexado: IMG-X.jpg>
-legenda angle`,
-    'Inglês 12h': `4/28/26, 2:32 PM - Heitor: IMG-002.jpg (file attached)
-english caption`,
+    'Android PT': `28/04/2026 14:32 - Heitor: IMG-001.jpg (arquivo anexado)\nlegenda 1`,
+    'Android PT vírgula': `28/04/2026, 14:32 - Heitor: IMG-002.jpg (arquivo anexado)\nlegenda 2`,
+    'iOS': `[28/04/2026, 14:32:45] Heitor: <anexado: PHOTO.jpg>\nlegenda 3`,
+    'Android angle': `28/04/2026 14:32 - Heitor: <anexado: IMG-X.jpg>\nlegenda 4`,
+    'Inglês 12h': `4/28/26, 2:32 PM - Heitor: IMG-003.jpg (file attached)\ncaption en`,
   };
-  const results = {};
-  for (const [name, txt] of Object.entries(samples)) {
-    const r = parseChat(txt);
-    results[name] = { messages: r.messageCount, files: Object.keys(r.byFile) };
-  }
-  console.log('Self-test parser WhatsApp:', results);
+  const r = {};
+  for (const [n,t] of Object.entries(samples)) r[n] = parseChat(t);
+  console.log('%cChatPic self-test:', 'color:#10b981;font-weight:bold', r);
 })();
 </script>
 </body>
