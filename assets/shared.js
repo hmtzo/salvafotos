@@ -175,7 +175,7 @@ async function initDottedSurface() {
         const x = ix * SEPARATION - (AMOUNTX * SEPARATION) / 2;
         const z = iy * SEPARATION - (AMOUNTY * SEPARATION) / 2;
         positions.push(x, 0, z);
-        colors.push(0.06, 0.09, 0.15); // tom escuro azulado pra combinar com tema light
+        colors.push(0.78, 0.85, 0.95); // tom claro azulado pra combinar com tema dark
       }
     }
 

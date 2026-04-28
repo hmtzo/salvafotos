@@ -12,26 +12,26 @@
 <link rel="icon" href="/logo.svg">
 <link rel="stylesheet" href="/assets/shared.css">
 <style>
-  /* ===== Cinematic background (subtle grid + film grain) ===== */
+  /* ===== Cinematic background (subtle grid + film grain) — DARK ===== */
   body::after{
     content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
     background:
-      linear-gradient(to right, rgba(15,23,42,0.04) 1px, transparent 1px) 0 0/60px 60px,
-      linear-gradient(to bottom, rgba(15,23,42,0.04) 1px, transparent 1px) 0 0/60px 60px;
+      linear-gradient(to right, rgba(255,255,255,0.04) 1px, transparent 1px) 0 0/60px 60px,
+      linear-gradient(to bottom, rgba(255,255,255,0.04) 1px, transparent 1px) 0 0/60px 60px;
     -webkit-mask-image:radial-gradient(ellipse at center, black 0%, transparent 70%);
             mask-image:radial-gradient(ellipse at center, black 0%, transparent 70%);
   }
   .film-grain{
-    position:fixed;inset:0;z-index:1;pointer-events:none;opacity:0.025;mix-blend-mode:overlay;
+    position:fixed;inset:0;z-index:1;pointer-events:none;opacity:0.04;mix-blend-mode:overlay;
     background-image:url("data:image/svg+xml;utf8,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   }
 
-  /* ===== Hub Hero — silver matte typography ===== */
+  /* ===== Hub Hero — silver matte typography (dark) ===== */
   .hub-hero{padding:48px 0 36px;text-align:center;position:relative;z-index:2}
   .hub-eyebrow{
     display:inline-block;padding:6px 14px;border-radius:100px;
-    background:linear-gradient(135deg, rgba(255,255,255,0.6), rgba(255,255,255,0.3));
-    border:1px solid rgba(15,23,42,0.06);
+    background:linear-gradient(135deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
+    border:1px solid rgba(255,255,255,0.08);
     font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.1em;
     color:var(--text-dim);margin-bottom:20px;
     backdrop-filter:blur(20px);
@@ -41,16 +41,16 @@
     font-weight:800;letter-spacing:-0.04em;line-height:1;margin-bottom:14px;
   }
   .hub-hero h1 .silver-matte{
-    background:linear-gradient(180deg, #0f172a 0%, rgba(15,23,42,0.5) 100%);
+    background:linear-gradient(180deg, #ffffff 0%, rgba(255,255,255,0.4) 100%);
     -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
     transform:translateZ(0);
     filter:
-      drop-shadow(0 10px 20px rgba(15,23,42,0.15))
-      drop-shadow(0 2px 4px rgba(15,23,42,0.1));
+      drop-shadow(0 10px 20px rgba(255,255,255,0.08))
+      drop-shadow(0 2px 4px rgba(0,0,0,0.4));
     display:inline-block;
   }
   .hub-hero h1 .highlight{
-    background:linear-gradient(135deg, var(--accent) 0%, var(--info) 100%);
+    background:linear-gradient(135deg, var(--accent-bright) 0%, var(--info) 100%);
     -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
     display:inline-block;
   }
@@ -73,13 +73,13 @@
     width:18px;height:18px;color:var(--text-muted);pointer-events:none;
   }
 
-  /* ===== LimelightNav style category tabs ===== */
+  /* ===== LimelightNav style category tabs (dark) ===== */
   .category-tabs{
     display:inline-flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:0;
     margin:18px auto 32px;padding:6px 8px;position:relative;
-    background:rgba(255,255,255,0.6);border:1px solid rgba(15,23,42,0.06);
+    background:rgba(31,32,35,0.6);border:1px solid rgba(255,255,255,0.06);
     border-radius:14px;backdrop-filter:blur(20px);
-    box-shadow:0 4px 20px -4px rgba(15,23,42,0.08);
+    box-shadow:0 4px 20px -4px rgba(0,0,0,0.4);
   }
   .category-tabs-wrap{display:flex;justify-content:center;flex-wrap:wrap}
   .cat-tab{
@@ -107,22 +107,24 @@
     display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));
     gap:16px;margin-bottom:40px;position:relative;z-index:2;
   }
-  /* ===== GlowCard tool cards (cursor-tracking spotlight) ===== */
+  /* ===== GlowCard tool cards (cursor-tracking spotlight, dark) ===== */
   .tool-card{
     --base:220;--spread:200;
     --hue:calc(var(--base) + (var(--xp, 0) * var(--spread)));
     --card-x:-200px;--card-y:-200px;
-    background:var(--card);border:1px solid rgba(15,23,42,0.08);
+    background:rgba(31,32,35,0.7);border:1px solid rgba(255,255,255,0.08);
     border-radius:16px;padding:22px;
     text-decoration:none;color:inherit;display:block;
     transition:transform 0.2s cubic-bezier(.4,1.4,.5,1), box-shadow 0.25s;
     cursor:pointer;position:relative;overflow:hidden;
-    background-image:radial-gradient(
-      260px 260px at var(--card-x) var(--card-y),
-      hsl(var(--hue) 95% 65% / 0.10),
-      transparent 70%
-    );
-    backdrop-filter:blur(2px);
+    background-image:
+      radial-gradient(
+        260px 260px at var(--card-x) var(--card-y),
+        hsl(var(--hue) 95% 60% / 0.18),
+        transparent 70%
+      ),
+      linear-gradient(180deg, rgba(255,255,255,0.02), transparent);
+    backdrop-filter:blur(8px);
   }
   .tool-card.disabled{opacity:0.45;cursor:not-allowed;pointer-events:none}
   .tool-card::before{
@@ -170,15 +172,15 @@
   .tool-card .tool-badge.new{background:var(--accent-glow);color:var(--accent-bright)}
   .tool-card .tool-badge.soon{background:var(--bg-elev);color:var(--text-muted)}
 
-  /* Cores por categoria */
-  .icon-pdf{background:rgba(239,68,68,0.1);color:#dc2626}
-  .icon-image{background:rgba(168,85,247,0.1);color:#9333ea}
-  .icon-doc{background:rgba(37,99,235,0.1);color:#2563eb}
-  .icon-org{background:rgba(245,158,11,0.1);color:#d97706}
-  .icon-secure{background:rgba(16,185,129,0.1);color:#059669}
-  .icon-ai{background:rgba(236,72,153,0.1);color:#db2777}
-  .icon-calc{background:rgba(20,184,166,0.1);color:#0d9488}
-  .icon-convert{background:rgba(99,102,241,0.1);color:#4f46e5}
+  /* Cores por categoria (dark) */
+  .icon-pdf{background:rgba(239,68,68,0.15);color:#fca5a5}
+  .icon-image{background:rgba(168,85,247,0.15);color:#c4b5fd}
+  .icon-doc{background:rgba(59,130,246,0.15);color:#93c5fd}
+  .icon-org{background:rgba(245,158,11,0.15);color:#fcd34d}
+  .icon-secure{background:rgba(16,185,129,0.15);color:#6ee7b7}
+  .icon-ai{background:rgba(236,72,153,0.15);color:#f9a8d4}
+  .icon-calc{background:rgba(20,184,166,0.15);color:#5eead4}
+  .icon-convert{background:rgba(99,102,241,0.15);color:#a5b4fc}
 
   .section-title{
     font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;
@@ -199,7 +201,7 @@
 <div class="container">
 
   <section class="hub-hero">
-    <span class="hub-eyebrow">✨ Sindicompany Hub · uso interno</span>
+    <span class="hub-eyebrow">Sindicompany Hub · Uso interno</span>
     <h1>
       <span class="silver-matte">Ferramentas para o</span><br>
       <span class="highlight">dia a dia do escritório</span>
@@ -214,7 +216,7 @@
     <div class="category-tabs-wrap">
       <div class="category-tabs" id="catTabs">
         <button class="cat-tab active" data-cat="all">Todas</button>
-        <button class="cat-tab" data-cat="ai">🤖 IA</button>
+        <button class="cat-tab" data-cat="ai">IA</button>
         <button class="cat-tab" data-cat="doc">Documentos</button>
         <button class="cat-tab" data-cat="calc">Cálculos</button>
         <button class="cat-tab" data-cat="convert">Conversões</button>
@@ -235,49 +237,85 @@
 
 <script src="/assets/shared.js"></script>
 <script>
+// === Lucide-style icon paths (24x24, stroke-currentColor, stroke-width=1.75) ===
+const ICONS = {
+  bot:        '<path d="M12 8V4H8"/><rect x="4" y="8" width="16" height="12" rx="2"/><path d="M2 14h2M20 14h2M15 13v2M9 13v2"/>',
+  pencil:     '<path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>',
+  fileText:   '<path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/>',
+  filePen:    '<path d="M12.5 22H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8.5L20 7.5V11"/><path d="M14 2v6h6"/><path d="m18.4 9.6 3 3-7 7H11v-3.4z"/>',
+  fileSign:   '<path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><path d="M14 2v6h6"/><path d="m11 14-3 3 1.5 1.5L13 15"/>',
+  calculator: '<rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="14" x2="8" y2="14"/><line x1="12" y1="14" x2="12" y2="14"/><line x1="16" y1="14" x2="16" y2="14"/><line x1="8" y1="18" x2="8" y2="18"/><line x1="12" y1="18" x2="12" y2="18"/><line x1="16" y1="18" x2="16" y2="18"/>',
+  fileDown:   '<path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><path d="M14 2v6h6"/><path d="M12 18v-6"/><path d="m9 15 3 3 3-3"/>',
+  table:      '<path d="M12 3v18M3 9h18M3 15h18"/><rect x="3" y="3" width="18" height="18" rx="2"/>',
+  fileSpread: '<path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><path d="M14 2v6h6"/><path d="M8 13h2v5H8zM12 11h2v7h-2zM16 14h-2"/>',
+  image:      '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>',
+  images:     '<path d="M18 22H4a2 2 0 0 1-2-2V6"/><path d="m22 13-1.296-1.296a2.41 2.41 0 0 0-3.408 0L11 18"/><circle cx="12" cy="8" r="2"/><rect x="6" y="2" width="16" height="16" rx="2"/>',
+  palette:    '<circle cx="13.5" cy="6.5" r=".5"/><circle cx="17.5" cy="10.5" r=".5"/><circle cx="8.5" cy="7.5" r=".5"/><circle cx="6.5" cy="12.5" r=".5"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/>',
+  pdfEdit:    '<path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>',
+  files:      '<path d="M15.5 2H8.6c-.4 0-.8.2-1.1.5-.3.3-.5.7-.5 1.1v12.8c0 .4.2.8.5 1.1.3.3.7.5 1.1.5h9.8c.4 0 .8-.2 1.1-.5.3-.3.5-.7.5-1.1V6.5L15.5 2z"/><path d="M3 7.6v12.8c0 .4.2.8.5 1.1.3.3.7.5 1.1.5h9.8"/><path d="M15 2v5h5"/>',
+  scissors:   '<circle cx="6" cy="6" r="3"/><path d="M8.12 8.12 12 12"/><path d="M20 4 8.12 15.88"/><circle cx="6" cy="18" r="3"/><path d="M14.8 14.8 20 20"/>',
+  archive:    '<path d="M22 8v13H2V8M20 4H4l-2 4h20l-2-4z"/><line x1="10" y1="12" x2="14" y2="12"/>',
+  scale:      '<path d="m16 16 3-8 3 8c-2 1-4 1-6 0M2 16l3-8 3 8c-2 1-4 1-6 0M7 21h10M12 3v18M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"/>',
+  layoutGrid: '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/>',
+  rotate:     '<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/>',
+  hash:       '<line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/><line x1="10" y1="3" x2="8" y2="21"/><line x1="16" y1="3" x2="14" y2="21"/>',
+  droplet:    '<path d="M12 2.69 5.64 9.06a8 8 0 1 0 12.72 0Z"/>',
+  message:    '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
+  search:     '<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
+  lock:       '<rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
+  unlock:     '<rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/>',
+  shield:     '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/>',
+  signature:  '<path d="m6 17 6-6"/><path d="m20 4-9 9-3-3 9-9 3 3z"/><path d="M15 10 9.5 4.5"/><path d="M2 22h20"/>',
+  sparkles:   '<path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3z"/><path d="M19 13l.7 2.1 2.1.7-2.1.7L19 19l-.7-2.5-2.1-.7 2.1-.7L19 13z"/><path d="M5 14l.5 1.5L7 16l-1.5.5L5 18l-.5-1.5L3 16l1.5-.5L5 14z"/>',
+};
+function svg(name, size = 22) {
+  const p = ICONS[name] || '';
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
+}
+
 const TOOLS = [
   // === IA (destaque) ===
-  { slug: 'sindi', cat: 'ai', name: 'Sindi (IA)', desc: 'Copiloto IA que lê documentos e responde dúvidas sobre direito condominial.', icon: '🤖', iconClass: 'icon-ai' },
-  { slug: 'corretor-texto', cat: 'ai', name: 'Corretor de Texto PT-BR', desc: 'Corrige ortografia, gramática e pontuação. Mantém o tom do texto.', icon: '✏️', iconClass: 'icon-ai', badge: 'new' },
+  { slug: 'sindi', cat: 'ai', name: 'Sindi (IA)', desc: 'Copiloto IA que lê documentos e responde dúvidas sobre direito condominial.', icon: 'bot', iconClass: 'icon-ai' },
+  { slug: 'corretor-texto', cat: 'ai', name: 'Corretor de Texto PT-BR', desc: 'Corrige ortografia, gramática e pontuação. Mantém o tom do texto.', icon: 'pencil', iconClass: 'icon-ai', badge: 'new' },
 
   // === GERADORES ===
-  { slug: 'gerador-notificacao', cat: 'doc', name: 'Gerar Notificação', desc: 'Notificações extrajudiciais prontas: inadimplência, barulho, animal, obra.', icon: '📋', iconClass: 'icon-doc' },
-  { slug: 'gerador-ata', cat: 'doc', name: 'Gerar Ata', desc: 'Wizard de ata de assembleia (ordinária ou extraordinária) com deliberações.', icon: '📝', iconClass: 'icon-doc' },
-  { slug: 'gerador-contrato', cat: 'doc', name: 'Gerar Contrato', desc: 'Modelos: prestação de serviço, locação salão, manutenção mensal.', icon: '📄', iconClass: 'icon-doc' },
+  { slug: 'gerador-notificacao', cat: 'doc', name: 'Gerar Notificação', desc: 'Notificações extrajudiciais prontas: inadimplência, barulho, animal, obra.', icon: 'fileText', iconClass: 'icon-doc' },
+  { slug: 'gerador-ata', cat: 'doc', name: 'Gerar Ata', desc: 'Wizard de ata de assembleia (ordinária ou extraordinária) com deliberações.', icon: 'filePen', iconClass: 'icon-doc' },
+  { slug: 'gerador-contrato', cat: 'doc', name: 'Gerar Contrato', desc: 'Modelos: prestação de serviço, locação salão, manutenção mensal.', icon: 'fileSign', iconClass: 'icon-doc' },
 
   // === CALCULADORAS ===
-  { slug: 'calculadoras', cat: 'calc', name: 'Calculadoras', desc: 'Reajuste de aluguel, multa de inadimplência, rateio e projeção de caixa.', icon: '🧮', iconClass: 'icon-calc', badge: 'new' },
+  { slug: 'calculadoras', cat: 'calc', name: 'Calculadoras', desc: 'Reajuste de aluguel, multa de inadimplência, rateio e projeção de caixa.', icon: 'calculator', iconClass: 'icon-calc', badge: 'new' },
 
   // === CONVERSÕES ===
-  { slug: 'word-para-pdf', cat: 'convert', name: 'Word → PDF', desc: 'Converte .docx em PDF preservando formatação.', icon: '📊', iconClass: 'icon-convert', badge: 'new' },
-  { slug: 'excel-para-pdf', cat: 'convert', name: 'Excel → PDF', desc: 'Converte .xlsx em PDF (suporta múltiplas abas).', icon: '📈', iconClass: 'icon-convert', badge: 'new' },
-  { slug: 'pdf-para-excel', cat: 'convert', name: 'PDF → Excel', desc: 'Extrai tabelas de PDFs em planilha .xlsx.', icon: '📋', iconClass: 'icon-convert', badge: 'new' },
-  { slug: 'pdf-para-jpg', cat: 'convert', name: 'PDF → JPG', desc: 'Converta cada página do PDF em imagem JPG.', icon: '🖼️', iconClass: 'icon-convert' },
-  { slug: 'jpg-para-pdf', cat: 'convert', name: 'Imagens → PDF', desc: 'Junte várias imagens em um PDF.', icon: '🎴', iconClass: 'icon-convert' },
-  { slug: 'conversor-imagens', cat: 'convert', name: 'Conversor de Imagens', desc: 'PNG ↔ JPG ↔ WEBP. Redimensiona, comprime, em lote.', icon: '🎨', iconClass: 'icon-image', badge: 'new' },
+  { slug: 'word-para-pdf', cat: 'convert', name: 'Word → PDF', desc: 'Converte .docx em PDF preservando formatação.', icon: 'fileText', iconClass: 'icon-convert', badge: 'new' },
+  { slug: 'excel-para-pdf', cat: 'convert', name: 'Excel → PDF', desc: 'Converte .xlsx em PDF (suporta múltiplas abas).', icon: 'fileSpread', iconClass: 'icon-convert', badge: 'new' },
+  { slug: 'pdf-para-excel', cat: 'convert', name: 'PDF → Excel', desc: 'Extrai tabelas de PDFs em planilha .xlsx.', icon: 'table', iconClass: 'icon-convert', badge: 'new' },
+  { slug: 'pdf-para-jpg', cat: 'convert', name: 'PDF → JPG', desc: 'Converta cada página do PDF em imagem JPG.', icon: 'image', iconClass: 'icon-convert' },
+  { slug: 'jpg-para-pdf', cat: 'convert', name: 'Imagens → PDF', desc: 'Junte várias imagens em um PDF.', icon: 'images', iconClass: 'icon-convert' },
+  { slug: 'conversor-imagens', cat: 'convert', name: 'Conversor de Imagens', desc: 'PNG ↔ JPG ↔ WEBP. Redimensiona, comprime, em lote.', icon: 'palette', iconClass: 'icon-image', badge: 'new' },
 
   // === PDF (manipulação) ===
-  { slug: 'editor-pdf', cat: 'pdf', name: 'Editor de PDF', desc: 'Adicione texto, destaque, risque, anote o PDF.', icon: '✏️', iconClass: 'icon-pdf', badge: 'new' },
-  { slug: 'juntar-pdf', cat: 'pdf', name: 'Juntar PDF', desc: 'Combine vários PDFs em um único arquivo.', icon: '📑', iconClass: 'icon-pdf' },
-  { slug: 'dividir-pdf', cat: 'pdf', name: 'Dividir PDF', desc: 'Separe páginas ou intervalos em arquivos individuais.', icon: '✂️', iconClass: 'icon-pdf' },
-  { slug: 'comprimir-pdf', cat: 'pdf', name: 'Comprimir PDF', desc: 'Reduz o tamanho do PDF rasterizando em JPEG.', icon: '🗜️', iconClass: 'icon-pdf' },
-  { slug: 'comparar-pdf', cat: 'pdf', name: 'Comparar Documentos', desc: 'Veja o que mudou entre duas versões (com resumo IA).', icon: '⚖️', iconClass: 'icon-pdf', badge: 'new' },
+  { slug: 'editor-pdf', cat: 'pdf', name: 'Editor de PDF', desc: 'Adicione texto, destaque, risque, anote o PDF.', icon: 'pdfEdit', iconClass: 'icon-pdf', badge: 'new' },
+  { slug: 'juntar-pdf', cat: 'pdf', name: 'Juntar PDF', desc: 'Combine vários PDFs em um único arquivo.', icon: 'files', iconClass: 'icon-pdf' },
+  { slug: 'dividir-pdf', cat: 'pdf', name: 'Dividir PDF', desc: 'Separe páginas ou intervalos em arquivos individuais.', icon: 'scissors', iconClass: 'icon-pdf' },
+  { slug: 'comprimir-pdf', cat: 'pdf', name: 'Comprimir PDF', desc: 'Reduz o tamanho do PDF rasterizando em JPEG.', icon: 'archive', iconClass: 'icon-pdf' },
+  { slug: 'comparar-pdf', cat: 'pdf', name: 'Comparar Documentos', desc: 'Veja o que mudou entre duas versões (com resumo IA).', icon: 'scale', iconClass: 'icon-pdf', badge: 'new' },
 
   // === ORGANIZAÇÃO ===
-  { slug: 'organizar-pdf', cat: 'org', name: 'Organizar Páginas', desc: 'Reordene e remova páginas arrastando miniaturas.', icon: '🧩', iconClass: 'icon-org' },
-  { slug: 'girar-pdf', cat: 'org', name: 'Girar PDF', desc: 'Rotacione páginas que vieram de cabeça pra baixo.', icon: '🔄', iconClass: 'icon-org' },
-  { slug: 'numerar-paginas', cat: 'org', name: 'Numerar Páginas', desc: 'Adicione número em cada página automaticamente.', icon: '🔢', iconClass: 'icon-org' },
-  { slug: 'marca-dagua', cat: 'org', name: 'Marca d\'água', desc: 'Texto como marca d\'água em todas as páginas.', icon: '💧', iconClass: 'icon-org' },
+  { slug: 'organizar-pdf', cat: 'org', name: 'Organizar Páginas', desc: 'Reordene e remova páginas arrastando miniaturas.', icon: 'layoutGrid', iconClass: 'icon-org' },
+  { slug: 'girar-pdf', cat: 'org', name: 'Girar PDF', desc: 'Rotacione páginas que vieram de cabeça pra baixo.', icon: 'rotate', iconClass: 'icon-org' },
+  { slug: 'numerar-paginas', cat: 'org', name: 'Numerar Páginas', desc: 'Adicione número em cada página automaticamente.', icon: 'hash', iconClass: 'icon-org' },
+  { slug: 'marca-dagua', cat: 'org', name: 'Marca d\'água', desc: 'Texto como marca d\'água em todas as páginas.', icon: 'droplet', iconClass: 'icon-org' },
 
   // === DOCUMENTOS / DADOS ===
-  { slug: 'whatsapp-fotos', cat: 'doc', name: 'Fotos do WhatsApp', desc: 'Extrai fotos com legenda, data e remetente.', icon: '💬', iconClass: 'icon-doc' },
-  { slug: 'ocr', cat: 'doc', name: 'OCR (Texto em Imagem)', desc: 'Extrai texto de fotos e PDFs escaneados (PT/EN/ES).', icon: '🔍', iconClass: 'icon-doc' },
+  { slug: 'whatsapp-fotos', cat: 'doc', name: 'Fotos do WhatsApp', desc: 'Extrai fotos com legenda, data e remetente.', icon: 'message', iconClass: 'icon-doc' },
+  { slug: 'ocr', cat: 'doc', name: 'OCR (Texto em Imagem)', desc: 'Extrai texto de fotos e PDFs escaneados (PT/EN/ES).', icon: 'search', iconClass: 'icon-doc' },
 
   // === SEGURANÇA ===
-  { slug: 'proteger-pdf', cat: 'secure', name: 'Proteger PDF', desc: 'Adicione senha (AES-256) antes de enviar.', icon: '🔒', iconClass: 'icon-secure' },
-  { slug: 'desbloquear-pdf', cat: 'secure', name: 'Desbloquear PDF', desc: 'Remove senha de PDF (precisa saber a senha).', icon: '🔓', iconClass: 'icon-secure' },
-  { slug: 'redigir-lgpd', cat: 'secure', name: 'Redigir LGPD', desc: 'Tarja CPF, RG, e-mail, telefone automaticamente.', icon: '🛡️', iconClass: 'icon-secure', badge: 'new' },
-  { slug: 'assinatura', cat: 'secure', name: 'Assinatura Eletrônica', desc: 'Assine PDF digitalmente com trilha de auditoria.', icon: '✍️', iconClass: 'icon-secure', badge: 'new' },
+  { slug: 'proteger-pdf', cat: 'secure', name: 'Proteger PDF', desc: 'Adicione senha (AES-256) antes de enviar.', icon: 'lock', iconClass: 'icon-secure' },
+  { slug: 'desbloquear-pdf', cat: 'secure', name: 'Desbloquear PDF', desc: 'Remove senha de PDF (precisa saber a senha).', icon: 'unlock', iconClass: 'icon-secure' },
+  { slug: 'redigir-lgpd', cat: 'secure', name: 'Redigir LGPD', desc: 'Tarja CPF, RG, e-mail, telefone automaticamente.', icon: 'shield', iconClass: 'icon-secure', badge: 'new' },
+  { slug: 'assinatura', cat: 'secure', name: 'Assinatura Eletrônica', desc: 'Assine PDF digitalmente com trilha de auditoria.', icon: 'signature', iconClass: 'icon-secure', badge: 'new' },
 ];
 
 const grid = document.getElementById('toolsGrid');
@@ -318,7 +356,7 @@ function toolCard(t) {
   return `
     <a href="${href}" class="tool-card ${t.disabled ? 'disabled' : ''}" data-cat="${t.cat}">
       ${badge}
-      <div class="tool-icon ${t.iconClass}">${t.icon}</div>
+      <div class="tool-icon ${t.iconClass}">${svg(t.icon, 22)}</div>
       <h3>${t.name}</h3>
       <p>${t.desc}</p>
     </a>

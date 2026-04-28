@@ -3,26 +3,26 @@
    ========================================================================== */
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg:#fafbfc;
-  --bg-elev:#f1f5f9;
-  --card:#ffffff;
-  --border:#e5e7eb;
-  --border-bright:#cbd5e1;
-  --text:#0f172a;
-  --text-dim:#475569;
-  --text-muted:#94a3b8;
+  --bg:#09090b;
+  --bg-elev:#18181b;
+  --card:#1F2023;
+  --border:rgba(255,255,255,0.08);
+  --border-bright:rgba(255,255,255,0.16);
+  --text:#f4f4f5;
+  --text-dim:#a1a1aa;
+  --text-muted:#71717a;
   --accent:#10b981;
-  --accent-bright:#059669;
-  --accent-dim:#047857;
-  --accent-glow:rgba(16,185,129,0.1);
-  --info:#2563eb;
-  --info-glow:rgba(37,99,235,0.08);
-  --warn:#d97706;
+  --accent-bright:#34d399;
+  --accent-dim:#059669;
+  --accent-glow:rgba(16,185,129,0.15);
+  --info:#3b82f6;
+  --info-glow:rgba(59,130,246,0.15);
+  --warn:#f59e0b;
   --danger:#ef4444;
   --radius:14px;
   --radius-lg:20px;
-  --shadow:0 1px 3px rgba(0,0,0,0.05),0 4px 16px rgba(0,0,0,0.04);
-  --shadow-lg:0 10px 40px rgba(0,0,0,0.08);
+  --shadow:0 1px 3px rgba(0,0,0,0.4),0 4px 16px rgba(0,0,0,0.3);
+  --shadow-lg:0 10px 40px rgba(0,0,0,0.5);
 }
 html,body{min-height:100%}
 body{
@@ -33,13 +33,14 @@ body{
 body::before{
   content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
   background:
-    radial-gradient(ellipse 800px 500px at 0% 0%, rgba(16,185,129,0.04), transparent),
-    radial-gradient(ellipse 800px 500px at 100% 100%, rgba(37,99,235,0.03), transparent);
+    radial-gradient(ellipse 1000px 600px at 0% 0%, rgba(16,185,129,0.08), transparent 60%),
+    radial-gradient(ellipse 1000px 600px at 100% 100%, rgba(59,130,246,0.08), transparent 60%),
+    radial-gradient(ellipse 600px 400px at 50% 50%, rgba(139,92,246,0.04), transparent 70%);
 }
 /* Dotted surface 3D — fica atrás de tudo */
 #dotted-surface{
   position:fixed;inset:0;z-index:-1;pointer-events:none;
-  opacity:0.45;
+  opacity:0.6;
 }
 #dotted-surface canvas{display:block}
 @media (prefers-reduced-motion: reduce){
