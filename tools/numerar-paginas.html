@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Numerar Páginas — Sindicompany Hub</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="icon" href="/logo.svg">
+<link rel="stylesheet" href="/assets/shared.css">
+<script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+</head>
+<body>
+<div id="app-nav"></div>
+<div class="container">
+  <section class="tool-hero">
+    <span class="eyebrow">🔢 Organização</span>
+    <h1>Numerar Páginas</h1>
+    <p>Adicione número de página em todas as folhas do PDF, com opções de posição e formato.</p>
+  </section>
+
+  <div class="card">
+    <label for="fileInput" class="drop-zone" id="dropZone">
+      <div class="drop-icon">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14"/></svg>
+      </div>
+      <div class="drop-title">Arraste o PDF aqui ou clique para selecionar</div>
+      <div class="drop-sub">Aceita 1 arquivo PDF</div>
+    </label>
+    <input type="file" id="fileInput" accept="application/pdf">
+
+    <div id="fileInfo" style="display:none;margin-top:12px;padding:12px 14px;background:var(--bg-elev);border-radius:10px;font-size:13px;color:var(--text-dim);"></div>
+
+    <div id="options" style="display:none;margin-top:18px;">
+      <div class="field-row">
+        <div class="field">
+          <label>Posição</label>
+          <select id="position">
+            <option value="bottom-center" selected>Rodapé centro</option>
+            <option value="bottom-right">Rodapé direita</option>
+            <option value="bottom-left">Rodapé esquerda</option>
+            <option value="top-center">Topo centro</option>
+            <option value="top-right">Topo direita</option>
+            <option value="top-left">Topo esquerda</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Formato</label>
+          <select id="format">
+            <option value="n">1, 2, 3…</option>
+            <option value="n-of-N" selected>Página 1 de 10</option>
+            <option value="n/N">1/10</option>
+            <option value="hifen">- 1 -</option>
+          </select>
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>Tamanho</label>
+          <select id="size">
+            <option value="10">10</option>
+            <option value="12" selected>12</option>
+            <option value="14">14</option>
+            <option value="16">16</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Começar em</label>
+          <input type="number" id="startNum" value="1" min="1">
+        </div>
+      </div>
+    </div>
+
+    <button class="btn-primary" id="processBtn" disabled>
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+      <span id="btnText">Selecione um PDF</span>
+    </button>
+
+    <div class="status" id="status">
+      <div class="status-text">Aguardando…</div>
+      <div class="progress"><div class="progress-bar"></div></div>
+    </div>
+  </div>
+</div>
+<div id="app-footer"></div>
+
+<script src="/assets/shared.js"></script>
+<script>
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+const fileInfo = document.getElementById('fileInfo');
+const opts = document.getElementById('options');
+const processBtn = document.getElementById('processBtn');
+const btnText = document.getElementById('btnText');
+const statusEl = document.getElementById('status');
+
+let file = null;
+let totalPages = 0;
+
+setupDropZone(dropZone, fileInput, async newFiles => {
+  file = newFiles[0];
+  if (!file) return;
+  const buf = await file.arrayBuffer();
+  const doc = await PDFLib.PDFDocument.load(buf, { ignoreEncryption: true });
+  totalPages = doc.getPageCount();
+  fileInfo.style.display = 'block';
+  fileInfo.innerHTML = `<strong>${file.name}</strong> · ${formatBytes(file.size)} · <strong>${totalPages}</strong> páginas`;
+  opts.style.display = 'block';
+  processBtn.disabled = false;
+  btnText.textContent = 'Numerar páginas';
+});
+
+processBtn.addEventListener('click', async () => {
+  if (!file) return;
+  processBtn.disabled = true;
+  btnText.textContent = 'Processando…';
+  showStatus(statusEl, 'Lendo PDF…');
+  setProgress(statusEl, 10);
+
+  try {
+    const buf = await file.arrayBuffer();
+    const doc = await PDFLib.PDFDocument.load(buf, { ignoreEncryption: true });
+    const font = await doc.embedFont(PDFLib.StandardFonts.Helvetica);
+
+    const position = document.getElementById('position').value;
+    const format = document.getElementById('format').value;
+    const size = parseFloat(document.getElementById('size').value);
+    const start = parseInt(document.getElementById('startNum').value) || 1;
+
+    const pages = doc.getPages();
+    const N = pages.length;
+    const margin = 28;
+
+    setProgress(statusEl, 40);
+    pages.forEach((page, i) => {
+      const num = start + i;
+      let text;
+      switch (format) {
+        case 'n-of-N': text = `Página ${num} de ${N}`; break;
+        case 'n/N':    text = `${num}/${N}`; break;
+        case 'hifen':  text = `- ${num} -`; break;
+        default:       text = `${num}`;
+      }
+      const { width, height } = page.getSize();
+      const textWidth = font.widthOfTextAtSize(text, size);
+
+      let x, y;
+      if (position.endsWith('center')) x = (width - textWidth) / 2;
+      else if (position.endsWith('right')) x = width - textWidth - margin;
+      else x = margin;
+
+      if (position.startsWith('bottom')) y = margin;
+      else y = height - margin - size;
+
+      page.drawText(text, { x, y, size, font, color: PDFLib.rgb(0.1, 0.1, 0.15) });
+    });
+
+    setProgress(statusEl, 90);
+    const out = await doc.save();
+    const blob = new Blob([out], { type: 'application/pdf' });
+    const baseName = file.name.replace(/\.pdf$/i, '');
+    downloadBlob(blob, `${baseName}_numerado.pdf`);
+
+    setProgress(statusEl, 100);
+    showStatus(statusEl, `✓ Pronto! ${N} páginas numeradas.`, 'success');
+  } catch (err) {
+    console.error(err);
+    showStatus(statusEl, 'Erro: ' + err.message, 'error');
+    setProgress(statusEl, 0);
+  } finally {
+    processBtn.disabled = false;
+    btnText.textContent = 'Numerar páginas';
+  }
+});
+</script>
+</body>
+</html>

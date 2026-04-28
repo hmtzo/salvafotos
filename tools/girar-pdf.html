@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Girar PDF — Sindicompany Hub</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="icon" href="/logo.svg">
+<link rel="stylesheet" href="/assets/shared.css">
+<script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+</head>
+<body>
+<div id="app-nav"></div>
+<div class="container">
+  <section class="tool-hero">
+    <span class="eyebrow">🔄 Organização</span>
+    <h1>Girar PDF</h1>
+    <p>Gire páginas em 90°, 180° ou 270°. Aplique em todas as páginas ou só em algumas.</p>
+  </section>
+
+  <div class="card">
+    <label for="fileInput" class="drop-zone" id="dropZone">
+      <div class="drop-icon">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+      </div>
+      <div class="drop-title">Arraste o PDF aqui ou clique para selecionar</div>
+      <div class="drop-sub">Aceita 1 arquivo PDF</div>
+    </label>
+    <input type="file" id="fileInput" accept="application/pdf">
+
+    <div id="fileInfo" style="display:none;margin-top:12px;padding:12px 14px;background:var(--bg-elev);border-radius:10px;font-size:13px;color:var(--text-dim);"></div>
+
+    <div id="options" style="display:none;margin-top:18px;">
+      <div class="field">
+        <label>Rotação</label>
+        <select id="angle">
+          <option value="90">90° (sentido horário)</option>
+          <option value="180">180° (de cabeça pra baixo)</option>
+          <option value="270">270° (sentido anti-horário)</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Aplicar em</label>
+        <select id="scope">
+          <option value="all">Todas as páginas</option>
+          <option value="ranges">Páginas específicas</option>
+        </select>
+      </div>
+      <div class="field" id="rangesField" style="display:none;">
+        <label>Páginas (ex: <code>1-3, 5, 7-9</code>)</label>
+        <input type="text" id="ranges" placeholder="1-3, 5, 7-9">
+      </div>
+    </div>
+
+    <button class="btn-primary" id="processBtn" disabled>
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+      <span id="btnText">Selecione um PDF</span>
+    </button>
+
+    <div class="status" id="status">
+      <div class="status-text">Aguardando…</div>
+      <div class="progress"><div class="progress-bar"></div></div>
+    </div>
+  </div>
+</div>
+<div id="app-footer"></div>
+
+<script src="/assets/shared.js"></script>
+<script>
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+const fileInfo = document.getElementById('fileInfo');
+const opts = document.getElementById('options');
+const scopeSel = document.getElementById('scope');
+const rangesField = document.getElementById('rangesField');
+const processBtn = document.getElementById('processBtn');
+const btnText = document.getElementById('btnText');
+const statusEl = document.getElementById('status');
+
+let file = null;
+let totalPages = 0;
+
+setupDropZone(dropZone, fileInput, async newFiles => {
+  file = newFiles[0];
+  if (!file) return;
+  const buf = await file.arrayBuffer();
+  const doc = await PDFLib.PDFDocument.load(buf, { ignoreEncryption: true });
+  totalPages = doc.getPageCount();
+  fileInfo.style.display = 'block';
+  fileInfo.innerHTML = `<strong>${file.name}</strong> · ${formatBytes(file.size)} · <strong>${totalPages}</strong> páginas`;
+  opts.style.display = 'block';
+  processBtn.disabled = false;
+  btnText.textContent = 'Girar PDF';
+});
+
+scopeSel.addEventListener('change', () => {
+  rangesField.style.display = scopeSel.value === 'ranges' ? 'flex' : 'none';
+});
+
+function parseRanges(str, max) {
+  const set = new Set();
+  for (const part of str.split(',').map(s => s.trim()).filter(Boolean)) {
+    const m = part.match(/^(\d+)(?:\s*-\s*(\d+))?$/);
+    if (!m) throw new Error(`Intervalo inválido: "${part}"`);
+    const a = parseInt(m[1]), b = m[2] ? parseInt(m[2]) : a;
+    if (a < 1 || b > max || a > b) throw new Error(`Fora do PDF: "${part}" (${max} páginas)`);
+    for (let i = a; i <= b; i++) set.add(i - 1);
+  }
+  return set;
+}
+
+processBtn.addEventListener('click', async () => {
+  if (!file) return;
+  processBtn.disabled = true;
+  btnText.textContent = 'Processando…';
+  showStatus(statusEl, 'Lendo PDF…');
+  setProgress(statusEl, 10);
+
+  try {
+    const angle = parseInt(document.getElementById('angle').value);
+    const buf = await file.arrayBuffer();
+    const doc = await PDFLib.PDFDocument.load(buf, { ignoreEncryption: true });
+
+    let targetIndices;
+    if (scopeSel.value === 'all') {
+      targetIndices = new Set(doc.getPageIndices());
+    } else {
+      const r = document.getElementById('ranges').value.trim();
+      if (!r) throw new Error('Informe pelo menos uma página.');
+      targetIndices = parseRanges(r, totalPages);
+    }
+
+    setProgress(statusEl, 40);
+    showStatus(statusEl, `Girando ${targetIndices.size} páginas…`);
+    doc.getPages().forEach((page, i) => {
+      if (targetIndices.has(i)) {
+        const current = page.getRotation().angle;
+        page.setRotation(PDFLib.degrees((current + angle) % 360));
+      }
+    });
+
+    setProgress(statusEl, 90);
+    const out = await doc.save();
+    const blob = new Blob([out], { type: 'application/pdf' });
+    const baseName = file.name.replace(/\.pdf$/i, '');
+    downloadBlob(blob, `${baseName}_girado.pdf`);
+
+    setProgress(statusEl, 100);
+    showStatus(statusEl, `✓ Pronto! ${targetIndices.size} páginas giradas em ${angle}°.`, 'success');
+  } catch (err) {
+    console.error(err);
+    showStatus(statusEl, 'Erro: ' + err.message, 'error');
+    setProgress(statusEl, 0);
+  } finally {
+    processBtn.disabled = false;
+    btnText.textContent = 'Girar PDF';
+  }
+});
+</script>
+</body>
+</html>

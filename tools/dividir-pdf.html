@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dividir PDF — Sindicompany Hub</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="icon" href="/logo.svg">
+<link rel="stylesheet" href="/assets/shared.css">
+<script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+</head>
+<body>
+<div id="app-nav"></div>
+<div class="container">
+  <section class="tool-hero">
+    <span class="eyebrow">✂️ PDF</span>
+    <h1>Dividir PDF</h1>
+    <p>Separe páginas de um PDF em arquivos individuais ou extraia intervalos específicos.</p>
+  </section>
+
+  <div class="card">
+    <label for="fileInput" class="drop-zone" id="dropZone">
+      <div class="drop-icon">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.121 14.121L19 19m-7-7l7-7m-7 7l-2.879 2.879M12 12L9.121 9.121m0 5.758a3 3 0 10-4.243 4.243 3 3 0 004.243-4.243zm0-5.758a3 3 0 10-4.243-4.243 3 3 0 004.243 4.243z"/></svg>
+      </div>
+      <div class="drop-title">Arraste o PDF aqui ou clique para selecionar</div>
+      <div class="drop-sub">Aceita 1 arquivo PDF</div>
+    </label>
+    <input type="file" id="fileInput" accept="application/pdf">
+
+    <div id="fileInfo" style="display:none;margin-top:12px;padding:12px 14px;background:var(--bg-elev);border-radius:10px;font-size:13px;color:var(--text-dim);"></div>
+
+    <div id="options" style="display:none;margin-top:18px;">
+      <div class="field">
+        <label>Modo</label>
+        <select id="mode">
+          <option value="all">Cada página em um arquivo separado</option>
+          <option value="ranges">Intervalos personalizados</option>
+        </select>
+      </div>
+      <div class="field" id="rangesField" style="display:none;">
+        <label>Intervalos (ex: <code>1-3, 5, 7-9</code>)</label>
+        <input type="text" id="ranges" placeholder="1-3, 5, 7-9">
+      </div>
+    </div>
+
+    <button class="btn-primary" id="processBtn" disabled>
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+      <span id="btnText">Selecione um PDF</span>
+    </button>
+
+    <div class="status" id="status">
+      <div class="status-text">Aguardando…</div>
+      <div class="progress"><div class="progress-bar"></div></div>
+    </div>
+  </div>
+</div>
+<div id="app-footer"></div>
+
+<script src="/assets/shared.js"></script>
+<script>
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+const fileInfo = document.getElementById('fileInfo');
+const opts = document.getElementById('options');
+const mode = document.getElementById('mode');
+const rangesField = document.getElementById('rangesField');
+const processBtn = document.getElementById('processBtn');
+const btnText = document.getElementById('btnText');
+const statusEl = document.getElementById('status');
+
+let file = null;
+let totalPages = 0;
+
+setupDropZone(dropZone, fileInput, async newFiles => {
+  file = newFiles[0];
+  if (!file) return;
+  const buf = await file.arrayBuffer();
+  const doc = await PDFLib.PDFDocument.load(buf, { ignoreEncryption: true });
+  totalPages = doc.getPageCount();
+  fileInfo.style.display = 'block';
+  fileInfo.innerHTML = `<strong>${file.name}</strong> · ${formatBytes(file.size)} · <strong>${totalPages}</strong> páginas`;
+  opts.style.display = 'block';
+  processBtn.disabled = false;
+  btnText.textContent = 'Dividir PDF';
+});
+
+mode.addEventListener('change', () => {
+  rangesField.style.display = mode.value === 'ranges' ? 'flex' : 'none';
+});
+
+function parseRanges(str, max) {
+  const parts = str.split(',').map(s => s.trim()).filter(Boolean);
+  const out = [];
+  for (const p of parts) {
+    const m = p.match(/^(\d+)(?:\s*-\s*(\d+))?$/);
+    if (!m) throw new Error(`Intervalo inválido: "${p}"`);
+    const a = parseInt(m[1]);
+    const b = m[2] ? parseInt(m[2]) : a;
+    if (a < 1 || b > max || a > b) throw new Error(`Intervalo fora do PDF: "${p}" (PDF tem ${max} páginas)`);
+    out.push({ from: a, to: b, label: a === b ? `pag-${a}` : `pag-${a}-a-${b}` });
+  }
+  return out;
+}
+
+processBtn.addEventListener('click', async () => {
+  if (!file) return;
+  processBtn.disabled = true;
+  btnText.textContent = 'Processando…';
+  showStatus(statusEl, 'Lendo PDF…');
+  setProgress(statusEl, 5);
+
+  try {
+    const { PDFDocument } = PDFLib;
+    const buf = await file.arrayBuffer();
+    const src = await PDFDocument.load(buf, { ignoreEncryption: true });
+
+    let segments;
+    if (mode.value === 'all') {
+      segments = src.getPageIndices().map(i => ({ from: i + 1, to: i + 1, label: `pag-${i + 1}` }));
+    } else {
+      const r = document.getElementById('ranges').value.trim();
+      if (!r) throw new Error('Informe pelo menos um intervalo.');
+      segments = parseRanges(r, totalPages);
+    }
+
+    setProgress(statusEl, 15);
+    const zip = new JSZip();
+    const baseName = file.name.replace(/\.pdf$/i, '');
+
+    for (let i = 0; i < segments.length; i++) {
+      const seg = segments[i];
+      showStatus(statusEl, `Gerando ${i+1}/${segments.length}…`);
+      setProgress(statusEl, 15 + (i / segments.length) * 75);
+      const out = await PDFDocument.create();
+      const indices = [];
+      for (let p = seg.from; p <= seg.to; p++) indices.push(p - 1);
+      const pages = await out.copyPages(src, indices);
+      pages.forEach(p => out.addPage(p));
+      const pdfBytes = await out.save();
+      zip.file(`${baseName}_${seg.label}.pdf`, pdfBytes);
+    }
+
+    showStatus(statusEl, 'Compactando em ZIP…');
+    setProgress(statusEl, 95);
+    const blob = await zip.generateAsync({ type: 'blob' });
+    downloadBlob(blob, `${baseName}_dividido.zip`);
+
+    setProgress(statusEl, 100);
+    showStatus(statusEl, `✓ Pronto! ${segments.length} arquivos gerados.`, 'success');
+  } catch (err) {
+    console.error(err);
+    showStatus(statusEl, 'Erro: ' + err.message, 'error');
+    setProgress(statusEl, 0);
+  } finally {
+    processBtn.disabled = false;
+    btnText.textContent = 'Dividir PDF';
+  }
+});
+</script>
+</body>
+</html>

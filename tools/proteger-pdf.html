@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Proteger PDF — Sindicompany Hub</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="icon" href="/logo.svg">
+<link rel="stylesheet" href="/assets/shared.css">
+<!-- Fork do pdf-lib com suporte a criptografia AES -->
+<script src="https://cdn.jsdelivr.net/npm/@cantoo/pdf-lib@2.4.4/dist/pdf-lib.min.js"></script>
+</head>
+<body>
+<div id="app-nav"></div>
+<div class="container">
+  <section class="tool-hero">
+    <span class="eyebrow">🔒 Segurança</span>
+    <h1>Proteger PDF com senha</h1>
+    <p>Adicione uma senha ao PDF. Quem abrir o arquivo precisará dela. Criptografia AES-256.</p>
+  </section>
+
+  <div class="card">
+    <label for="fileInput" class="drop-zone" id="dropZone">
+      <div class="drop-icon">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+      </div>
+      <div class="drop-title">Arraste o PDF aqui ou clique para selecionar</div>
+      <div class="drop-sub">Aceita 1 arquivo PDF</div>
+    </label>
+    <input type="file" id="fileInput" accept="application/pdf">
+
+    <div id="fileInfo" style="display:none;margin-top:12px;padding:12px 14px;background:var(--bg-elev);border-radius:10px;font-size:13px;color:var(--text-dim);"></div>
+
+    <div id="options" style="display:none;margin-top:18px;">
+      <div class="field">
+        <label for="userPass">Senha de abertura</label>
+        <input type="password" id="userPass" placeholder="senha que será exigida ao abrir o PDF">
+      </div>
+      <div class="field">
+        <label for="userPass2">Confirme a senha</label>
+        <input type="password" id="userPass2" placeholder="repita a senha">
+      </div>
+      <p style="font-size:12px;color:var(--text-muted);">⚠️ Se você esquecer essa senha, não tem como recuperar o PDF. Anote em local seguro.</p>
+    </div>
+
+    <button class="btn-primary" id="processBtn" disabled>
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+      <span id="btnText">Selecione um PDF</span>
+    </button>
+
+    <div class="status" id="status">
+      <div class="status-text">Aguardando…</div>
+      <div class="progress"><div class="progress-bar"></div></div>
+    </div>
+  </div>
+</div>
+<div id="app-footer"></div>
+
+<script src="/assets/shared.js"></script>
+<script>
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+const fileInfo = document.getElementById('fileInfo');
+const opts = document.getElementById('options');
+const processBtn = document.getElementById('processBtn');
+const btnText = document.getElementById('btnText');
+const statusEl = document.getElementById('status');
+
+let file = null;
+
+setupDropZone(dropZone, fileInput, newFiles => {
+  file = newFiles[0];
+  if (!file) return;
+  fileInfo.style.display = 'block';
+  fileInfo.innerHTML = `<strong>${file.name}</strong> · ${formatBytes(file.size)}`;
+  opts.style.display = 'block';
+  processBtn.disabled = false;
+  btnText.textContent = 'Proteger PDF';
+});
+
+processBtn.addEventListener('click', async () => {
+  if (!file) return;
+  const pw = document.getElementById('userPass').value;
+  const pw2 = document.getElementById('userPass2').value;
+  if (!pw || pw.length < 4) { showStatus(statusEl, 'A senha precisa ter pelo menos 4 caracteres.', 'error'); return; }
+  if (pw !== pw2) { showStatus(statusEl, 'As senhas não coincidem.', 'error'); return; }
+
+  processBtn.disabled = true;
+  btnText.textContent = 'Processando…';
+  showStatus(statusEl, 'Lendo PDF…');
+  setProgress(statusEl, 10);
+
+  try {
+    const buf = await file.arrayBuffer();
+    const doc = await PDFLib.PDFDocument.load(buf, { ignoreEncryption: true });
+
+    setProgress(statusEl, 50);
+    showStatus(statusEl, 'Aplicando senha…');
+
+    // O fork @cantoo/pdf-lib suporta save() com opção encrypt.
+    const out = await doc.save({
+      encrypt: {
+        userPassword: pw,
+        ownerPassword: pw,
+        permissions: {},
+        keyBits: 256,
+      },
+    });
+
+    setProgress(statusEl, 90);
+    const blob = new Blob([out], { type: 'application/pdf' });
+    const baseName = file.name.replace(/\.pdf$/i, '');
+    downloadBlob(blob, `${baseName}_protegido.pdf`);
+
+    setProgress(statusEl, 100);
+    showStatus(statusEl, '✓ Pronto! PDF protegido com senha.', 'success');
+  } catch (err) {
+    console.error(err);
+    showStatus(statusEl, 'Erro: ' + (err.message || 'falha ao criptografar'), 'error');
+    setProgress(statusEl, 0);
+  } finally {
+    processBtn.disabled = false;
+    btnText.textContent = 'Proteger PDF';
+  }
+});
+</script>
+</body>
+</html>

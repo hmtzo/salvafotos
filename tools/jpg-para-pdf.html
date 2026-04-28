@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JPG / PNG → PDF — Sindicompany Hub</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="icon" href="/logo.svg">
+<link rel="stylesheet" href="/assets/shared.css">
+<script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+</head>
+<body>
+<div id="app-nav"></div>
+<div class="container">
+  <section class="tool-hero">
+    <span class="eyebrow">🖼️ Imagens</span>
+    <h1>Converter imagens em PDF</h1>
+    <p>Junte fotos e imagens (JPG, PNG, WEBP) em um PDF na ordem que quiser.</p>
+  </section>
+
+  <div class="card">
+    <label for="fileInput" class="drop-zone" id="dropZone">
+      <div class="drop-icon">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+      </div>
+      <div class="drop-title">Arraste suas imagens aqui ou clique para selecionar</div>
+      <div class="drop-sub">JPG, PNG, WEBP · você pode adicionar várias</div>
+    </label>
+    <input type="file" id="fileInput" accept="image/jpeg,image/png,image/webp" multiple>
+
+    <div class="file-list" id="fileList"></div>
+
+    <div id="options" style="display:none;margin-top:18px;">
+      <div class="field-row">
+        <div class="field">
+          <label>Tamanho da página</label>
+          <select id="pageSize">
+            <option value="auto">Ajustar à imagem</option>
+            <option value="A4">A4</option>
+            <option value="Letter">Carta (Letter)</option>
+            <option value="Legal">Ofício (Legal)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Orientação</label>
+          <select id="orient">
+            <option value="auto">Automática</option>
+            <option value="portrait">Retrato</option>
+            <option value="landscape">Paisagem</option>
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label>Margem (mm)</label>
+        <input type="number" id="margin" value="10" min="0" max="50">
+      </div>
+    </div>
+
+    <button class="btn-primary" id="processBtn" disabled>
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+      <span id="btnText">Selecione imagens</span>
+    </button>
+
+    <div class="status" id="status">
+      <div class="status-text">Aguardando…</div>
+      <div class="progress"><div class="progress-bar"></div></div>
+    </div>
+  </div>
+</div>
+<div id="app-footer"></div>
+
+<script src="/assets/shared.js"></script>
+<script>
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+const fileList = document.getElementById('fileList');
+const opts = document.getElementById('options');
+const processBtn = document.getElementById('processBtn');
+const btnText = document.getElementById('btnText');
+const statusEl = document.getElementById('status');
+
+let images = [];
+
+const PAGE_SIZES = {
+  A4: [595.28, 841.89],
+  Letter: [612, 792],
+  Legal: [612, 1008],
+};
+
+function renderList() {
+  if (!images.length) { fileList.innerHTML = ''; opts.style.display = 'none'; updateBtn(); return; }
+  fileList.innerHTML = images.map((img, i) => `
+    <div class="file-item">
+      <div class="file-icon">IMG</div>
+      <div class="file-info">
+        <div class="file-name">${i + 1}. ${img.file.name}</div>
+        <div class="file-meta">${formatBytes(img.file.size)}</div>
+      </div>
+      <div class="file-actions">
+        <button class="icon-btn" data-act="up" data-i="${i}" title="Mover pra cima" ${i === 0 ? 'disabled' : ''}>
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg>
+        </button>
+        <button class="icon-btn" data-act="down" data-i="${i}" title="Mover pra baixo" ${i === images.length - 1 ? 'disabled' : ''}>
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+        </button>
+        <button class="icon-btn" data-act="del" data-i="${i}" title="Remover">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3"/></svg>
+        </button>
+      </div>
+    </div>
+  `).join('');
+  opts.style.display = 'block';
+  updateBtn();
+}
+
+function updateBtn() {
+  if (!images.length) {
+    processBtn.disabled = true;
+    btnText.textContent = 'Selecione imagens';
+  } else {
+    processBtn.disabled = false;
+    btnText.textContent = `Gerar PDF (${images.length} imagens)`;
+  }
+}
+
+fileList.addEventListener('click', e => {
+  const btn = e.target.closest('button[data-act]');
+  if (!btn) return;
+  const i = parseInt(btn.dataset.i);
+  const act = btn.dataset.act;
+  if (act === 'del') images.splice(i, 1);
+  else if (act === 'up' && i > 0) [images[i-1], images[i]] = [images[i], images[i-1]];
+  else if (act === 'down' && i < images.length - 1) [images[i+1], images[i]] = [images[i], images[i+1]];
+  renderList();
+});
+
+setupDropZone(dropZone, fileInput, addImages);
+
+function addImages(files) {
+  const accepted = files.filter(f => /^image\/(jpeg|png|webp)$/i.test(f.type) || /\.(jpe?g|png|webp)$/i.test(f.name));
+  accepted.forEach(f => images.push({ file: f }));
+  renderList();
+}
+
+processBtn.addEventListener('click', async () => {
+  processBtn.disabled = true;
+  btnText.textContent = 'Processando…';
+  showStatus(statusEl, 'Gerando PDF…');
+  setProgress(statusEl, 5);
+
+  try {
+    const { PDFDocument } = PDFLib;
+    const pdf = await PDFDocument.create();
+    const pageSize = document.getElementById('pageSize').value;
+    const orient = document.getElementById('orient').value;
+    const marginMm = parseFloat(document.getElementById('margin').value) || 0;
+    const marginPt = (marginMm / 25.4) * 72;
+
+    for (let i = 0; i < images.length; i++) {
+      showStatus(statusEl, `Adicionando ${i+1}/${images.length}: ${images[i].file.name}`);
+      setProgress(statusEl, 10 + (i / images.length) * 80);
+
+      const f = images[i].file;
+      const buf = await f.arrayBuffer();
+      let img;
+      if (/\.(png)$/i.test(f.name) || f.type === 'image/png') {
+        img = await pdf.embedPng(buf);
+      } else if (/\.(webp)$/i.test(f.name) || f.type === 'image/webp') {
+        // converte WEBP -> JPG via canvas
+        const blob = new Blob([buf], { type: f.type });
+        const url = URL.createObjectURL(blob);
+        const image = await new Promise((res, rej) => {
+          const im = new Image();
+          im.onload = () => res(im);
+          im.onerror = rej;
+          im.src = url;
+        });
+        const canvas = document.createElement('canvas');
+        canvas.width = image.naturalWidth;
+        canvas.height = image.naturalHeight;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(image, 0, 0);
+        URL.revokeObjectURL(url);
+        const jpgUrl = canvas.toDataURL('image/jpeg', 0.92);
+        const jpgBytes = await fetch(jpgUrl).then(r => r.arrayBuffer());
+        img = await pdf.embedJpg(jpgBytes);
+      } else {
+        img = await pdf.embedJpg(buf);
+      }
+
+      let pw, ph;
+      if (pageSize === 'auto') {
+        pw = img.width + marginPt * 2;
+        ph = img.height + marginPt * 2;
+      } else {
+        [pw, ph] = PAGE_SIZES[pageSize];
+        const isLandscape = orient === 'landscape' || (orient === 'auto' && img.width > img.height);
+        if (isLandscape && pw < ph) [pw, ph] = [ph, pw];
+        if (orient === 'portrait' && pw > ph) [pw, ph] = [ph, pw];
+      }
+
+      const page = pdf.addPage([pw, ph]);
+      const availW = pw - marginPt * 2;
+      const availH = ph - marginPt * 2;
+      const ratio = Math.min(availW / img.width, availH / img.height);
+      const w = img.width * ratio;
+      const h = img.height * ratio;
+      const x = (pw - w) / 2;
+      const y = (ph - h) / 2;
+      page.drawImage(img, { x, y, width: w, height: h });
+    }
+
+    showStatus(statusEl, 'Salvando…');
+    setProgress(statusEl, 95);
+    const pdfBytes = await pdf.save();
+    const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+    downloadBlob(blob, `imagens_${new Date().toISOString().slice(0,10)}.pdf`);
+
+    setProgress(statusEl, 100);
+    showStatus(statusEl, `✓ Pronto! ${images.length} imagens em PDF (${formatBytes(blob.size)}).`, 'success');
+  } catch (err) {
+    console.error(err);
+    showStatus(statusEl, 'Erro: ' + err.message, 'error');
+    setProgress(statusEl, 0);
+  } finally {
+    processBtn.disabled = false;
+    updateBtn();
+  }
+});
+</script>
+</body>
+</html>

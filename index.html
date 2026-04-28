@@ -3,912 +3,283 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Sindicompany — Ferramenta interna de organização de fotos do WhatsApp</title>
-<meta name="description" content="Ferramenta exclusiva para colaboradores Sindicompany. Extraia fotos, vídeos e áudios de conversas do WhatsApp organizados por legenda, data e remetente.">
+<title>Sindicompany Hub — Ferramentas internas</title>
+<meta name="description" content="Hub de ferramentas internas Sindicompany — PDFs, conversões, geradores e automações para o dia a dia do escritório.">
 <meta name="robots" content="noindex, nofollow">
-<meta property="og:title" content="Sindicompany — Ferramenta interna">
-<meta property="og:description" content="Ferramenta exclusiva para colaboradores Sindicompany.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="icon" href="logo.svg">
-<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<link rel="icon" href="/logo.svg">
+<link rel="stylesheet" href="/assets/shared.css">
 <style>
-  :root {
-    --bg: #ffffff;
-    --bg-elev: #f8fafc;
-    --bg-card: #ffffff;
-    --border: #e5e7eb;
-    --border-bright: #d1d5db;
-    --text: #0f172a;
-    --text-dim: #475569;
-    --text-muted: #94a3b8;
-    --accent: #10b981;
-    --accent-bright: #059669;
-    --accent-dim: #047857;
-    --accent-glow: rgba(16, 185, 129, 0.1);
-    --danger: #ef4444;
-    --warn: #d97706;
-    --info: #2563eb;
-    --radius: 14px;
-    --radius-lg: 20px;
-    --shadow: 0 1px 3px rgba(0,0,0,0.05), 0 4px 16px rgba(0,0,0,0.04);
-    --shadow-lg: 0 10px 40px rgba(0,0,0,0.08);
+  /* ===== Hub-specific ===== */
+  .hub-hero{padding:24px 0 32px;text-align:center}
+  .hub-hero h1{font-size:clamp(32px,5vw,48px);margin-bottom:10px}
+  .hub-hero h1 .highlight{
+    background:linear-gradient(135deg,var(--accent),var(--info));
+    -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
   }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  html { scroll-behavior: smooth; }
-  body {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    min-height: 100vh;
-    line-height: 1.5;
-    -webkit-font-smoothing: antialiased;
-    overflow-x: hidden;
-  }
-  /* Background gradient mesh */
-  body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
-    background:
-      radial-gradient(ellipse at 20% 0%, rgba(16, 185, 129, 0.08), transparent 50%),
-      radial-gradient(ellipse at 80% 100%, rgba(59, 130, 246, 0.05), transparent 50%);
-    pointer-events: none;
-    z-index: 0;
-  }
-  .container { max-width: 1100px; margin: 0 auto; padding: 0 24px; position: relative; z-index: 1; }
+  .hub-hero p{font-size:16px;color:var(--text-dim);max-width:540px;margin:0 auto}
 
-  /* ====== NAV ====== */
-  nav {
-    padding: 22px 0;
-    display: flex; align-items: center; justify-content: space-between;
+  .search-wrap{max-width:520px;margin:24px auto 8px;position:relative}
+  .search-wrap input{
+    width:100%;padding:14px 18px 14px 46px;
+    border:1.5px solid var(--border);border-radius:12px;
+    font-size:15px;font-family:inherit;color:var(--text);
+    background:var(--card);transition:all 0.15s;
+    box-shadow:var(--shadow);
   }
-  .logo {
-    display: flex; align-items: center; gap: 12px;
-    font-weight: 700; font-size: 20px; letter-spacing: -0.02em;
-    color: var(--text);
-  }
-  .logo svg { height: 36px; width: auto; display: block; flex-shrink: 0; }
-  .logo-text { font-weight: 700; letter-spacing: -0.02em; }
-  .nav-links { display: flex; gap: 28px; align-items: center; font-size: 14px; }
-  .nav-links a { color: var(--text-dim); text-decoration: none; transition: color 0.2s; }
-  .nav-links a:hover { color: var(--text); }
-  .badge-privacy, .badge-internal {
-    display: inline-flex; align-items: center; gap: 6px;
-    background: var(--accent-glow); color: var(--accent-bright);
-    padding: 6px 12px; border-radius: 100px; font-size: 12px; font-weight: 500;
-    border: 1px solid rgba(16, 185, 129, 0.2);
-  }
-  .badge-internal {
-    background: rgba(37, 99, 235, 0.08); color: var(--info);
-    border-color: rgba(37, 99, 235, 0.2);
-  }
-  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
-
-  /* ====== HERO ====== */
-  .hero { padding: 60px 0 40px; text-align: center; }
-  .hero-eyebrow {
-    display: inline-block;
-    font-size: 13px; font-weight: 500;
-    color: var(--info);
-    background: rgba(37, 99, 235, 0.08);
-    padding: 8px 16px; border-radius: 100px;
-    margin-bottom: 24px;
-    border: 1px solid rgba(37, 99, 235, 0.2);
-  }
-  h1 {
-    font-size: clamp(36px, 6vw, 64px);
-    font-weight: 800;
-    letter-spacing: -0.03em;
-    line-height: 1.05;
-    margin-bottom: 20px;
-    color: var(--text);
-  }
-  h1 .highlight {
-    background: linear-gradient(135deg, var(--accent) 0%, var(--info) 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-  }
-  .hero-sub {
-    font-size: clamp(16px, 2vw, 19px);
-    color: var(--text-dim);
-    max-width: 620px; margin: 0 auto;
+  .search-wrap input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-glow)}
+  .search-wrap svg{
+    position:absolute;left:16px;top:50%;transform:translateY(-50%);
+    width:18px;height:18px;color:var(--text-muted);pointer-events:none;
   }
 
-  /* ====== CARD ====== */
-  .card {
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    padding: 32px;
-    margin-bottom: 20px;
-    box-shadow: var(--shadow);
-    backdrop-filter: blur(10px);
+  .category-tabs{
+    display:flex;gap:8px;justify-content:center;flex-wrap:wrap;
+    margin:16px 0 28px;padding:4px;
   }
-  .card-header { margin-bottom: 24px; }
-  .card-title {
-    font-size: 20px; font-weight: 700; letter-spacing: -0.01em;
-    display: flex; align-items: center; gap: 10px;
+  .cat-tab{
+    padding:8px 14px;background:transparent;border:1px solid var(--border);
+    color:var(--text-dim);border-radius:100px;font-size:13px;font-weight:500;
+    cursor:pointer;transition:all 0.15s;font-family:inherit;
   }
-  .card-title-num {
-    width: 28px; height: 28px; border-radius: 8px;
-    background: var(--accent-glow); color: var(--accent-bright);
-    display: inline-flex; align-items: center; justify-content: center;
-    font-size: 13px; font-weight: 700;
-    border: 1px solid rgba(16, 185, 129, 0.2);
-  }
-  .card-sub { color: var(--text-dim); font-size: 14px; margin-top: 6px; margin-left: 38px; }
+  .cat-tab:hover{border-color:var(--border-bright);color:var(--text)}
+  .cat-tab.active{background:var(--text);color:white;border-color:var(--text)}
 
-  /* ====== STEPS ====== */
-  .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
-  .step {
-    background: var(--bg-elev);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 18px;
-    transition: all 0.2s;
+  .tools-grid{
+    display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));
+    gap:16px;margin-bottom:40px;
   }
-  .step:hover { border-color: var(--border-bright); transform: translateY(-2px); }
-  .step-num {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 12px; color: var(--accent-bright);
-    margin-bottom: 8px; font-weight: 500;
+  .tool-card{
+    background:var(--card);border:1px solid var(--border);
+    border-radius:var(--radius);padding:20px;
+    text-decoration:none;color:inherit;display:block;
+    transition:all 0.15s;cursor:pointer;
+    position:relative;overflow:hidden;
   }
-  .step-title { font-weight: 600; font-size: 14px; margin-bottom: 4px; }
-  .step-desc { font-size: 13px; color: var(--text-dim); }
-  @media (max-width: 700px) { .steps { grid-template-columns: 1fr; } }
+  .tool-card.disabled{opacity:0.5;cursor:not-allowed;pointer-events:none}
+  .tool-card:hover:not(.disabled){
+    border-color:var(--accent);transform:translateY(-2px);
+    box-shadow:0 8px 24px -4px rgba(16,185,129,0.15);
+  }
+  .tool-card .tool-icon{
+    width:42px;height:42px;border-radius:10px;
+    display:flex;align-items:center;justify-content:center;
+    margin-bottom:14px;font-size:22px;
+  }
+  .tool-card .tool-icon svg{width:22px;height:22px}
+  .tool-card h3{font-size:15px;font-weight:600;margin-bottom:4px;letter-spacing:-0.01em}
+  .tool-card p{font-size:13px;color:var(--text-dim);line-height:1.45}
+  .tool-card .tool-badge{
+    position:absolute;top:14px;right:14px;
+    font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;
+    padding:3px 8px;border-radius:100px;
+  }
+  .tool-card .tool-badge.new{background:var(--accent-glow);color:var(--accent-bright)}
+  .tool-card .tool-badge.soon{background:var(--bg-elev);color:var(--text-muted)}
 
-  /* ====== DROP ZONE ====== */
-  .drop-zone {
-    border: 2px dashed var(--border-bright);
-    border-radius: var(--radius);
-    padding: 36px 24px;
-    text-align: center;
-    cursor: pointer;
-    transition: all 0.15s;
-    background: var(--bg-elev);
-  }
-  .drop-zone:hover, .drop-zone.dragover {
-    border-color: var(--accent);
-    background: var(--accent-glow);
-  }
-  .drop-icon {
-    width: 52px; height: 52px;
-    margin: 0 auto 14px;
-    background: var(--accent-glow);
-    border-radius: 12px;
-    display: flex; align-items: center; justify-content: center;
-  }
-  .drop-icon svg { width: 24px; height: 24px; color: var(--accent); }
-  .drop-title { font-size: 16px; font-weight: 600; margin-bottom: 4px; color: var(--text); }
-  .drop-sub { font-size: 13px; color: var(--text-dim); }
-  .drop-sub kbd {
-    background: var(--bg-card); padding: 2px 8px;
-    border: 1px solid var(--border-bright); border-radius: 6px;
-    font-family: 'JetBrains Mono', monospace; font-size: 12px;
-  }
-  input[type=file] { display: none; }
-  .file-selected {
-    display: inline-flex; align-items: center; gap: 10px;
-    background: var(--accent-glow); color: var(--accent-bright);
-    padding: 10px 16px; border-radius: 100px; margin-top: 12px;
-    font-size: 14px; font-weight: 500;
-    border: 1px solid rgba(16, 185, 129, 0.3);
+  /* Cores por categoria */
+  .icon-pdf{background:rgba(239,68,68,0.1);color:#dc2626}
+  .icon-image{background:rgba(168,85,247,0.1);color:#9333ea}
+  .icon-doc{background:rgba(37,99,235,0.1);color:#2563eb}
+  .icon-org{background:rgba(245,158,11,0.1);color:#d97706}
+  .icon-secure{background:rgba(16,185,129,0.1);color:#059669}
+  .icon-ai{background:rgba(236,72,153,0.1);color:#db2777}
+
+  .section-title{
+    font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;
+    color:var(--text-muted);margin:32px 0 14px;
   }
 
-  /* ====== TOGGLES ====== */
-  .options {
-    display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;
+  .empty{
+    text-align:center;padding:40px 20px;color:var(--text-muted);
+    background:var(--bg-elev);border-radius:var(--radius);
   }
-  @media (max-width: 700px) { .options { grid-template-columns: 1fr; } }
-  .toggle {
-    display: flex; align-items: center; gap: 14px;
-    padding: 16px;
-    background: var(--bg-elev);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    cursor: pointer; transition: all 0.15s;
-    user-select: none;
-  }
-  .toggle:hover { border-color: var(--border-bright); }
-  .toggle input { position: absolute; opacity: 0; pointer-events: none; }
-  .toggle-switch {
-    flex-shrink: 0;
-    width: 38px; height: 22px;
-    background: #cbd5e1;
-    border-radius: 100px;
-    position: relative; transition: background 0.2s;
-  }
-  .toggle-switch::after {
-    content: '';
-    position: absolute; top: 2px; left: 2px;
-    width: 18px; height: 18px;
-    background: white;
-    border-radius: 50%;
-    transition: transform 0.2s;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-  }
-  .toggle input:checked ~ .toggle-switch {
-    background: var(--accent);
-  }
-  .toggle input:checked ~ .toggle-switch::after { transform: translateX(16px); }
-  .toggle-label { flex: 1; }
-  .toggle-label strong { display: block; font-size: 14px; font-weight: 600; }
-  .toggle-label span { font-size: 12px; color: var(--text-dim); }
-  .toggle:has(input:checked) { border-color: rgba(16, 185, 129, 0.3); }
-
-  /* ====== BUTTON ====== */
-  .btn-primary {
-    width: 100%; padding: 16px;
-    background: linear-gradient(135deg, var(--accent) 0%, var(--accent-dim) 100%);
-    color: white; border: none;
-    border-radius: var(--radius);
-    font-family: inherit; font-size: 16px; font-weight: 600;
-    cursor: pointer;
-    margin-top: 24px;
-    transition: all 0.15s;
-    box-shadow: 0 4px 20px rgba(16, 185, 129, 0.25);
-    display: flex; align-items: center; justify-content: center; gap: 10px;
-  }
-  .btn-primary:hover:not(:disabled) {
-    transform: translateY(-1px);
-    box-shadow: 0 6px 28px rgba(16, 185, 129, 0.4);
-  }
-  .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; box-shadow: none; }
-  .btn-primary svg { width: 18px; height: 18px; }
-
-  /* ====== STATUS ====== */
-  .status {
-    margin-top: 20px; padding: 16px;
-    border-radius: var(--radius);
-    background: var(--bg-elev);
-    border: 1px solid var(--border);
-    font-size: 14px; display: none;
-  }
-  .status.show { display: block; }
-  .status.error { background: rgba(239, 68, 68, 0.08); border-color: rgba(239, 68, 68, 0.3); color: #fca5a5; }
-  .status.success { background: var(--accent-glow); border-color: rgba(16, 185, 129, 0.3); color: var(--accent-bright); }
-  .progress {
-    width: 100%; height: 4px;
-    background: var(--border);
-    border-radius: 100px; overflow: hidden;
-    margin-top: 12px;
-  }
-  .progress-bar {
-    height: 100%;
-    background: linear-gradient(90deg, var(--accent) 0%, var(--accent-bright) 100%);
-    width: 0%; transition: width 0.3s;
-    border-radius: 100px;
-  }
-
-  /* ====== STATS ====== */
-  .stats {
-    display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px;
-    margin-top: 20px;
-  }
-  @media (max-width: 700px) { .stats { grid-template-columns: repeat(2, 1fr); } }
-  .stat {
-    background: var(--bg-elev);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 16px;
-    text-align: center;
-    transition: all 0.2s;
-  }
-  .stat:hover { border-color: var(--border-bright); }
-  .stat-value {
-    font-size: 28px; font-weight: 800;
-    color: var(--accent-bright);
-    letter-spacing: -0.02em;
-  }
-  .stat-value.warn { color: var(--warn); }
-  .stat-label { font-size: 11px; color: var(--text-muted); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 500; }
-
-  /* ====== DETAILS / DIAGNOSTICS ====== */
-  details {
-    margin-top: 16px;
-    background: rgba(245, 158, 11, 0.05);
-    border: 1px solid rgba(245, 158, 11, 0.2);
-    border-radius: var(--radius);
-    padding: 14px 16px;
-  }
-  details summary { cursor: pointer; font-weight: 600; font-size: 14px; color: var(--warn); display: flex; align-items: center; gap: 8px; }
-  details ul { margin: 12px 0 0 20px; font-size: 13px; color: var(--text-dim); max-height: 200px; overflow-y: auto; }
-  details code { font-family: 'JetBrains Mono', monospace; font-size: 12px; background: var(--bg-card); padding: 2px 6px; border-radius: 4px; color: var(--text); }
-
-  /* ====== PREVIEW TABLE ====== */
-  .preview {
-    margin-top: 20px;
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    overflow: hidden;
-    background: var(--bg-elev);
-  }
-  .preview-header {
-    padding: 14px 18px;
-    background: var(--bg-card);
-    border-bottom: 1px solid var(--border);
-    font-size: 14px; font-weight: 600;
-    display: flex; align-items: center; gap: 8px;
-  }
-  .preview-table-wrap { max-height: 400px; overflow-y: auto; }
-  .preview table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  .preview th {
-    background: var(--bg-card);
-    padding: 12px 14px; text-align: left;
-    position: sticky; top: 0;
-    font-weight: 600; font-size: 12px;
-    color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em;
-    border-bottom: 1px solid var(--border);
-  }
-  .preview td {
-    padding: 12px 14px;
-    border-bottom: 1px solid var(--border);
-    vertical-align: top;
-    color: var(--text-dim);
-  }
-  .preview td.caption { max-width: 360px; word-break: break-word; color: var(--text); }
-  .preview tr.no-cap td { background: rgba(239, 68, 68, 0.04); }
-  .preview tr:last-child td { border-bottom: none; }
-  .preview code { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--accent-bright); }
-
-  /* ====== FEATURES GRID ====== */
-  .features {
-    display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;
-    margin-top: 60px;
-  }
-  @media (max-width: 800px) { .features { grid-template-columns: 1fr; } }
-  .feature {
-    background: var(--bg-card);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 24px;
-  }
-  .feature-icon {
-    width: 40px; height: 40px;
-    background: var(--accent-glow);
-    border-radius: 10px;
-    display: flex; align-items: center; justify-content: center;
-    margin-bottom: 14px;
-    border: 1px solid rgba(16, 185, 129, 0.2);
-  }
-  .feature-icon svg { width: 20px; height: 20px; color: var(--accent-bright); }
-  .feature h3 { font-size: 16px; font-weight: 600; margin-bottom: 6px; }
-  .feature p { font-size: 14px; color: var(--text-dim); }
-
-  /* ====== FOOTER ====== */
-  footer {
-    margin-top: 80px; padding: 32px 0;
-    border-top: 1px solid var(--border);
-    text-align: center;
-    color: var(--text-muted); font-size: 13px;
-  }
-  footer a { color: var(--text-dim); text-decoration: none; }
-  footer a:hover { color: var(--accent-bright); }
-
-  /* utility */
-  .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
 </style>
 </head>
 <body>
+
+<div id="app-nav" data-hub="self"></div>
+
 <div class="container">
-  <nav>
-    <div class="logo">
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 392 81" width="174" height="36" aria-label="Sindicompany">
-        <path fill="#84c7d3" fill-rule="evenodd" d="M 29 12 L 27 14 L 26 14 L 20 20 L 19 20 L 14 25 L 13 25 L 9 29 L 9 58 L 40 58 L 40 50 L 41 49 L 48 49 L 49 48 L 49 29 L 43 23 L 42 23 L 36 17 L 35 17 L 30 12 Z M 29 30 L 31 32 L 32 32 L 35 35 L 35 43 L 34 44 L 24 44 L 23 43 L 23 35 L 25 33 L 26 33 Z M 28 19 L 29 18 L 30 18 L 34 22 L 35 22 L 40 27 L 41 27 L 45 31 L 45 43 L 44 44 L 41 44 L 40 43 L 40 33 L 39 33 L 33 27 L 32 27 L 29 24 L 24 29 L 23 29 L 19 33 L 19 49 L 34 49 L 35 50 L 35 53 L 34 54 L 14 54 L 13 53 L 13 31 L 14 30 L 15 30 L 21 24 L 22 24 L 27 19 Z"/>
-        <path fill="#84c7d3" fill-rule="evenodd" d="M 29 0 L 26 3 L 25 3 L 20 8 L 19 8 L 13 14 L 12 14 L 7 19 L 6 19 L 0 25 L 0 67 L 45 67 L 45 65 L 46 64 L 46 63 L 5 63 L 4 62 L 4 27 L 7 24 L 8 24 L 14 18 L 15 18 L 20 13 L 21 13 L 27 7 L 28 7 L 29 6 L 30 6 L 35 11 L 36 11 L 41 16 L 42 16 L 48 22 L 49 22 L 54 27 L 54 55 L 56 55 L 57 54 L 58 54 L 58 24 L 57 23 L 56 23 L 50 17 L 49 17 L 44 12 L 43 12 L 37 6 L 36 6 L 31 1 L 30 1 Z"/>
-        <path fill="#dabda9" fill-rule="evenodd" d="M 57 55 L 56 56 L 53 56 L 52 57 L 51 57 L 48 60 L 48 61 L 47 62 L 47 64 L 46 65 L 46 72 L 47 73 L 47 74 L 52 79 L 53 79 L 54 80 L 62 80 L 63 79 L 64 79 L 65 78 L 66 78 L 69 75 L 69 74 L 70 73 L 70 72 L 71 71 L 71 65 L 70 64 L 70 62 L 68 60 L 68 59 L 67 58 L 66 58 L 64 56 L 62 56 L 61 55 Z"/>
-        <path fill="#1a1c29" fill-rule="evenodd" d="M 385 31 L 384 32 L 383 32 L 382 33 L 382 34 L 381 35 L 381 37 L 382 38 L 382 39 L 383 39 L 385 41 L 387 41 L 388 40 L 389 40 L 391 38 L 391 34 L 388 31 Z M 385 38 L 386 37 L 387 38 L 386 39 Z M 388 35 L 389 34 L 390 35 L 390 37 L 389 38 L 388 38 L 387 37 L 388 36 Z M 383 34 L 384 33 L 385 34 L 385 37 L 384 38 L 383 37 Z M 385 33 L 386 32 L 387 32 L 388 33 L 387 34 L 386 34 Z"/>
-        <path fill="#1a1c29" fill-rule="evenodd" d="M 339 31 L 338 32 L 337 32 L 336 33 L 335 32 L 326 32 L 326 55 L 335 55 L 335 40 L 337 38 L 340 38 L 342 40 L 342 55 L 351 55 L 351 38 L 352 37 L 353 38 L 353 39 L 354 40 L 354 42 L 355 43 L 355 44 L 356 45 L 356 46 L 357 47 L 357 49 L 358 50 L 358 51 L 359 52 L 359 54 L 360 55 L 358 57 L 356 57 L 355 58 L 354 58 L 354 64 L 357 64 L 358 63 L 360 63 L 361 62 L 362 62 L 363 61 L 364 61 L 368 57 L 368 56 L 369 55 L 369 54 L 370 53 L 370 52 L 371 51 L 371 49 L 372 48 L 372 46 L 373 45 L 373 44 L 374 43 L 374 41 L 375 40 L 375 38 L 376 37 L 376 35 L 377 34 L 377 33 L 378 32 L 368 32 L 367 33 L 367 35 L 366 36 L 366 39 L 365 40 L 365 42 L 364 43 L 363 42 L 363 40 L 362 39 L 362 37 L 361 36 L 361 33 L 360 32 L 350 32 L 351 33 L 351 34 L 350 35 L 346 31 Z M 350 35 L 351 34 L 352 35 L 352 37 L 351 38 L 350 37 Z"/>
-        <path fill="#1a1c29" fill-rule="evenodd" d="M 282 31 L 280 33 L 279 32 L 270 32 L 270 62 L 279 62 L 279 53 L 280 52 L 282 54 L 289 54 L 290 53 L 291 53 L 295 49 L 295 48 L 296 47 L 298 49 L 298 50 L 300 52 L 300 53 L 301 53 L 303 55 L 305 55 L 306 56 L 309 56 L 310 55 L 312 55 L 313 54 L 314 55 L 323 55 L 323 32 L 314 32 L 313 33 L 312 32 L 310 32 L 309 31 L 307 31 L 306 32 L 303 32 L 301 34 L 300 34 L 300 35 L 298 37 L 298 38 L 297 39 L 295 37 L 295 36 L 291 32 L 290 32 L 289 31 Z M 307 39 L 308 38 L 313 38 L 314 39 L 314 47 L 312 49 L 308 49 L 307 48 L 307 47 L 306 46 L 306 42 L 307 41 Z M 281 38 L 282 37 L 283 37 L 284 38 L 285 38 L 286 39 L 286 40 L 287 41 L 287 44 L 286 45 L 286 46 L 284 48 L 282 48 L 281 47 L 280 47 L 279 46 L 279 39 L 280 38 Z"/>
-        <path fill="#1a1c29" fill-rule="evenodd" d="M 241 31 L 238 34 L 237 33 L 237 32 L 229 32 L 229 55 L 237 55 L 237 41 L 238 40 L 238 39 L 239 38 L 241 38 L 244 41 L 244 55 L 252 55 L 252 41 L 253 40 L 253 39 L 254 38 L 256 38 L 258 40 L 258 41 L 259 42 L 259 55 L 267 55 L 267 36 L 266 35 L 266 34 L 264 32 L 263 32 L 262 31 L 256 31 L 255 32 L 254 32 L 252 34 L 251 34 L 249 32 L 248 32 L 247 31 Z"/>
-        <path fill="#1a1c29" fill-rule="evenodd" d="M 188 30 L 187 31 L 183 31 L 181 33 L 180 33 L 177 36 L 177 37 L 176 38 L 176 39 L 175 40 L 174 39 L 174 32 L 165 32 L 165 55 L 173 55 L 174 54 L 174 47 L 175 46 L 176 47 L 176 49 L 181 54 L 182 54 L 183 55 L 184 55 L 185 56 L 192 56 L 193 55 L 195 55 L 196 54 L 197 54 L 201 50 L 205 54 L 206 54 L 207 55 L 208 55 L 209 56 L 218 56 L 219 55 L 220 55 L 222 53 L 223 53 L 224 52 L 224 51 L 226 49 L 226 48 L 227 47 L 227 40 L 226 39 L 226 37 L 221 32 L 220 32 L 219 31 L 217 31 L 216 30 L 212 30 L 211 31 L 208 31 L 207 32 L 206 32 L 201 37 L 200 36 L 200 35 L 197 32 L 196 32 L 195 31 L 192 31 L 191 30 Z M 199 49 L 200 48 L 201 49 L 200 50 Z M 212 38 L 213 37 L 214 37 L 215 38 L 216 38 L 217 39 L 217 42 L 218 43 L 217 44 L 217 47 L 215 49 L 211 49 L 210 48 L 210 46 L 209 45 L 209 41 L 210 40 L 210 39 L 211 38 Z M 199 37 L 200 36 L 201 37 L 201 38 L 200 39 L 200 48 L 199 49 L 198 49 L 196 47 L 194 47 L 193 48 L 192 48 L 191 49 L 188 49 L 187 48 L 186 48 L 184 46 L 184 41 L 185 40 L 185 39 L 186 38 L 187 38 L 188 37 L 190 37 L 191 38 L 192 38 L 194 40 L 195 39 L 196 39 L 198 37 Z"/>
-        <path fill="#1a1c29" fill-rule="evenodd" d="M 84 30 L 83 31 L 79 31 L 78 32 L 77 32 L 75 34 L 75 35 L 74 36 L 74 41 L 75 42 L 75 43 L 76 44 L 77 44 L 78 45 L 79 45 L 80 46 L 83 46 L 84 47 L 85 47 L 87 49 L 86 50 L 82 50 L 81 49 L 78 49 L 77 48 L 76 48 L 74 50 L 74 51 L 73 52 L 73 53 L 74 54 L 75 54 L 76 55 L 78 55 L 79 56 L 90 56 L 91 55 L 92 55 L 95 52 L 95 50 L 96 49 L 97 50 L 97 54 L 98 55 L 106 55 L 106 32 L 97 32 L 97 47 L 96 48 L 95 47 L 95 45 L 92 42 L 91 42 L 90 41 L 88 41 L 87 40 L 84 40 L 83 39 L 83 38 L 84 37 L 88 37 L 89 38 L 92 38 L 93 37 L 93 36 L 94 35 L 94 34 L 95 33 L 94 33 L 93 32 L 92 32 L 91 31 L 87 31 L 86 30 Z"/>
-        <path fill="#1a1c29" fill-rule="evenodd" d="M 165 23 L 165 29 L 173 29 L 174 28 L 174 23 Z"/>
-        <path fill="#1a1c29" fill-rule="evenodd" d="M 153 23 L 153 32 L 152 33 L 151 33 L 150 32 L 148 32 L 147 31 L 145 31 L 144 32 L 141 32 L 137 36 L 137 37 L 136 38 L 136 39 L 135 40 L 134 39 L 134 38 L 133 37 L 133 35 L 129 31 L 122 31 L 121 32 L 120 32 L 119 33 L 118 32 L 109 32 L 109 55 L 118 55 L 118 40 L 120 38 L 123 38 L 125 40 L 125 55 L 134 55 L 134 47 L 135 46 L 136 47 L 136 49 L 137 50 L 137 51 L 140 54 L 141 54 L 142 55 L 143 55 L 144 56 L 147 56 L 148 55 L 150 55 L 151 54 L 152 54 L 153 55 L 162 55 L 162 23 Z M 147 38 L 151 38 L 153 40 L 153 46 L 152 47 L 152 48 L 151 49 L 147 49 L 145 47 L 145 40 Z"/>
-        <path fill="#1a1c29" fill-rule="evenodd" d="M 97 23 L 97 28 L 98 29 L 106 29 L 106 23 Z"/>
-      </svg>
-    </div>
-    <div class="nav-links">
-      <a href="#como-funciona">Como funciona</a>
-      <a href="#privacidade">Privacidade</a>
-      <span class="badge-internal">🔒 Uso interno</span>
-    </div>
-  </nav>
 
-  <section class="hero">
-    <span class="hero-eyebrow">🔒 Ferramenta exclusiva para colaboradores Sindicompany</span>
-    <h1>Fotos do WhatsApp,<br><span class="highlight">organizadas com legenda</span></h1>
-    <p class="hero-sub">Ferramenta interna da Sindicompany para extrair fotos, vídeos e áudios de conversas do WhatsApp e renomear cada arquivo com sua legenda, data e remetente — em segundos.</p>
-  </section>
+  <section class="hub-hero">
+    <h1>Hub de <span class="highlight">ferramentas internas</span></h1>
+    <p>Tudo que sua equipe precisa pro dia a dia — sem instalar nada, processado direto no navegador.</p>
 
-  <div class="card" id="como-funciona">
-    <div class="card-header">
-      <div class="card-title"><span class="card-title-num">1</span> Exporte sua conversa</div>
-      <div class="card-sub">No WhatsApp Android, abra a conversa e siga 3 passos rápidos:</div>
-    </div>
-    <div class="steps">
-      <div class="step">
-        <div class="step-num">PASSO 01</div>
-        <div class="step-title">Abra a conversa</div>
-        <div class="step-desc">Toque nos 3 pontinhos no canto superior direito</div>
-      </div>
-      <div class="step">
-        <div class="step-num">PASSO 02</div>
-        <div class="step-title">Mais → Exportar conversa</div>
-        <div class="step-desc">Escolha a opção <strong>Incluir mídia</strong></div>
-      </div>
-      <div class="step">
-        <div class="step-num">PASSO 03</div>
-        <div class="step-title">Salve o .zip</div>
-        <div class="step-desc">Compartilhe pra você (Drive, e-mail) e baixe</div>
-      </div>
-    </div>
-  </div>
-
-  <div class="card">
-    <div class="card-header">
-      <div class="card-title"><span class="card-title-num">2</span> Envie o arquivo</div>
-      <div class="card-sub">Tudo é processado no seu navegador — nada é enviado para servidor.</div>
+    <div class="search-wrap">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+      <input type="text" id="search" placeholder="Buscar ferramenta…" autocomplete="off">
     </div>
 
-    <label for="fileInput" class="drop-zone" id="dropZone">
-      <div class="drop-icon">
-        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
-      </div>
-      <div class="drop-title" id="dropTitle">Arraste seu arquivo .zip aqui</div>
-      <div class="drop-sub">ou clique para selecionar &nbsp;·&nbsp; também aceita <kbd>.txt</kbd></div>
-    </label>
-    <input type="file" id="fileInput" accept=".zip,.txt">
-  </div>
-
-  <div class="card">
-    <div class="card-header">
-      <div class="card-title"><span class="card-title-num">3</span> Configure e processe</div>
-      <div class="card-sub">Escolha como quer receber os arquivos de volta.</div>
-    </div>
-
-    <div class="options">
-      <label class="toggle">
-        <input type="checkbox" id="optRename" checked>
-        <span class="toggle-switch"></span>
-        <span class="toggle-label"><strong>Renomear com a legenda</strong><span>nome do arquivo = legenda</span></span>
-      </label>
-      <label class="toggle">
-        <input type="checkbox" id="optDatePrefix">
-        <span class="toggle-switch"></span>
-        <span class="toggle-label"><strong>Incluir data no nome</strong><span>prefixo AAAA-MM-DD_HHhMM</span></span>
-      </label>
-      <label class="toggle">
-        <input type="checkbox" id="optCsv" checked>
-        <span class="toggle-switch"></span>
-        <span class="toggle-label"><strong>Gerar planilha CSV</strong><span>arquivo, legenda, data, remetente</span></span>
-      </label>
-      <label class="toggle">
-        <input type="checkbox" id="optVideos" checked>
-        <span class="toggle-switch"></span>
-        <span class="toggle-label"><strong>Incluir vídeos</strong><span>.mp4, .mov, .3gp</span></span>
-      </label>
-      <label class="toggle">
-        <input type="checkbox" id="optAudios">
-        <span class="toggle-switch"></span>
-        <span class="toggle-label"><strong>Incluir áudios</strong><span>.opus, .mp3, .m4a</span></span>
-      </label>
-    </div>
-
-    <button class="btn-primary" id="processBtn" disabled>
-      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-      <span id="btnText">Processar arquivo</span>
-    </button>
-
-    <div class="status" id="status">
-      <div id="statusText">Aguardando…</div>
-      <div class="progress"><div class="progress-bar" id="progressBar"></div></div>
-    </div>
-
-    <div class="stats" id="stats" style="display:none;">
-      <div class="stat"><div class="stat-value" id="statPhotos">0</div><div class="stat-label">Fotos</div></div>
-      <div class="stat"><div class="stat-value" id="statVideos">0</div><div class="stat-label">Vídeos</div></div>
-      <div class="stat"><div class="stat-value" id="statAudios">0</div><div class="stat-label">Áudios</div></div>
-      <div class="stat"><div class="stat-value" id="statCaptions">0</div><div class="stat-label">Com legenda</div></div>
-      <div class="stat"><div class="stat-value warn" id="statUnmatched">0</div><div class="stat-label">Sem match</div></div>
-    </div>
-
-    <div id="diagnostics"></div>
-    <div class="preview" id="preview" style="display:none;">
-      <div class="preview-header">
-        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
-        Prévia (primeiros 100 arquivos)
-      </div>
-      <div class="preview-table-wrap" id="previewTable"></div>
-    </div>
-  </div>
-
-  <section class="features" id="privacidade">
-    <div class="feature">
-      <div class="feature-icon">
-        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
-      </div>
-      <h3>100% privado</h3>
-      <p>Seu arquivo nunca sai do navegador. Sem upload, sem servidor, sem rastreamento.</p>
-    </div>
-    <div class="feature">
-      <div class="feature-icon">
-        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-      </div>
-      <h3>Rápido</h3>
-      <p>Processa milhares de fotos em segundos, direto na sua máquina.</p>
-    </div>
-    <div class="feature">
-      <div class="feature-icon">
-        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2a4 4 0 014-4h6m-3-3l3 3-3 3M3 12a9 9 0 1118 0 9 9 0 01-18 0z"/></svg>
-      </div>
-      <h3>Organizado</h3>
-      <p>Renomeia com a legenda, gera CSV e separa em pastas por tipo.</p>
+    <div class="category-tabs" id="catTabs">
+      <button class="cat-tab active" data-cat="all">Todas</button>
+      <button class="cat-tab" data-cat="pdf">PDF</button>
+      <button class="cat-tab" data-cat="image">Imagens</button>
+      <button class="cat-tab" data-cat="doc">Documentos</button>
+      <button class="cat-tab" data-cat="org">Organização</button>
+      <button class="cat-tab" data-cat="secure">Segurança</button>
     </div>
   </section>
 
-  <footer>
-    <p><strong>Sindicompany</strong> · Ferramenta interna de uso exclusivo dos colaboradores</p>
-    <p style="margin-top:6px; font-size:12px; opacity:0.7;">Os dados processados nesta ferramenta são confidenciais e não saem do seu navegador.</p>
-  </footer>
+  <div class="tools-grid" id="toolsGrid"></div>
+
 </div>
 
+<div id="app-footer"></div>
+
+<script src="/assets/shared.js"></script>
 <script>
-const fileInput = document.getElementById('fileInput');
-const dropZone = document.getElementById('dropZone');
-const dropTitle = document.getElementById('dropTitle');
-const processBtn = document.getElementById('processBtn');
-const btnText = document.getElementById('btnText');
-const statusEl = document.getElementById('status');
-const statusText = document.getElementById('statusText');
-const progressBar = document.getElementById('progressBar');
-const statsEl = document.getElementById('stats');
-const previewEl = document.getElementById('preview');
-const previewTable = document.getElementById('previewTable');
-const diagEl = document.getElementById('diagnostics');
+const TOOLS = [
+  // === PDF ===
+  {
+    slug: 'juntar-pdf', cat: 'pdf', name: 'Juntar PDF',
+    desc: 'Combine vários PDFs em um único arquivo, na ordem que quiser.',
+    icon: '📑', iconClass: 'icon-pdf', badge: 'new',
+  },
+  {
+    slug: 'dividir-pdf', cat: 'pdf', name: 'Dividir PDF',
+    desc: 'Separe páginas ou intervalos de um PDF em arquivos individuais.',
+    icon: '✂️', iconClass: 'icon-pdf', badge: 'new',
+  },
+  {
+    slug: 'comprimir-pdf', cat: 'pdf', name: 'Comprimir PDF',
+    desc: 'Reduza o tamanho do PDF mantendo a qualidade do texto.',
+    icon: '🗜️', iconClass: 'icon-pdf', badge: 'new',
+  },
+  {
+    slug: 'girar-pdf', cat: 'org', name: 'Girar PDF',
+    desc: 'Rotacione páginas que vieram de cabeça pra baixo ou de lado.',
+    icon: '🔄', iconClass: 'icon-org', badge: 'new',
+  },
+  {
+    slug: 'numerar-paginas', cat: 'org', name: 'Numerar Páginas',
+    desc: 'Adicione número em cada página automaticamente.',
+    icon: '🔢', iconClass: 'icon-org', badge: 'new',
+  },
+  {
+    slug: 'marca-dagua', cat: 'org', name: 'Marca d\'água',
+    desc: 'Adicione texto ou logo como marca d\'água em todas as páginas.',
+    icon: '💧', iconClass: 'icon-org', badge: 'new',
+  },
+  {
+    slug: 'proteger-pdf', cat: 'secure', name: 'Proteger PDF',
+    desc: 'Adicione senha ao PDF antes de enviar pra terceiros.',
+    icon: '🔒', iconClass: 'icon-secure', badge: 'new',
+  },
 
-let selectedFile = null;
+  // === IMAGENS ===
+  {
+    slug: 'jpg-para-pdf', cat: 'image', name: 'JPG / PNG → PDF',
+    desc: 'Junte várias imagens em um PDF, na ordem que quiser.',
+    icon: '🖼️', iconClass: 'icon-image', badge: 'new',
+  },
+  {
+    slug: 'whatsapp-fotos', cat: 'image', name: 'Fotos do WhatsApp',
+    desc: 'Extrai fotos da conversa exportada com legenda, data e remetente.',
+    icon: '💬', iconClass: 'icon-image',
+  },
 
-['dragenter','dragover'].forEach(ev => dropZone.addEventListener(ev, e => { e.preventDefault(); e.stopPropagation(); dropZone.classList.add('dragover'); }));
-['dragleave','drop'].forEach(ev => dropZone.addEventListener(ev, e => { e.preventDefault(); e.stopPropagation(); dropZone.classList.remove('dragover'); }));
-dropZone.addEventListener('drop', e => {
-  const f = e.dataTransfer.files[0];
-  if (f) { fileInput.files = e.dataTransfer.files; handleFile(f); }
-});
-fileInput.addEventListener('change', e => { if (e.target.files[0]) handleFile(e.target.files[0]); });
+  // === EM BREVE ===
+  {
+    slug: 'ocr', cat: 'doc', name: 'OCR (Texto em Imagem)',
+    desc: 'Extrai texto de fotos e PDFs escaneados.',
+    icon: '🔍', iconClass: 'icon-doc', badge: 'soon', disabled: true,
+  },
+  {
+    slug: 'pdf-para-jpg', cat: 'pdf', name: 'PDF → JPG',
+    desc: 'Converta cada página do PDF em uma imagem.',
+    icon: '🖼️', iconClass: 'icon-pdf', badge: 'soon', disabled: true,
+  },
+  {
+    slug: 'comparar-pdf', cat: 'doc', name: 'Comparar Documentos',
+    desc: 'Veja o que mudou entre duas versões de um documento.',
+    icon: '⚖️', iconClass: 'icon-doc', badge: 'soon', disabled: true,
+  },
+  {
+    slug: 'redigir-pdf', cat: 'secure', name: 'Redigir LGPD',
+    desc: 'Tarja CPF, RG e outros dados pessoais automaticamente.',
+    icon: '🛡️', iconClass: 'icon-secure', badge: 'soon', disabled: true,
+  },
+  {
+    slug: 'assinatura', cat: 'doc', name: 'Assinatura Eletrônica',
+    desc: 'Assine documentos digitalmente com trilha de auditoria.',
+    icon: '✍️', iconClass: 'icon-doc', badge: 'soon', disabled: true,
+  },
+  {
+    slug: 'gerador-notificacao', cat: 'doc', name: 'Gerar Notificação',
+    desc: 'Notificações extrajudiciais prontas (inadimplência, barulho, etc).',
+    icon: '📋', iconClass: 'icon-doc', badge: 'soon', disabled: true,
+  },
+  {
+    slug: 'gerador-ata', cat: 'doc', name: 'Gerar Ata',
+    desc: 'Wizard pra ata de assembleia conforme ABNT.',
+    icon: '📝', iconClass: 'icon-doc', badge: 'soon', disabled: true,
+  },
+  {
+    slug: 'sindi-ia', cat: 'doc', name: 'Sindi (IA)',
+    desc: 'Copiloto que lê documentos e responde perguntas.',
+    icon: '🤖', iconClass: 'icon-ai', badge: 'soon', disabled: true,
+  },
+];
 
-function handleFile(f) {
-  selectedFile = f;
-  dropTitle.innerHTML = `<span class="file-selected">✓ ${f.name} <span style="opacity:0.7;font-weight:400">(${(f.size/1024/1024).toFixed(1)} MB)</span></span>`;
-  processBtn.disabled = false;
-  showStatus('Pronto para processar', '');
-}
-function showStatus(msg, type) { statusEl.className = 'status show' + (type ? ' ' + type : ''); statusText.style.whiteSpace = 'pre-wrap'; statusText.style.fontFamily = msg.includes('\n') ? 'JetBrains Mono, monospace' : 'inherit'; statusText.style.fontSize = msg.includes('\n') ? '12px' : '14px'; statusText.textContent = msg; }
-function setProgress(pct) { progressBar.style.width = pct + '%'; }
+const grid = document.getElementById('toolsGrid');
+const search = document.getElementById('search');
+const catTabs = document.getElementById('catTabs');
+let currentCat = 'all';
 
-// =============================================================================
-// PARSER ROBUSTO — cobre todas as variações do export do WhatsApp
-// =============================================================================
-function cleanInvisible(s) {
-  return s.replace(/[​-‏‪-‮⁦-⁩﻿]/g, '');
-}
-const RE_BRACKET = /^\[(\d{1,2}\/\d{1,2}\/\d{2,4}),?\s+(\d{1,2}:\d{2}(?::\d{2})?(?:\s*[AaPp][Mm])?)\]\s*([^:]+?):\s?(.*)$/;
-const RE_PLAIN   = /^(\d{1,2}\/\d{1,2}\/\d{2,4}),?\s+(\d{1,2}:\d{2}(?::\d{2})?(?:\s*[AaPp][Mm])?)\s*[-–—]\s*([^:]+?):\s?(.*)$/;
-const RE_BRACKET_SYS = /^\[(\d{1,2}\/\d{1,2}\/\d{2,4}),?\s+(\d{1,2}:\d{2}(?::\d{2})?(?:\s*[AaPp][Mm])?)\]\s*(.*)$/;
-const RE_PLAIN_SYS   = /^(\d{1,2}\/\d{1,2}\/\d{2,4}),?\s+(\d{1,2}:\d{2}(?::\d{2})?(?:\s*[AaPp][Mm])?)\s*[-–—]\s*(.*)$/;
-const RE_ATTACH_ANGLE = /<(?:anexado|attached|adjunto|allegato|anexo)[:：]?\s*([^>]+?\.[A-Za-z0-9]{2,5})\s*>/i;
-const RE_ATTACH_PAREN = /([\w.\-+()\s]+?\.(?:jpg|jpeg|png|gif|webp|heic|mp4|3gp|mov|avi|mkv|opus|mp3|m4a|ogg|wav|aac|pdf|docx?|xlsx?|pptx?|txt|vcf))\s*[\(\（](?:arquivo anexado|file attached|archivo adjunto|file allegato|adjunto)[\)\）]/i;
-const PHOTO_EXT = ['jpg','jpeg','png','gif','webp','heic'];
-const VIDEO_EXT = ['mp4','3gp','mov','avi','mkv'];
-const AUDIO_EXT = ['opus','mp3','m4a','ogg','wav','aac'];
+function renderTools() {
+  const q = search.value.trim().toLowerCase();
+  const filtered = TOOLS.filter(t => {
+    const matchCat = currentCat === 'all' || t.cat === currentCat;
+    const matchQ = !q || t.name.toLowerCase().includes(q) || t.desc.toLowerCase().includes(q);
+    return matchCat && matchQ;
+  });
 
-function parseChat(text) {
-  text = cleanInvisible(text);
-  const lines = text.split(/\r?\n/);
-  const messages = [];
-  let cur = null;
-  for (const raw of lines) {
-    const line = raw;
-    let m = line.match(RE_BRACKET) || line.match(RE_PLAIN);
-    if (m) {
-      if (cur) messages.push(cur);
-      cur = { date: m[1], time: m[2], sender: m[3].trim(), body: m[4] || '' };
-      continue;
-    }
-    const sys = line.match(RE_BRACKET_SYS) || line.match(RE_PLAIN_SYS);
-    if (sys && !line.includes(': ')) {
-      if (cur) { messages.push(cur); cur = null; }
-      continue;
-    }
-    if (cur) cur.body += '\n' + line;
+  if (!filtered.length) {
+    grid.innerHTML = '<div class="empty" style="grid-column:1/-1">Nenhuma ferramenta encontrada.</div>';
+    return;
   }
-  if (cur) messages.push(cur);
 
-  const byFile = {};
-  for (const msg of messages) {
-    let attachMatch = msg.body.match(RE_ATTACH_ANGLE) || msg.body.match(RE_ATTACH_PAREN);
-    if (!attachMatch) continue;
-    const filename = attachMatch[1].trim();
-    const fullMatch = attachMatch[0];
-    const idx = msg.body.indexOf(fullMatch);
-    let caption = msg.body.slice(idx + fullMatch.length).replace(/^\s*[\n\r]+/, '').trim();
-    const before = msg.body.slice(0, idx).trim();
-    if (!caption && before) caption = before;
-    byFile[filename] = { filename, caption, date: msg.date, time: msg.time, sender: msg.sender };
-    const base = filename.split(/[\\\/]/).pop();
-    if (base !== filename) byFile[base] = byFile[filename];
+  // Separa disponíveis e em breve
+  const ready = filtered.filter(t => !t.disabled);
+  const soon = filtered.filter(t => t.disabled);
+  let html = '';
+  if (ready.length) {
+    html += ready.map(toolCard).join('');
   }
-  return { byFile, messageCount: messages.length };
-}
-
-function parseDateBR(dateStr, timeStr) {
-  let parts = dateStr.split('/');
-  let [a, b, y] = parts;
-  let d, m;
-  if (parseInt(a) > 12) { d = a; m = b; }
-  else if (parseInt(b) > 12) { m = a; d = b; }
-  else { d = a; m = b; }
-  const yyyy = y.length === 2 ? '20' + y : y;
-  let t = timeStr.trim();
-  const ampm = t.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?\s*([AaPp])[Mm]$/);
-  if (ampm) {
-    let hh = parseInt(ampm[1]); const mm = ampm[2];
-    const isPM = /p/i.test(ampm[4]);
-    if (isPM && hh < 12) hh += 12;
-    if (!isPM && hh === 12) hh = 0;
-    t = String(hh).padStart(2,'0') + ':' + mm;
-  } else {
-    const m24 = t.match(/^(\d{1,2}):(\d{2})/);
-    if (m24) t = m24[1].padStart(2,'0') + ':' + m24[2];
+  if (soon.length) {
+    html += `<div style="grid-column:1/-1" class="section-title">Em breve</div>`;
+    html += soon.map(toolCard).join('');
   }
-  return { iso: `${yyyy}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`, time: t.replace(':','h') };
+  grid.innerHTML = html;
 }
 
-function filenamify(s, max=120) {
-  if (!s) return '';
-  return s.replace(/[<>:"/\\|?*\x00-\x1f]/g,'')
-          .replace(/\s*\n\s*/g, ' — ')
-          .replace(/\s+/g,' ')
-          .trim().slice(0, max).replace(/[.\s]+$/,'');
+function toolCard(t) {
+  const href = t.disabled ? '#' : `/tools/${t.slug}.html`;
+  const badge = t.badge ? `<span class="tool-badge ${t.badge}">${t.badge === 'new' ? 'novo' : 'em breve'}</span>` : '';
+  return `
+    <a href="${href}" class="tool-card ${t.disabled ? 'disabled' : ''}">
+      ${badge}
+      <div class="tool-icon ${t.iconClass}">${t.icon}</div>
+      <h3>${t.name}</h3>
+      <p>${t.desc}</p>
+    </a>
+  `;
 }
 
-function csvEscape(v) {
-  v = (v == null ? '' : String(v));
-  if (/[",\n;\r]/.test(v)) return '"' + v.replace(/"/g,'""') + '"';
-  return v;
-}
-
-function escapeHtml(s) {
-  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
-}
-
-processBtn.addEventListener('click', async () => {
-  if (!selectedFile) return;
-  processBtn.disabled = true;
-  btnText.textContent = 'Processando…';
-  statsEl.style.display = 'none';
-  previewEl.style.display = 'none';
-  diagEl.innerHTML = '';
-  setProgress(5);
-
-  try {
-    let chatText = null;
-    let zipFiles = [];
-    const isTxt = /\.txt$/i.test(selectedFile.name);
-
-    if (isTxt) {
-      chatText = await selectedFile.text();
-      showStatus('Modo texto: gerando apenas planilha CSV', '');
-    } else {
-      showStatus('Lendo arquivo .zip…', '');
-      // tenta carregar com decodeFileName customizado para suportar UTF-8 em nomes
-      const zip = await JSZip.loadAsync(selectedFile, {
-        decodeFileName: (bytes) => {
-          try { return new TextDecoder('utf-8', {fatal: false}).decode(bytes); }
-          catch { return new TextDecoder('latin1').decode(bytes); }
-        }
-      });
-      setProgress(15);
-      const allFiles = [];
-      const txtCandidates = [];
-      zip.forEach((path, file) => {
-        if (file.dir) return;
-        zipFiles.push({path, file});
-        allFiles.push(path);
-        if (/\.txt$/i.test(path)) txtCandidates.push({path, file});
-      });
-
-      if (allFiles.length === 0) throw new Error('O zip está vazio ou corrompido.');
-
-      // estratégia 1: arquivos com nome típico de chat
-      let chatFile = txtCandidates.find(c => /(_chat|chat|whatsapp|conversa)/i.test(c.path.split('/').pop()));
-      // estratégia 2: qualquer .txt
-      if (!chatFile && txtCandidates.length) chatFile = txtCandidates[0];
-      // estratégia 3: detectar por conteúdo — qualquer arquivo cujo início pareça um chat do WhatsApp
-      if (!chatFile) {
-        showStatus('Procurando o arquivo de conversa por conteúdo…', '');
-        for (const {path, file} of zipFiles) {
-          // pula mídias claramente não-texto
-          if (/\.(jpg|jpeg|png|gif|webp|heic|mp4|3gp|mov|avi|mkv|opus|mp3|m4a|ogg|wav|aac|pdf|zip)$/i.test(path)) continue;
-          try {
-            const head = await file.async('string');
-            const sample = head.slice(0, 4000);
-            if (RE_BRACKET.test(sample.split('\n')[0]) || RE_PLAIN.test(sample.split('\n')[0])
-                || /\d{1,2}\/\d{1,2}\/\d{2,4}[\s,]+\d{1,2}:\d{2}/.test(sample)) {
-              chatFile = {path, file};
-              break;
-            }
-          } catch(e) {}
-        }
-      }
-
-      if (!chatFile) {
-        const list = allFiles.slice(0, 30).map(p => '  • ' + p).join('\n');
-        throw new Error(`Não encontrei o arquivo de conversa do WhatsApp dentro do zip.\n\nArquivos encontrados (${allFiles.length}):\n${list}${allFiles.length>30?'\n  …':''}\n\nDica: confira se você marcou "Incluir mídia" ao exportar e se o zip não foi modificado.`);
-      }
-      chatText = await chatFile.file.async('string');
-      console.log('Chat detectado em:', chatFile.path);
-    }
-
-    setProgress(30);
-    showStatus('Lendo conversa…', '');
-    const { byFile, messageCount } = parseChat(chatText);
-
-    if (messageCount === 0) {
-      throw new Error('Não consegui interpretar nenhuma mensagem. Formato desconhecido.');
-    }
-    setProgress(45);
-
-    const optRename = document.getElementById('optRename').checked;
-    const optDatePrefix = document.getElementById('optDatePrefix').checked;
-    const optCsv    = document.getElementById('optCsv').checked;
-    const optVideos = document.getElementById('optVideos').checked;
-    const optAudios = document.getElementById('optAudios').checked;
-    const allowedExts = new Set([...PHOTO_EXT, ...(optVideos?VIDEO_EXT:[]), ...(optAudios?AUDIO_EXT:[])]);
-
-    const out = new JSZip();
-    const csvRows = [['arquivo_original','arquivo_novo','legenda','data','hora','data_iso','remetente','tipo']];
-    const previewRows = [];
-    let photos=0, videos=0, audios=0, withCaption=0, unmatched=0;
-    const unmatchedList = [];
-    const usedNames = new Set();
-
-    if (isTxt) {
-      for (const fname of Object.keys(byFile)) {
-        const meta = byFile[fname];
-        const ext = (fname.split('.').pop()||'').toLowerCase();
-        let type = PHOTO_EXT.includes(ext) ? 'foto' : VIDEO_EXT.includes(ext) ? 'video' : AUDIO_EXT.includes(ext) ? 'audio' : 'outro';
-        if (type==='foto') photos++; else if (type==='video') videos++; else if (type==='audio') audios++;
-        if (meta.caption) withCaption++;
-        let isoDate = '';
-        try { isoDate = parseDateBR(meta.date, meta.time).iso; } catch(e){}
-        csvRows.push([fname, '', meta.caption, meta.date, meta.time, isoDate, meta.sender, type]);
-        if (previewRows.length < 100) previewRows.push({base:fname, newName:'(modo texto)', caption: meta.caption, date: meta.date, time: meta.time, sender: meta.sender, hasCap: !!meta.caption});
-      }
-    } else {
-      const fileEntries = zipFiles.filter(({path}) => {
-        const base = path.split('/').pop();
-        const ext = (base.split('.').pop()||'').toLowerCase();
-        return allowedExts.has(ext);
-      });
-
-      let i = 0;
-      for (const {path, file} of fileEntries) {
-        i++;
-        if (i % 5 === 0 || i === fileEntries.length) {
-          setProgress(45 + Math.round((i/fileEntries.length)*50));
-          showStatus(`Processando ${i}/${fileEntries.length}…`, '');
-          await new Promise(r => setTimeout(r, 0));
-        }
-        const base = path.split('/').pop();
-        const ext = (base.split('.').pop()||'').toLowerCase();
-        const meta = byFile[base] || byFile[path] || null;
-        let type = PHOTO_EXT.includes(ext) ? 'foto' : VIDEO_EXT.includes(ext) ? 'video' : AUDIO_EXT.includes(ext) ? 'audio' : 'outro';
-        if (type==='foto') photos++; else if (type==='video') videos++; else if (type==='audio') audios++;
-
-        const m = meta || { caption:'', date:'', time:'', sender:'' };
-        if (m.caption) withCaption++;
-        if (!meta) { unmatched++; unmatchedList.push(base); }
-
-        let newName = base;
-        let isoDate = '';
-        if (m.date && m.time) { try { isoDate = parseDateBR(m.date, m.time).iso; } catch(e){} }
-
-        if (optRename) {
-          const captionName = filenamify(m.caption);
-          let prefix = '';
-          if (optDatePrefix && m.date && m.time) {
-            try { const d = parseDateBR(m.date, m.time); prefix = `${d.iso}_${d.time}`; } catch(e){}
-          }
-          let core;
-          if (captionName) core = prefix ? `${prefix} ${captionName}` : captionName;
-          else if (prefix) core = prefix;
-          else { const senderName = filenamify(m.sender, 30); core = senderName || base.replace(/\.[^.]+$/,''); }
-          newName = core + '.' + ext;
-          let candidate = newName, n = 1;
-          while (usedNames.has(candidate)) {
-            const dot = newName.lastIndexOf('.');
-            candidate = newName.slice(0,dot) + ' (' + (++n) + ')' + newName.slice(dot);
-          }
-          newName = candidate;
-          usedNames.add(newName);
-        }
-
-        const folder = type === 'foto' ? 'fotos' : (type==='video' ? 'videos' : (type==='audio'?'audios':'outros'));
-        const data = await file.async('uint8array');
-        out.file(`${folder}/${newName}`, data);
-
-        csvRows.push([base, newName, m.caption, m.date, m.time, isoDate, m.sender, type]);
-        if (previewRows.length < 100 && (type==='foto' || type==='video')) {
-          previewRows.push({base, newName, caption: m.caption, date: m.date, time: m.time, sender: m.sender, hasCap: !!m.caption});
-        }
-      }
-    }
-
-    if (optCsv || isTxt) {
-      const csv = '﻿' + csvRows.map(r => r.map(csvEscape).join(',')).join('\n');
-      out.file('legendas.csv', csv);
-    }
-
-    showStatus('Gerando arquivo .zip de saída…', '');
-    setProgress(96);
-    const blob = await out.generateAsync({type:'blob', compression: isTxt ? 'DEFLATE' : 'STORE'});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    const baseName = selectedFile.name.replace(/\.(zip|txt)$/i,'');
-    a.download = baseName + '_processado.zip';
-    document.body.appendChild(a); a.click(); a.remove();
-    setTimeout(()=>URL.revokeObjectURL(url), 1000);
-
-    setProgress(100);
-    showStatus(`✓ Pronto! ${messageCount.toLocaleString('pt-BR')} mensagens · ${photos} fotos · ${withCaption} com legenda${unmatched?` · ${unmatched} sem match`:''}`, 'success');
-
-    document.getElementById('statPhotos').textContent = photos.toLocaleString('pt-BR');
-    document.getElementById('statVideos').textContent = videos.toLocaleString('pt-BR');
-    document.getElementById('statAudios').textContent = audios.toLocaleString('pt-BR');
-    document.getElementById('statCaptions').textContent = withCaption.toLocaleString('pt-BR');
-    document.getElementById('statUnmatched').textContent = unmatched.toLocaleString('pt-BR');
-    statsEl.style.display = 'grid';
-
-    if (unmatched > 0) {
-      diagEl.innerHTML = `<details open><summary>⚠ ${unmatched} arquivo(s) não casaram com mensagem do chat</summary>
-        <p style="font-size:13px;margin-top:8px;color:var(--text-dim);">Foram incluídos sem legenda. Geralmente são stickers, mídias deletadas no chat, ou um formato que o parser não reconheceu.</p>
-        <ul>${unmatchedList.slice(0,30).map(n=>`<li><code>${escapeHtml(n)}</code></li>`).join('')}${unmatchedList.length>30?`<li>… e mais ${unmatchedList.length-30}</li>`:''}</ul></details>`;
-    }
-
-    if (previewRows.length) {
-      previewTable.innerHTML = '<table><thead><tr><th>Data</th><th>Remetente</th><th>Legenda</th><th>Novo nome</th></tr></thead><tbody>' +
-        previewRows.map(r => `<tr class="${r.hasCap?'':'no-cap'}"><td style="white-space:nowrap">${r.date} ${r.time}</td><td>${escapeHtml(r.sender)}</td><td class="caption">${r.caption ? escapeHtml(r.caption) : '<em style="color:var(--text-muted)">sem legenda</em>'}</td><td><code>${escapeHtml(r.newName)}</code></td></tr>`).join('') +
-        '</tbody></table>';
-      previewEl.style.display = 'block';
-    }
-  } catch (err) {
-    console.error(err);
-    showStatus('Erro: ' + err.message, 'error');
-    setProgress(0);
-  } finally {
-    processBtn.disabled = false;
-    btnText.textContent = 'Processar arquivo';
+search.addEventListener('input', renderTools);
+catTabs.addEventListener('click', e => {
+  if (e.target.classList.contains('cat-tab')) {
+    catTabs.querySelectorAll('.cat-tab').forEach(t => t.classList.remove('active'));
+    e.target.classList.add('active');
+    currentCat = e.target.dataset.cat;
+    renderTools();
   }
 });
 
-// Self-test
-(function selfTest(){
-  const samples = {
-    'Android PT': `28/04/2026 14:32 - Heitor: IMG-001.jpg (arquivo anexado)\nlegenda 1`,
-    'Android PT vírgula': `28/04/2026, 14:32 - Heitor: IMG-002.jpg (arquivo anexado)\nlegenda 2`,
-    'iOS': `[28/04/2026, 14:32:45] Heitor: <anexado: PHOTO.jpg>\nlegenda 3`,
-    'Android angle': `28/04/2026 14:32 - Heitor: <anexado: IMG-X.jpg>\nlegenda 4`,
-    'Inglês 12h': `4/28/26, 2:32 PM - Heitor: IMG-003.jpg (file attached)\ncaption en`,
-  };
-  const r = {};
-  for (const [n,t] of Object.entries(samples)) r[n] = parseChat(t);
-  console.log('%cChatPic self-test:', 'color:#10b981;font-weight:bold', r);
-})();
+renderTools();
 </script>
 </body>
 </html>
