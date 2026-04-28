@@ -86,6 +86,8 @@
   .icon-org{background:rgba(245,158,11,0.1);color:#d97706}
   .icon-secure{background:rgba(16,185,129,0.1);color:#059669}
   .icon-ai{background:rgba(236,72,153,0.1);color:#db2777}
+  .icon-calc{background:rgba(20,184,166,0.1);color:#0d9488}
+  .icon-convert{background:rgba(99,102,241,0.1);color:#4f46e5}
 
   .section-title{
     font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;
@@ -116,7 +118,9 @@
     <div class="category-tabs" id="catTabs">
       <button class="cat-tab active" data-cat="all">Todas</button>
       <button class="cat-tab" data-cat="ai">🤖 IA</button>
-      <button class="cat-tab" data-cat="doc">Geradores</button>
+      <button class="cat-tab" data-cat="doc">Documentos</button>
+      <button class="cat-tab" data-cat="calc">Cálculos</button>
+      <button class="cat-tab" data-cat="convert">Conversões</button>
       <button class="cat-tab" data-cat="pdf">PDF</button>
       <button class="cat-tab" data-cat="image">Imagens</button>
       <button class="cat-tab" data-cat="org">Organização</button>
@@ -134,38 +138,47 @@
 <script>
 const TOOLS = [
   // === IA (destaque) ===
-  { slug: 'sindi', cat: 'ai', name: 'Sindi (IA)', desc: 'Copiloto IA que lê documentos e responde dúvidas sobre direito condominial.', icon: '🤖', iconClass: 'icon-ai', badge: 'new', path: '/tools/sindi.html' },
+  { slug: 'sindi', cat: 'ai', name: 'Sindi (IA)', desc: 'Copiloto IA que lê documentos e responde dúvidas sobre direito condominial.', icon: '🤖', iconClass: 'icon-ai' },
+  { slug: 'corretor-texto', cat: 'ai', name: 'Corretor de Texto PT-BR', desc: 'Corrige ortografia, gramática e pontuação. Mantém o tom do texto.', icon: '✏️', iconClass: 'icon-ai', badge: 'new' },
 
   // === GERADORES ===
-  { slug: 'gerador-notificacao', cat: 'doc', name: 'Gerar Notificação', desc: 'Notificações extrajudiciais prontas: inadimplência, barulho, animal, obra.', icon: '📋', iconClass: 'icon-doc', badge: 'new' },
-  { slug: 'gerador-ata', cat: 'doc', name: 'Gerar Ata', desc: 'Wizard de ata de assembleia (ordinária ou extraordinária) com deliberações.', icon: '📝', iconClass: 'icon-doc', badge: 'new' },
-  { slug: 'gerador-contrato', cat: 'doc', name: 'Gerar Contrato', desc: 'Modelos: prestação de serviço, locação salão, manutenção mensal.', icon: '📄', iconClass: 'icon-doc', badge: 'new' },
+  { slug: 'gerador-notificacao', cat: 'doc', name: 'Gerar Notificação', desc: 'Notificações extrajudiciais prontas: inadimplência, barulho, animal, obra.', icon: '📋', iconClass: 'icon-doc' },
+  { slug: 'gerador-ata', cat: 'doc', name: 'Gerar Ata', desc: 'Wizard de ata de assembleia (ordinária ou extraordinária) com deliberações.', icon: '📝', iconClass: 'icon-doc' },
+  { slug: 'gerador-contrato', cat: 'doc', name: 'Gerar Contrato', desc: 'Modelos: prestação de serviço, locação salão, manutenção mensal.', icon: '📄', iconClass: 'icon-doc' },
 
-  // === PDF ===
-  { slug: 'juntar-pdf', cat: 'pdf', name: 'Juntar PDF', desc: 'Combine vários PDFs em um único arquivo, na ordem que quiser.', icon: '📑', iconClass: 'icon-pdf' },
-  { slug: 'dividir-pdf', cat: 'pdf', name: 'Dividir PDF', desc: 'Separe páginas ou intervalos de um PDF em arquivos individuais.', icon: '✂️', iconClass: 'icon-pdf' },
-  { slug: 'comprimir-pdf', cat: 'pdf', name: 'Comprimir PDF', desc: 'Reduza o tamanho do PDF rasterizando em JPEG.', icon: '🗜️', iconClass: 'icon-pdf' },
-  { slug: 'pdf-para-jpg', cat: 'pdf', name: 'PDF → JPG', desc: 'Converta cada página do PDF em imagem JPG.', icon: '🖼️', iconClass: 'icon-pdf', badge: 'new' },
+  // === CALCULADORAS ===
+  { slug: 'calculadoras', cat: 'calc', name: 'Calculadoras', desc: 'Reajuste de aluguel, multa de inadimplência, rateio e projeção de caixa.', icon: '🧮', iconClass: 'icon-calc', badge: 'new' },
+
+  // === CONVERSÕES ===
+  { slug: 'word-para-pdf', cat: 'convert', name: 'Word → PDF', desc: 'Converte .docx em PDF preservando formatação.', icon: '📊', iconClass: 'icon-convert', badge: 'new' },
+  { slug: 'excel-para-pdf', cat: 'convert', name: 'Excel → PDF', desc: 'Converte .xlsx em PDF (suporta múltiplas abas).', icon: '📈', iconClass: 'icon-convert', badge: 'new' },
+  { slug: 'pdf-para-excel', cat: 'convert', name: 'PDF → Excel', desc: 'Extrai tabelas de PDFs em planilha .xlsx.', icon: '📋', iconClass: 'icon-convert', badge: 'new' },
+  { slug: 'pdf-para-jpg', cat: 'convert', name: 'PDF → JPG', desc: 'Converta cada página do PDF em imagem JPG.', icon: '🖼️', iconClass: 'icon-convert' },
+  { slug: 'jpg-para-pdf', cat: 'convert', name: 'Imagens → PDF', desc: 'Junte várias imagens em um PDF.', icon: '🎴', iconClass: 'icon-convert' },
+  { slug: 'conversor-imagens', cat: 'convert', name: 'Conversor de Imagens', desc: 'PNG ↔ JPG ↔ WEBP. Redimensiona, comprime, em lote.', icon: '🎨', iconClass: 'icon-image', badge: 'new' },
+
+  // === PDF (manipulação) ===
+  { slug: 'editor-pdf', cat: 'pdf', name: 'Editor de PDF', desc: 'Adicione texto, destaque, risque, anote o PDF.', icon: '✏️', iconClass: 'icon-pdf', badge: 'new' },
+  { slug: 'juntar-pdf', cat: 'pdf', name: 'Juntar PDF', desc: 'Combine vários PDFs em um único arquivo.', icon: '📑', iconClass: 'icon-pdf' },
+  { slug: 'dividir-pdf', cat: 'pdf', name: 'Dividir PDF', desc: 'Separe páginas ou intervalos em arquivos individuais.', icon: '✂️', iconClass: 'icon-pdf' },
+  { slug: 'comprimir-pdf', cat: 'pdf', name: 'Comprimir PDF', desc: 'Reduz o tamanho do PDF rasterizando em JPEG.', icon: '🗜️', iconClass: 'icon-pdf' },
+  { slug: 'comparar-pdf', cat: 'pdf', name: 'Comparar Documentos', desc: 'Veja o que mudou entre duas versões (com resumo IA).', icon: '⚖️', iconClass: 'icon-pdf', badge: 'new' },
 
   // === ORGANIZAÇÃO ===
-  { slug: 'organizar-pdf', cat: 'org', name: 'Organizar Páginas', desc: 'Reordene e remova páginas arrastando miniaturas.', icon: '🧩', iconClass: 'icon-org', badge: 'new' },
+  { slug: 'organizar-pdf', cat: 'org', name: 'Organizar Páginas', desc: 'Reordene e remova páginas arrastando miniaturas.', icon: '🧩', iconClass: 'icon-org' },
   { slug: 'girar-pdf', cat: 'org', name: 'Girar PDF', desc: 'Rotacione páginas que vieram de cabeça pra baixo.', icon: '🔄', iconClass: 'icon-org' },
   { slug: 'numerar-paginas', cat: 'org', name: 'Numerar Páginas', desc: 'Adicione número em cada página automaticamente.', icon: '🔢', iconClass: 'icon-org' },
   { slug: 'marca-dagua', cat: 'org', name: 'Marca d\'água', desc: 'Texto como marca d\'água em todas as páginas.', icon: '💧', iconClass: 'icon-org' },
 
-  // === IMAGENS / DOCS ===
-  { slug: 'jpg-para-pdf', cat: 'image', name: 'JPG / PNG → PDF', desc: 'Junte várias imagens em um PDF.', icon: '🖼️', iconClass: 'icon-image' },
-  { slug: 'whatsapp-fotos', cat: 'image', name: 'Fotos do WhatsApp', desc: 'Extrai fotos da conversa exportada com legenda, data e remetente.', icon: '💬', iconClass: 'icon-image' },
-  { slug: 'ocr', cat: 'doc', name: 'OCR (Texto em Imagem)', desc: 'Extrai texto de fotos e PDFs escaneados (PT/EN/ES).', icon: '🔍', iconClass: 'icon-doc', badge: 'new' },
+  // === DOCUMENTOS / DADOS ===
+  { slug: 'whatsapp-fotos', cat: 'doc', name: 'Fotos do WhatsApp', desc: 'Extrai fotos com legenda, data e remetente.', icon: '💬', iconClass: 'icon-doc' },
+  { slug: 'ocr', cat: 'doc', name: 'OCR (Texto em Imagem)', desc: 'Extrai texto de fotos e PDFs escaneados (PT/EN/ES).', icon: '🔍', iconClass: 'icon-doc' },
 
   // === SEGURANÇA ===
   { slug: 'proteger-pdf', cat: 'secure', name: 'Proteger PDF', desc: 'Adicione senha (AES-256) antes de enviar.', icon: '🔒', iconClass: 'icon-secure' },
-  { slug: 'desbloquear-pdf', cat: 'secure', name: 'Desbloquear PDF', desc: 'Remove senha de PDF (você precisa saber a senha).', icon: '🔓', iconClass: 'icon-secure', badge: 'new' },
-
-  // === EM BREVE ===
-  { slug: 'comparar-pdf', cat: 'doc', name: 'Comparar Documentos', desc: 'Veja o que mudou entre duas versões.', icon: '⚖️', iconClass: 'icon-doc', badge: 'soon', disabled: true },
-  { slug: 'redigir-pdf', cat: 'secure', name: 'Redigir LGPD', desc: 'Tarja CPF, RG e dados pessoais automaticamente.', icon: '🛡️', iconClass: 'icon-secure', badge: 'soon', disabled: true },
-  { slug: 'assinatura', cat: 'doc', name: 'Assinatura Eletrônica', desc: 'Assine digitalmente com trilha de auditoria.', icon: '✍️', iconClass: 'icon-doc', badge: 'soon', disabled: true },
+  { slug: 'desbloquear-pdf', cat: 'secure', name: 'Desbloquear PDF', desc: 'Remove senha de PDF (precisa saber a senha).', icon: '🔓', iconClass: 'icon-secure' },
+  { slug: 'redigir-lgpd', cat: 'secure', name: 'Redigir LGPD', desc: 'Tarja CPF, RG, e-mail, telefone automaticamente.', icon: '🛡️', iconClass: 'icon-secure', badge: 'new' },
+  { slug: 'assinatura', cat: 'secure', name: 'Assinatura Eletrônica', desc: 'Assine PDF digitalmente com trilha de auditoria.', icon: '✍️', iconClass: 'icon-secure', badge: 'new' },
 ];
 
 const grid = document.getElementById('toolsGrid');

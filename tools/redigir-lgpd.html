@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Redigir LGPD — Sindicompany Hub</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="icon" href="/logo.svg">
+<link rel="stylesheet" href="/assets/shared.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+<style>
+  .toggle-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+  .toggle-row label{
+    display:flex;align-items:center;gap:6px;padding:8px 14px;
+    background:var(--bg-elev);border:1.5px solid var(--border);border-radius:100px;
+    cursor:pointer;font-size:13px;color:var(--text-dim);font-weight:500;transition:all 0.15s;
+  }
+  .toggle-row label:has(input:checked){background:var(--accent-glow);border-color:var(--accent);color:var(--accent-bright)}
+  .toggle-row input{margin:0}
+  .findings-box{margin-top:18px}
+  .finding-stat{
+    display:inline-flex;gap:6px;align-items:center;
+    padding:5px 10px;background:var(--bg-elev);border-radius:100px;
+    font-size:12px;color:var(--text-dim);margin-right:6px;margin-bottom:6px;
+  }
+  .finding-stat strong{color:var(--text)}
+</style>
+</head>
+<body>
+<div id="app-nav"></div>
+<div class="container">
+  <section class="tool-hero">
+    <span class="eyebrow">🛡️ Segurança</span>
+    <h1>Redigir LGPD</h1>
+    <p>Detecta CPF, RG, e-mails e telefones em PDFs e tarja automaticamente. Use antes de circular ata, ofício ou documento que vai pra fora do escritório.</p>
+  </section>
+
+  <div class="card">
+    <label for="fileInput" class="drop-zone" id="dropZone">
+      <div class="drop-icon">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+      </div>
+      <div class="drop-title">Arraste o PDF aqui</div>
+      <div class="drop-sub">Aceita 1 arquivo PDF</div>
+    </label>
+    <input type="file" id="fileInput" accept="application/pdf">
+
+    <div id="fileInfo" style="display:none;margin-top:12px;padding:12px 14px;background:var(--bg-elev);border-radius:10px;font-size:13px;color:var(--text-dim);"></div>
+
+    <div id="options" style="display:none;margin-top:18px">
+      <h3 style="margin-bottom:8px;font-size:13px;font-weight:600;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.05em">O que tarjar</h3>
+      <div class="toggle-row">
+        <label><input type="checkbox" data-pat="cpf" checked> 🆔 CPF</label>
+        <label><input type="checkbox" data-pat="rg" checked> 🪪 RG</label>
+        <label><input type="checkbox" data-pat="email" checked> ✉️ E-mail</label>
+        <label><input type="checkbox" data-pat="phone" checked> 📞 Telefone</label>
+        <label><input type="checkbox" data-pat="cnpj"> 🏢 CNPJ</label>
+        <label><input type="checkbox" data-pat="cep"> 📮 CEP</label>
+        <label><input type="checkbox" data-pat="cnh"> 🚗 CNH</label>
+        <label><input type="checkbox" data-pat="cartao"> 💳 Cartão de crédito</label>
+      </div>
+    </div>
+
+    <button class="btn-primary" id="processBtn" disabled>
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+      <span id="btnText">Selecione um PDF</span>
+    </button>
+
+    <div class="status" id="status">
+      <div class="status-text">Aguardando…</div>
+      <div class="progress"><div class="progress-bar"></div></div>
+    </div>
+
+    <div id="findings" class="findings-box"></div>
+
+    <p style="margin-top:14px;font-size:12px;color:var(--text-muted);">
+      ⚖️ <strong>LGPD</strong> (Lei 13.709/2018): dados pessoais devem ser anonimizados antes de divulgação. Útil pra atas de assembleia, comunicados públicos, ofícios.
+    </p>
+  </div>
+</div>
+<div id="app-footer"></div>
+
+<script src="/assets/shared.js"></script>
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+// Padrões regex para PT-BR
+const PATTERNS = {
+  cpf:    { re: /\b\d{3}\.?\d{3}\.?\d{3}-?\d{2}\b/g, name: 'CPF' },
+  rg:     { re: /\b\d{1,2}\.?\d{3}\.?\d{3}-?[\dXx]\b/g, name: 'RG' },
+  email:  { re: /[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g, name: 'E-mail' },
+  phone:  { re: /(?:\(?\d{2}\)?\s?)?(?:9?\d{4}[-.\s]?\d{4})\b/g, name: 'Telefone' },
+  cnpj:   { re: /\b\d{2}\.?\d{3}\.?\d{3}\/?\d{4}-?\d{2}\b/g, name: 'CNPJ' },
+  cep:    { re: /\b\d{5}-?\d{3}\b/g, name: 'CEP' },
+  cnh:    { re: /\b\d{11}\b/g, name: 'CNH (11 dígitos)' },
+  cartao: { re: /\b\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4}\b/g, name: 'Cartão' },
+};
+
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+const fileInfo = document.getElementById('fileInfo');
+const opts = document.getElementById('options');
+const processBtn = document.getElementById('processBtn');
+const btnText = document.getElementById('btnText');
+const statusEl = document.getElementById('status');
+const findingsEl = document.getElementById('findings');
+
+let file = null;
+
+setupDropZone(dropZone, fileInput, newFiles => {
+  file = newFiles[0];
+  if (!file) return;
+  fileInfo.style.display = 'block';
+  fileInfo.innerHTML = `<strong>${file.name}</strong> · ${formatBytes(file.size)}`;
+  opts.style.display = 'block';
+  processBtn.disabled = false;
+  btnText.textContent = 'Detectar e tarjar';
+});
+
+processBtn.addEventListener('click', async () => {
+  if (!file) return;
+  processBtn.disabled = true;
+  btnText.textContent = 'Processando…';
+  showStatus(statusEl, 'Lendo PDF…');
+  setProgress(statusEl, 5);
+  findingsEl.innerHTML = '';
+
+  try {
+    const enabledPatterns = {};
+    document.querySelectorAll('.toggle-row input:checked').forEach(cb => {
+      const k = cb.dataset.pat;
+      enabledPatterns[k] = PATTERNS[k];
+    });
+    if (!Object.keys(enabledPatterns).length) {
+      throw new Error('Selecione pelo menos um tipo de dado para tarjar.');
+    }
+
+    const buf = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: buf.slice(0) }).promise;
+    const totalPages = pdf.numPages;
+
+    // Extrai itens de texto com posição em cada página
+    const allMatches = []; // { page, x, y, w, h, type, text }
+    const counts = {};
+
+    for (let i = 1; i <= totalPages; i++) {
+      showStatus(statusEl, `Analisando página ${i}/${totalPages}…`);
+      setProgress(statusEl, 5 + (i / totalPages) * 60);
+
+      const page = await pdf.getPage(i);
+      const tc = await page.getTextContent();
+      const viewport = page.getViewport({ scale: 1 });
+
+      // Para cada item de texto, testa todos os padrões
+      for (const item of tc.items) {
+        const text = item.str;
+        if (!text) continue;
+        for (const [key, pat] of Object.entries(enabledPatterns)) {
+          pat.re.lastIndex = 0;
+          let m;
+          while ((m = pat.re.exec(text)) !== null) {
+            const matched = m[0];
+            // Posição aproximada do match dentro do item de texto
+            const itemX = item.transform[4];
+            const itemY = item.transform[5];
+            const itemW = item.width;
+            const itemH = item.height || (item.transform[3] || 12);
+            const charW = itemW / Math.max(text.length, 1);
+            const startCharX = m.index;
+            const x = itemX + startCharX * charW;
+            const y = itemY;
+            const w = matched.length * charW + 2;
+            const h = itemH * 1.2;
+            allMatches.push({
+              page: i, x, y, w, h, type: key, text: matched,
+              pageHeight: viewport.height,
+            });
+            counts[key] = (counts[key] || 0) + 1;
+          }
+        }
+      }
+    }
+
+    if (!allMatches.length) {
+      setProgress(statusEl, 100);
+      showStatus(statusEl, '✓ Nenhum dado pessoal encontrado nos padrões selecionados.', 'success');
+      processBtn.disabled = false;
+      btnText.textContent = 'Detectar e tarjar';
+      return;
+    }
+
+    showStatus(statusEl, `Tarjando ${allMatches.length} ocorrências…`);
+    setProgress(statusEl, 75);
+
+    // Aplica retângulos pretos com pdf-lib
+    const out = await PDFLib.PDFDocument.load(buf, { ignoreEncryption: true });
+    const pages = out.getPages();
+    for (const m of allMatches) {
+      const p = pages[m.page - 1];
+      const { height } = p.getSize();
+      // PDF.js usa origem top-left convertido pra bottom-left no pdf-lib
+      const yPdfLib = m.y; // já está em coordenadas PDF
+      p.drawRectangle({
+        x: m.x - 1,
+        y: yPdfLib - 2,
+        width: m.w,
+        height: m.h,
+        color: PDFLib.rgb(0, 0, 0),
+      });
+    }
+
+    setProgress(statusEl, 95);
+    const bytes = await out.save();
+    const blob = new Blob([bytes], { type: 'application/pdf' });
+    const baseName = file.name.replace(/\.pdf$/i, '');
+    downloadBlob(blob, `${baseName}_anonimizado.pdf`);
+
+    setProgress(statusEl, 100);
+    showStatus(statusEl, `✓ Pronto! ${allMatches.length} dados tarjados.`, 'success');
+
+    // Mostra estatísticas
+    findingsEl.innerHTML = '<h3 style="margin-bottom:10px;font-size:13px;font-weight:600;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.05em">Detectado</h3>' +
+      Object.entries(counts).map(([k, n]) => `<div class="finding-stat">${PATTERNS[k].name}: <strong>${n}</strong></div>`).join('');
+
+    trackUsage('redigir-lgpd', { matches: allMatches.length });
+  } catch (err) {
+    console.error(err);
+    showStatus(statusEl, 'Erro: ' + err.message, 'error');
+    setProgress(statusEl, 0);
+  } finally {
+    processBtn.disabled = false;
+    btnText.textContent = 'Detectar e tarjar';
+  }
+});
+</script>
+</body>
+</html>

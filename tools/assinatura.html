@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Assinatura Eletrônica — Sindicompany Hub</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Caveat:wght@400;700&display=swap" rel="stylesheet">
+<link rel="icon" href="/logo.svg">
+<link rel="stylesheet" href="/assets/shared.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+<style>
+  .sig-tabs{display:flex;gap:6px;margin-bottom:10px;border-bottom:1px solid var(--border)}
+  .sig-tab{padding:8px 16px;border:none;background:transparent;cursor:pointer;font-family:inherit;font-size:13px;color:var(--text-dim);font-weight:500;border-bottom:2px solid transparent;transition:all 0.15s}
+  .sig-tab.active{color:var(--accent-bright);border-bottom-color:var(--accent)}
+
+  .sig-panel{display:none}
+  .sig-panel.active{display:block}
+
+  .sig-canvas-wrap{
+    border:2px dashed var(--border-bright);border-radius:10px;background:#fafbfc;
+    overflow:hidden;position:relative;
+  }
+  #sigCanvas{display:block;width:100%;height:200px;cursor:crosshair;touch-action:none}
+  .sig-canvas-actions{padding:8px;display:flex;gap:8px;justify-content:flex-end}
+  .sig-canvas-actions button{padding:6px 12px;background:var(--card);border:1px solid var(--border);border-radius:6px;font-size:12px;cursor:pointer;color:var(--text-dim);font-family:inherit}
+
+  .sig-typed-preview{
+    margin-top:14px;padding:24px;background:#fafbfc;border:1px dashed var(--border-bright);border-radius:10px;
+    text-align:center;font-family:'Caveat',cursive;font-size:42px;color:var(--text);min-height:80px;
+    display:flex;align-items:center;justify-content:center;
+  }
+
+  .pages-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-top:14px}
+  .page-thumb{
+    background:white;border:2px solid var(--border);border-radius:10px;padding:8px;cursor:pointer;
+    position:relative;transition:all 0.15s;
+  }
+  .page-thumb:hover{border-color:var(--accent)}
+  .page-thumb.selected{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-glow)}
+  .page-thumb canvas{width:100%;display:block;border-radius:6px}
+  .page-thumb .label{font-size:11px;color:var(--text-dim);text-align:center;margin-top:6px}
+  .page-thumb .placed-marker{
+    position:absolute;background:rgba(16,185,129,0.18);border:2px solid var(--accent);
+    border-radius:4px;pointer-events:none;
+  }
+
+  .place-instructions{
+    padding:12px 14px;background:var(--info-glow);border-left:3px solid var(--info);
+    border-radius:8px;font-size:13px;color:var(--info);margin-top:14px;
+  }
+</style>
+</head>
+<body>
+<div id="app-nav"></div>
+<div class="container">
+  <section class="tool-hero">
+    <span class="eyebrow">✍️ Documentos</span>
+    <h1>Assinatura Eletrônica</h1>
+    <p>Assine PDFs digitalmente. Crie sua assinatura desenhando ou digitando, posicione na página correta e baixe com trilha de auditoria.</p>
+  </section>
+
+  <div class="card">
+    <h3 style="margin-bottom:10px">1. Sua assinatura</h3>
+    <div class="sig-tabs">
+      <button class="sig-tab active" data-tab="draw">✏️ Desenhar</button>
+      <button class="sig-tab" data-tab="type">⌨️ Digitar</button>
+    </div>
+
+    <div class="sig-panel active" id="panel-draw">
+      <div class="sig-canvas-wrap">
+        <canvas id="sigCanvas"></canvas>
+        <div class="sig-canvas-actions">
+          <button id="clearSig">🗑️ Limpar</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="sig-panel" id="panel-type">
+      <div class="field">
+        <label>Digite seu nome</label>
+        <input type="text" id="typedName" placeholder="Maria da Silva" oninput="updateTyped()">
+      </div>
+      <div class="sig-typed-preview" id="typedPreview">Sua assinatura aparece aqui</div>
+    </div>
+
+    <div class="field" style="margin-top:18px">
+      <label>Nome do(a) assinante (para a trilha de auditoria)</label>
+      <input type="text" id="signerName" placeholder="Nome completo">
+    </div>
+
+    <h3 style="margin-top:24px;margin-bottom:10px">2. Documento</h3>
+    <label for="fileInput" class="drop-zone" id="dropZone">
+      <div class="drop-icon">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+      </div>
+      <div class="drop-title">Arraste o PDF para assinar</div>
+      <div class="drop-sub">Aceita 1 arquivo PDF</div>
+    </label>
+    <input type="file" id="fileInput" accept="application/pdf">
+
+    <div id="docArea" style="display:none">
+      <div class="place-instructions">
+        💡 Clique numa miniatura abaixo, depois clique no ponto da página onde quer colocar a assinatura.
+      </div>
+      <div class="pages-grid" id="pagesGrid"></div>
+    </div>
+
+    <button class="btn-primary" id="processBtn" disabled>
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+      <span id="btnText">Crie a assinatura primeiro</span>
+    </button>
+
+    <div class="status" id="status">
+      <div class="status-text">Aguardando…</div>
+      <div class="progress"><div class="progress-bar"></div></div>
+    </div>
+
+    <p style="margin-top:14px;font-size:12px;color:var(--text-muted);">
+      ⚖️ Esta assinatura é eletrônica simples (não ICP-Brasil). Válida juridicamente entre as partes que aceitarem (Lei 14.063/2020). Para contratos com terceiros, considere assinatura qualificada.
+    </p>
+  </div>
+</div>
+<div id="app-footer"></div>
+
+<script src="/assets/shared.js"></script>
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+// ===== TABS =====
+document.querySelectorAll('.sig-tab').forEach(t => t.addEventListener('click', () => {
+  document.querySelectorAll('.sig-tab').forEach(x => x.classList.remove('active'));
+  document.querySelectorAll('.sig-panel').forEach(p => p.classList.remove('active'));
+  t.classList.add('active');
+  document.getElementById('panel-' + t.dataset.tab).classList.add('active');
+  updateBtn();
+}));
+
+// ===== CANVAS DRAWING =====
+const canvas = document.getElementById('sigCanvas');
+const ctx = canvas.getContext('2d');
+function resizeCanvas() {
+  const dpr = window.devicePixelRatio || 1;
+  const w = canvas.offsetWidth, h = 200;
+  canvas.width = w * dpr;
+  canvas.height = h * dpr;
+  ctx.scale(dpr, dpr);
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.lineWidth = 2.5;
+  ctx.strokeStyle = '#0f172a';
+}
+window.addEventListener('resize', () => { const old = canvas.toDataURL(); resizeCanvas(); const im = new Image(); im.onload = () => ctx.drawImage(im, 0, 0, canvas.offsetWidth, 200); im.src = old; });
+resizeCanvas();
+
+let drawing = false;
+function getPos(e) {
+  const rect = canvas.getBoundingClientRect();
+  const t = e.touches?.[0] || e;
+  return { x: t.clientX - rect.left, y: t.clientY - rect.top };
+}
+function startDraw(e) { drawing = true; const p = getPos(e); ctx.beginPath(); ctx.moveTo(p.x, p.y); }
+function moveDraw(e) { if (!drawing) return; e.preventDefault(); const p = getPos(e); ctx.lineTo(p.x, p.y); ctx.stroke(); }
+function endDraw() { drawing = false; updateBtn(); }
+canvas.addEventListener('mousedown', startDraw);
+canvas.addEventListener('mousemove', moveDraw);
+canvas.addEventListener('mouseup', endDraw);
+canvas.addEventListener('mouseleave', endDraw);
+canvas.addEventListener('touchstart', startDraw);
+canvas.addEventListener('touchmove', moveDraw);
+canvas.addEventListener('touchend', endDraw);
+
+document.getElementById('clearSig').addEventListener('click', () => {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  updateBtn();
+});
+
+function isCanvasEmpty() {
+  const blank = document.createElement('canvas');
+  blank.width = canvas.width; blank.height = canvas.height;
+  return canvas.toDataURL() === blank.toDataURL();
+}
+
+function updateTyped() {
+  document.getElementById('typedPreview').textContent = document.getElementById('typedName').value || 'Sua assinatura aparece aqui';
+  updateBtn();
+}
+
+function getSignatureImage() {
+  const tab = document.querySelector('.sig-tab.active').dataset.tab;
+  if (tab === 'draw') {
+    if (isCanvasEmpty()) return null;
+    return canvas.toDataURL('image/png');
+  } else {
+    const name = document.getElementById('typedName').value.trim();
+    if (!name) return null;
+    // Renderiza nome em canvas com fonte Caveat
+    const c = document.createElement('canvas');
+    c.width = 600; c.height = 180;
+    const cctx = c.getContext('2d');
+    cctx.fillStyle = '#0f172a';
+    cctx.font = "italic bold 72px 'Caveat', cursive";
+    cctx.textBaseline = 'middle';
+    cctx.textAlign = 'center';
+    cctx.fillText(name, 300, 90);
+    return c.toDataURL('image/png');
+  }
+}
+
+// ===== PDF =====
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+const docArea = document.getElementById('docArea');
+const pagesGrid = document.getElementById('pagesGrid');
+const processBtn = document.getElementById('processBtn');
+const btnText = document.getElementById('btnText');
+const statusEl = document.getElementById('status');
+
+let pdfBuffer = null;
+let pdfFile = null;
+let placements = []; // { page, x, y, scale }
+let selectedPage = null;
+let pageDims = []; // [{ w, h, scaleFactor }]
+
+setupDropZone(dropZone, fileInput, async newFiles => {
+  pdfFile = newFiles[0];
+  if (!pdfFile) return;
+  pdfBuffer = await pdfFile.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: pdfBuffer.slice(0) }).promise;
+  pagesGrid.innerHTML = '';
+  pageDims = [];
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i);
+    const viewport = page.getViewport({ scale: 0.4 });
+    const card = document.createElement('div');
+    card.className = 'page-thumb';
+    card.dataset.page = i;
+    card.innerHTML = `<canvas></canvas><div class="label">Página ${i}</div>`;
+    pagesGrid.appendChild(card);
+    const cv = card.querySelector('canvas');
+    cv.width = viewport.width;
+    cv.height = viewport.height;
+    pageDims.push({ pdfW: page.getViewport({ scale: 1 }).width, pdfH: page.getViewport({ scale: 1 }).height, viewW: viewport.width, viewH: viewport.height });
+    const ctx2 = cv.getContext('2d');
+    ctx2.fillStyle = 'white';
+    ctx2.fillRect(0, 0, cv.width, cv.height);
+    await page.render({ canvasContext: ctx2, viewport }).promise;
+    cv.addEventListener('click', e => {
+      if (selectedPage !== i) return;
+      const rect = cv.getBoundingClientRect();
+      const cx = e.clientX - rect.left;
+      const cy = e.clientY - rect.top;
+      placements.push({ page: i, x: cx, y: cy, viewW: rect.width, viewH: rect.height });
+      drawPlacementMarker(card, cx, cy);
+      updateBtn();
+    });
+    card.addEventListener('click', e => {
+      if (e.target.tagName === 'CANVAS') return;
+      pagesGrid.querySelectorAll('.page-thumb').forEach(p => p.classList.remove('selected'));
+      card.classList.add('selected');
+      selectedPage = i;
+    });
+    if (i === 1) { card.classList.add('selected'); selectedPage = 1; }
+  }
+  docArea.style.display = 'block';
+  updateBtn();
+});
+
+function drawPlacementMarker(cardEl, x, y) {
+  const m = document.createElement('div');
+  m.className = 'placed-marker';
+  m.style.left = (x - 30) + 'px';
+  m.style.top = (y - 14) + 'px';
+  m.style.width = '60px';
+  m.style.height = '28px';
+  cardEl.style.position = 'relative';
+  cardEl.appendChild(m);
+}
+
+function updateBtn() {
+  const hasSig = !!getSignatureImage();
+  if (!hasSig) { processBtn.disabled = true; btnText.textContent = 'Crie a assinatura primeiro'; return; }
+  if (!pdfFile) { processBtn.disabled = true; btnText.textContent = 'Selecione um PDF'; return; }
+  if (!placements.length) { processBtn.disabled = true; btnText.textContent = 'Clique na página onde colocar a assinatura'; return; }
+  processBtn.disabled = false;
+  btnText.textContent = `Assinar (${placements.length} ${placements.length > 1 ? 'posições' : 'posição'})`;
+}
+
+document.getElementById('typedName').addEventListener('input', updateBtn);
+document.getElementById('signerName').addEventListener('input', updateBtn);
+
+processBtn.addEventListener('click', async () => {
+  processBtn.disabled = true;
+  btnText.textContent = 'Processando…';
+  showStatus(statusEl, 'Aplicando assinatura…');
+  setProgress(statusEl, 20);
+
+  try {
+    const sigDataUrl = getSignatureImage();
+    const sigBytes = await fetch(sigDataUrl).then(r => r.arrayBuffer());
+
+    const out = await PDFLib.PDFDocument.load(pdfBuffer.slice(0), { ignoreEncryption: true });
+    const sigImage = await out.embedPng(sigBytes);
+
+    const pages = out.getPages();
+    for (const place of placements) {
+      const page = pages[place.page - 1];
+      const dims = pageDims[place.page - 1];
+      const { width, height } = page.getSize();
+      // Converte coords do view (escala 0.4) pra PDF
+      const pdfX = (place.x / place.viewW) * width;
+      const pdfY = height - ((place.y / place.viewH) * height);
+      const sigW = 130;
+      const sigH = sigImage.height * (sigW / sigImage.width);
+      page.drawImage(sigImage, {
+        x: pdfX - sigW / 2,
+        y: pdfY - sigH / 2,
+        width: sigW,
+        height: sigH,
+      });
+    }
+
+    // Trilha de auditoria — adiciona página final com metadados
+    setProgress(statusEl, 70);
+    const signerName = (document.getElementById('signerName').value || 'Assinante não informado').trim();
+    const auditPage = out.addPage([595.28, 841.89]);
+    const font = await out.embedFont(PDFLib.StandardFonts.Helvetica);
+    const fontBold = await out.embedFont(PDFLib.StandardFonts.HelveticaBold);
+    const M = 50;
+    let y = 800;
+    auditPage.drawText('TRILHA DE AUDITORIA — Assinatura Eletrônica', { x: M, y, size: 14, font: fontBold });
+    y -= 30;
+    auditPage.drawLine({ start: { x: M, y }, end: { x: 545, y }, thickness: 0.5, color: PDFLib.rgb(0.5, 0.5, 0.5) });
+    y -= 20;
+
+    const lines = [
+      ['Documento original:', pdfFile.name],
+      ['Tamanho original:', formatBytes(pdfFile.size)],
+      ['Assinante:', signerName],
+      ['Data e hora:', new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' }) + ' (BRT)'],
+      ['Total de páginas:', String(pages.length)],
+      ['Posições assinadas:', placements.map(p => `Pág ${p.page}`).join(', ')],
+      ['Tipo:', 'Assinatura Eletrônica Simples (Lei 14.063/2020)'],
+      ['Plataforma:', 'Sindicompany Hub — uso interno'],
+      ['Hash do documento:', await sha256Hex(pdfBuffer)],
+    ];
+    for (const [k, v] of lines) {
+      auditPage.drawText(k, { x: M, y, size: 10, font: fontBold });
+      auditPage.drawText(String(v).slice(0, 80), { x: M + 150, y, size: 10, font });
+      y -= 18;
+    }
+    y -= 12;
+    auditPage.drawText('Esta página foi gerada automaticamente e atesta a integridade do', { x: M, y, size: 9, font, color: PDFLib.rgb(0.4, 0.4, 0.4) });
+    y -= 12;
+    auditPage.drawText('documento no momento da assinatura.', { x: M, y, size: 9, font, color: PDFLib.rgb(0.4, 0.4, 0.4) });
+
+    setProgress(statusEl, 95);
+    const bytes = await out.save();
+    const blob = new Blob([bytes], { type: 'application/pdf' });
+    const baseName = pdfFile.name.replace(/\.pdf$/i, '');
+    downloadBlob(blob, `${baseName}_assinado.pdf`);
+
+    setProgress(statusEl, 100);
+    showStatus(statusEl, `✓ Pronto! Documento assinado por ${signerName} em ${placements.length} posição${placements.length > 1 ? 'ões' : ''}.`, 'success');
+    trackUsage('assinatura', { placements: placements.length });
+  } catch (err) {
+    console.error(err);
+    showStatus(statusEl, 'Erro: ' + err.message, 'error');
+    setProgress(statusEl, 0);
+  } finally {
+    processBtn.disabled = false;
+    btnText.textContent = `Assinar (${placements.length})`;
+  }
+});
+
+async function sha256Hex(buf) {
+  const hashBuf = await crypto.subtle.digest('SHA-256', buf);
+  return Array.from(new Uint8Array(hashBuf)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+</script>
+</body>
+</html>

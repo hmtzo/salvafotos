@@ -81,8 +81,23 @@ const TIME_SAVED_MIN = {
   'numerar-paginas': 4, 'marca-dagua': 5, 'proteger-pdf': 3, 'jpg-para-pdf': 4,
   'whatsapp-fotos': 30, 'pdf-para-jpg': 4, 'organizar-pdf': 6, 'desbloquear-pdf': 2,
   'ocr': 10, 'gerador-notificacao': 20, 'gerador-ata': 30, 'gerador-contrato': 20,
-  'sindi': 5,
+  'sindi': 5, 'calculadoras': 4, 'word-para-pdf': 3, 'excel-para-pdf': 3,
+  'corretor-texto': 8, 'comparar-pdf': 15, 'redigir-lgpd': 12, 'assinatura': 10,
+  'conversor-imagens': 5, 'pdf-para-excel': 12, 'editor-pdf': 8,
 };
+
+// =============================================================================
+// SINDI HANDOFF — qualquer ferramenta passa contexto para a Sindi via localStorage
+// =============================================================================
+function askSindiAbout(filename, textContent, suggestedQuestion) {
+  try {
+    sessionStorage.setItem('sf_sindi_handoff', JSON.stringify({
+      filename, text: (textContent || '').slice(0, 30000), question: suggestedQuestion || '',
+      ts: Date.now(),
+    }));
+  } catch (e) { console.warn('handoff failed', e); }
+  window.location.href = '/tools/sindi.html?from=tool';
+}
 
 function trackUsage(toolSlug, meta = {}) {
   try {

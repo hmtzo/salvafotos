@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Comparar Documentos — Sindicompany Hub</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="icon" href="/logo.svg">
+<link rel="stylesheet" href="/assets/shared.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/diff-match-patch@1.0.5/index.js"></script>
+<style>
+  .upload-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+  @media(max-width:700px){.upload-grid{grid-template-columns:1fr}}
+  .upload-grid label.drop-zone{padding:24px 18px}
+  .upload-grid .drop-icon{width:40px;height:40px;margin-bottom:8px}
+  .upload-grid .drop-icon svg{width:20px;height:20px}
+  .upload-grid .drop-title{font-size:14px}
+  .upload-grid .drop-sub{font-size:12px}
+  .upload-grid .label-tag{font-size:11px;font-weight:600;color:var(--accent-bright);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px;text-align:left}
+
+  .summary-box{
+    margin-top:18px;padding:18px;background:var(--bg-elev);border:1px solid var(--border);
+    border-radius:12px;display:grid;grid-template-columns:repeat(3,1fr);gap:14px;
+  }
+  .summary-stat{text-align:center}
+  .summary-stat .stat-num{font-size:28px;font-weight:800;letter-spacing:-0.02em}
+  .summary-stat .stat-num.add{color:var(--accent-bright)}
+  .summary-stat .stat-num.del{color:var(--danger)}
+  .summary-stat .stat-num.same{color:var(--text-muted)}
+  .summary-stat .stat-lbl{font-size:11px;text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-top:2px;font-weight:500}
+
+  .diff-pane{
+    margin-top:14px;background:var(--card);border:1px solid var(--border);border-radius:12px;
+    padding:18px 20px;font-family:'JetBrains Mono',monospace;font-size:12px;line-height:1.7;
+    color:var(--text);max-height:600px;overflow-y:auto;white-space:pre-wrap;word-wrap:break-word;
+  }
+  .diff-add{background:rgba(16,185,129,0.18);color:var(--accent-bright);padding:1px 0}
+  .diff-del{background:rgba(239,68,68,0.18);color:var(--danger);text-decoration:line-through;padding:1px 0}
+  .diff-equal{color:var(--text-dim)}
+
+  .ai-summary{
+    margin-top:14px;padding:18px;background:linear-gradient(135deg,#84c7d320,#dabda920);
+    border:1px solid rgba(132,199,211,0.3);border-radius:12px;font-size:13px;line-height:1.6;
+  }
+  .ai-summary h3{margin-bottom:8px;font-size:14px;display:flex;align-items:center;gap:6px}
+</style>
+</head>
+<body>
+<div id="app-nav"></div>
+<div class="container">
+  <section class="tool-hero">
+    <span class="eyebrow">⚖️ Documentos</span>
+    <h1>Comparar Documentos</h1>
+    <p>Suba duas versões de um PDF (contrato, ata, documento). A ferramenta extrai o texto e mostra exatamente o que mudou.</p>
+  </section>
+
+  <div class="card">
+    <div class="upload-grid">
+      <div>
+        <div class="label-tag">📄 Versão A (original)</div>
+        <label for="fileA" class="drop-zone" id="dropA">
+          <div class="drop-icon"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg></div>
+          <div class="drop-title" id="titleA">Versão A</div>
+          <div class="drop-sub">Arraste o PDF original</div>
+        </label>
+        <input type="file" id="fileA" accept="application/pdf">
+      </div>
+      <div>
+        <div class="label-tag">📄 Versão B (nova)</div>
+        <label for="fileB" class="drop-zone" id="dropB">
+          <div class="drop-icon"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg></div>
+          <div class="drop-title" id="titleB">Versão B</div>
+          <div class="drop-sub">Arraste a nova versão</div>
+        </label>
+        <input type="file" id="fileB" accept="application/pdf">
+      </div>
+    </div>
+
+    <div class="field-row" style="margin-top:14px">
+      <div class="field">
+        <label>Granularidade da comparação</label>
+        <select id="gran">
+          <option value="line">Linha por linha (recomendado)</option>
+          <option value="word">Palavra por palavra</option>
+          <option value="char">Letra por letra (preciso)</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Resumo IA</label>
+        <select id="aiSummary">
+          <option value="yes" selected>Sim, pedir pra Sindi resumir</option>
+          <option value="no">Não, só o diff</option>
+        </select>
+      </div>
+    </div>
+
+    <button class="btn-primary" id="processBtn" disabled>
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
+      <span id="btnText">Selecione os 2 PDFs</span>
+    </button>
+
+    <div class="status" id="status">
+      <div class="status-text">Aguardando…</div>
+      <div class="progress"><div class="progress-bar"></div></div>
+    </div>
+
+    <div id="result" style="display:none">
+      <div class="summary-box" id="summary"></div>
+      <div id="aiBox"></div>
+      <h3 style="margin-top:18px;margin-bottom:8px;font-size:13px;font-weight:600;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.05em">Diferenças detalhadas</h3>
+      <div class="diff-pane" id="diffPane"></div>
+    </div>
+  </div>
+</div>
+<div id="app-footer"></div>
+
+<script src="/assets/shared.js"></script>
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+const dropA = document.getElementById('dropA');
+const dropB = document.getElementById('dropB');
+const fileA = document.getElementById('fileA');
+const fileB = document.getElementById('fileB');
+const titleA = document.getElementById('titleA');
+const titleB = document.getElementById('titleB');
+const processBtn = document.getElementById('processBtn');
+const btnText = document.getElementById('btnText');
+const statusEl = document.getElementById('status');
+const resultEl = document.getElementById('result');
+
+let docA = null, docB = null;
+
+setupDropZone(dropA, fileA, files => { docA = files[0]; titleA.textContent = docA.name; updateBtn(); });
+setupDropZone(dropB, fileB, files => { docB = files[0]; titleB.textContent = docB.name; updateBtn(); });
+
+function updateBtn() {
+  if (docA && docB) {
+    processBtn.disabled = false;
+    btnText.textContent = 'Comparar';
+  }
+}
+
+async function extractText(file) {
+  const buf = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+  let text = '';
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i);
+    const tc = await page.getTextContent();
+    let lastY = null;
+    for (const item of tc.items) {
+      const y = item.transform[5];
+      if (lastY !== null && Math.abs(y - lastY) > 4) text += '\n';
+      text += item.str + ' ';
+      lastY = y;
+    }
+    text += '\n\n';
+  }
+  return text.replace(/[ \t]+/g, ' ').replace(/\n /g, '\n').trim();
+}
+
+processBtn.addEventListener('click', async () => {
+  if (!docA || !docB) return;
+  processBtn.disabled = true;
+  btnText.textContent = 'Comparando…';
+  showStatus(statusEl, 'Extraindo texto da versão A…');
+  setProgress(statusEl, 10);
+  resultEl.style.display = 'none';
+
+  try {
+    const textA = await extractText(docA);
+    showStatus(statusEl, 'Extraindo texto da versão B…');
+    setProgress(statusEl, 35);
+    const textB = await extractText(docB);
+
+    showStatus(statusEl, 'Calculando diferenças…');
+    setProgress(statusEl, 60);
+
+    const dmp = new diff_match_patch();
+    let diffs;
+    const gran = document.getElementById('gran').value;
+
+    if (gran === 'char') {
+      diffs = dmp.diff_main(textA, textB);
+      dmp.diff_cleanupSemantic(diffs);
+    } else if (gran === 'word') {
+      // Truque oficial: diff em chars depois reagrupa palavras
+      const a = dmp.diff_linesToChars_(textA.split(' ').join('\n'), textB.split(' ').join('\n'));
+      diffs = dmp.diff_main(a.chars1, a.chars2, false);
+      dmp.diff_charsToLines_(diffs, a.lineArray);
+      diffs.forEach(d => d[1] = d[1].replace(/\n/g, ' '));
+    } else {
+      // line by line (mais legível pra documentos longos)
+      const a = dmp.diff_linesToChars_(textA, textB);
+      diffs = dmp.diff_main(a.chars1, a.chars2, false);
+      dmp.diff_charsToLines_(diffs, a.lineArray);
+    }
+
+    let added = 0, removed = 0, equal = 0;
+    let html = '';
+    for (const [op, text] of diffs) {
+      const safe = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      if (op === 1) { added += text.length; html += `<span class="diff-add">${safe}</span>`; }
+      else if (op === -1) { removed += text.length; html += `<span class="diff-del">${safe}</span>`; }
+      else { equal += text.length; html += `<span class="diff-equal">${safe}</span>`; }
+    }
+
+    document.getElementById('diffPane').innerHTML = html || '<em>Nenhum texto extraído.</em>';
+    document.getElementById('summary').innerHTML = `
+      <div class="summary-stat"><div class="stat-num add">+${added.toLocaleString('pt-BR')}</div><div class="stat-lbl">caracteres adicionados</div></div>
+      <div class="summary-stat"><div class="stat-num del">-${removed.toLocaleString('pt-BR')}</div><div class="stat-lbl">caracteres removidos</div></div>
+      <div class="summary-stat"><div class="stat-num same">${equal.toLocaleString('pt-BR')}</div><div class="stat-lbl">inalterados</div></div>
+    `;
+    resultEl.style.display = 'block';
+
+    // Resumo IA opcional
+    const useAi = document.getElementById('aiSummary').value === 'yes';
+    if (useAi && (added > 0 || removed > 0)) {
+      showStatus(statusEl, 'Sindi resumindo as mudanças…');
+      setProgress(statusEl, 85);
+      try {
+        const promptText = `Compare as duas versões abaixo de um documento condominial e me diga em bullets o que mudou de relevante (ignore reformatação, espaços, capitalização). Seja objetivo, máximo 8 bullets. Cite cláusulas/seções quando possível.\n\n=== VERSÃO ANTERIOR ===\n${textA.slice(0, 8000)}\n\n=== VERSÃO NOVA ===\n${textB.slice(0, 8000)}`;
+        const res = await fetch('/api/sindi', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ messages: [{ role: 'user', content: promptText }] }),
+        });
+        const data = await res.json();
+        if (res.ok && data.reply) {
+          document.getElementById('aiBox').innerHTML = `
+            <div class="ai-summary">
+              <h3>🤖 Resumo da Sindi</h3>
+              <div>${formatMd(data.reply)}</div>
+            </div>
+          `;
+        }
+      } catch (e) { console.warn('AI summary failed', e); }
+    }
+
+    setProgress(statusEl, 100);
+    const status = (added === 0 && removed === 0) ? '✓ Os documentos são idênticos!' : `✓ Comparação pronta: ${added.toLocaleString('pt-BR')} adições · ${removed.toLocaleString('pt-BR')} remoções`;
+    showStatus(statusEl, status, 'success');
+    trackUsage('comparar-pdf', { added, removed });
+  } catch (err) {
+    console.error(err);
+    showStatus(statusEl, 'Erro: ' + err.message, 'error');
+    setProgress(statusEl, 0);
+  } finally {
+    processBtn.disabled = false;
+    btnText.textContent = 'Comparar';
+  }
+});
+
+function formatMd(text) {
+  let html = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/`([^`]+)`/g, '<code>$1</code>');
+  const lines = html.split('\n');
+  const out = [];
+  let inList = null;
+  for (const ln of lines) {
+    const ulMatch = ln.match(/^[-*]\s+(.+)/);
+    const olMatch = ln.match(/^\d+\.\s+(.+)/);
+    if (ulMatch) {
+      if (inList !== 'ul') { if (inList) out.push(`</${inList}>`); out.push('<ul style="margin-left:18px">'); inList = 'ul'; }
+      out.push('<li>' + ulMatch[1] + '</li>');
+    } else if (olMatch) {
+      if (inList !== 'ol') { if (inList) out.push(`</${inList}>`); out.push('<ol style="margin-left:18px">'); inList = 'ol'; }
+      out.push('<li>' + olMatch[1] + '</li>');
+    } else {
+      if (inList) { out.push(`</${inList}>`); inList = null; }
+      if (ln.trim()) out.push('<p>' + ln + '</p>');
+    }
+  }
+  if (inList) out.push(`</${inList}>`);
+  return out.join('');
+}
+</script>
+</body>
+</html>

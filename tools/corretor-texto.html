@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Corretor de Texto PT-BR — Sindicompany Hub</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="icon" href="/logo.svg">
+<link rel="stylesheet" href="/assets/shared.css">
+<style>
+  .editor-grid{
+    display:grid;grid-template-columns:1fr 1fr;gap:16px;
+  }
+  @media(max-width:900px){.editor-grid{grid-template-columns:1fr}}
+  .editor-pane{
+    background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
+    overflow:hidden;display:flex;flex-direction:column;
+  }
+  .editor-pane .head{
+    padding:10px 14px;background:var(--bg-elev);border-bottom:1px solid var(--border);
+    display:flex;justify-content:space-between;align-items:center;font-size:12px;font-weight:600;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.04em;
+  }
+  .editor-pane .head .word-count{color:var(--text-muted);font-weight:400}
+  .editor-pane textarea{
+    flex:1;width:100%;padding:18px;border:none;resize:vertical;
+    font-family:inherit;font-size:14px;line-height:1.6;color:var(--text);
+    background:transparent;outline:none;min-height:320px;
+  }
+  .editor-pane .corrected-display{
+    padding:18px;font-size:14px;line-height:1.6;color:var(--text);min-height:320px;
+    overflow-y:auto;max-height:500px;
+  }
+  .editor-pane .corrected-display.empty{color:var(--text-muted);font-style:italic}
+  .editor-pane .actions{
+    padding:8px 12px;background:var(--bg-elev);border-top:1px solid var(--border);
+    display:flex;gap:8px;flex-wrap:wrap;
+  }
+  .editor-pane .actions button{
+    padding:6px 12px;background:var(--card);border:1px solid var(--border);
+    border-radius:6px;font-size:12px;cursor:pointer;color:var(--text-dim);
+    font-family:inherit;transition:all 0.15s;
+  }
+  .editor-pane .actions button:hover{border-color:var(--accent);color:var(--accent-bright)}
+
+  .changes-list{
+    margin-top:18px;background:var(--card);border:1px solid var(--border);
+    border-radius:var(--radius);padding:18px;
+  }
+  .changes-list h3{margin-bottom:12px;font-size:14px;font-weight:600}
+  .change-item{
+    padding:10px 12px;background:var(--bg-elev);border-radius:8px;margin-bottom:6px;
+    font-size:13px;line-height:1.5;border-left:3px solid var(--warn);
+  }
+  .change-item .change-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .change-item .change-from{color:var(--danger);text-decoration:line-through;background:rgba(239,68,68,0.08);padding:2px 6px;border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:12px}
+  .change-item .change-arrow{color:var(--text-muted)}
+  .change-item .change-to{color:var(--accent-bright);background:var(--accent-glow);padding:2px 6px;border-radius:4px;font-weight:600;font-family:'JetBrains Mono',monospace;font-size:12px}
+  .change-item .change-reason{margin-top:4px;font-size:12px;color:var(--text-dim);font-style:italic}
+
+  .config-warn{
+    padding:14px 18px;background:#fef3c7;border:1px solid #f59e0b;border-radius:10px;
+    color:#92400e;font-size:13px;margin-bottom:18px;
+  }
+  .config-warn code{font-family:'JetBrains Mono',monospace;background:rgba(0,0,0,0.06);padding:1px 5px;border-radius:4px;font-size:11px}
+</style>
+</head>
+<body>
+<div id="app-nav"></div>
+<div class="container">
+  <section class="tool-hero">
+    <span class="eyebrow">✏️ Texto</span>
+    <h1>Corretor de Texto PT-BR</h1>
+    <p>Cole um texto em português e a IA corrige ortografia, gramática, concordância, pontuação e acentuação. Mantém o tom e o sentido originais.</p>
+  </section>
+
+  <div id="configWarn" class="config-warn" style="display:none">
+    ⚠️ Corretor precisa da chave <code>GOOGLE_API_KEY</code> configurada no Vercel.
+  </div>
+
+  <div class="card">
+    <div class="editor-grid">
+      <div class="editor-pane">
+        <div class="head">
+          <span>📝 Texto original</span>
+          <span class="word-count" id="origCount">0 palavras</span>
+        </div>
+        <textarea id="orig" placeholder="Cole aqui o texto que você quer corrigir..."></textarea>
+        <div class="actions">
+          <button id="pasteBtn">📋 Colar</button>
+          <button id="clearBtn">🗑️ Limpar</button>
+          <button id="exampleBtn">💡 Exemplo</button>
+        </div>
+      </div>
+
+      <div class="editor-pane">
+        <div class="head">
+          <span>✓ Texto corrigido</span>
+          <span class="word-count" id="corrCount">—</span>
+        </div>
+        <div class="corrected-display empty" id="corrected">Clique em "Corrigir texto" para ver o resultado aqui.</div>
+        <div class="actions">
+          <button id="copyBtn">📋 Copiar</button>
+          <button id="downloadBtn">💾 Baixar .txt</button>
+          <button id="useBtn">↶ Substituir original</button>
+          <button id="sindiBtn" style="background:linear-gradient(135deg,#84c7d3,#dabda9);color:#1a1c29;border:none;font-weight:600">🤖 Sindi</button>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn-primary" id="processBtn">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+      <span id="btnText">Corrigir texto</span>
+    </button>
+
+    <div class="status" id="status">
+      <div class="status-text">Aguardando…</div>
+      <div class="progress"><div class="progress-bar"></div></div>
+    </div>
+
+    <div class="changes-list" id="changesList" style="display:none">
+      <h3 id="changesTitle">Correções feitas</h3>
+      <div id="changesContainer"></div>
+    </div>
+  </div>
+</div>
+<div id="app-footer"></div>
+
+<script src="/assets/shared.js"></script>
+<script>
+const orig = document.getElementById('orig');
+const corrected = document.getElementById('corrected');
+const origCount = document.getElementById('origCount');
+const corrCount = document.getElementById('corrCount');
+const processBtn = document.getElementById('processBtn');
+const btnText = document.getElementById('btnText');
+const statusEl = document.getElementById('status');
+const changesList = document.getElementById('changesList');
+const changesContainer = document.getElementById('changesContainer');
+const changesTitle = document.getElementById('changesTitle');
+
+let lastCorrected = '';
+
+function countWords(s) { return s.trim().split(/\s+/).filter(Boolean).length; }
+
+orig.addEventListener('input', () => {
+  origCount.textContent = countWords(orig.value) + ' palavras';
+});
+
+document.getElementById('pasteBtn').addEventListener('click', async () => {
+  try { orig.value = await navigator.clipboard.readText(); origCount.textContent = countWords(orig.value) + ' palavras'; }
+  catch (e) { alert('Permissão de área de transferência negada. Cole manualmente (Ctrl+V).'); }
+});
+
+document.getElementById('clearBtn').addEventListener('click', () => {
+  orig.value = ''; origCount.textContent = '0 palavras';
+  corrected.innerHTML = 'Clique em "Corrigir texto" para ver o resultado aqui.';
+  corrected.classList.add('empty');
+  corrCount.textContent = '—';
+  changesList.style.display = 'none';
+});
+
+document.getElementById('exampleBtn').addEventListener('click', () => {
+  orig.value = `Prezados condôminos,\n\nVenho por meio desta convoca-los para a assembleia geral ordinária que ira ocorrer no dia 15/05 as 19hrs no salão de festas afim de discutirmos a prestação de contas do anterior periodo e a definição do novo orçamento.\n\nA presença é de extrema importancia, contamos com vocês.\n\nAtenciosamente,\nMaria Souza`;
+  origCount.textContent = countWords(orig.value) + ' palavras';
+});
+
+document.getElementById('copyBtn').addEventListener('click', async () => {
+  if (!lastCorrected) return;
+  await navigator.clipboard.writeText(lastCorrected);
+  const btn = document.getElementById('copyBtn');
+  const orig = btn.textContent;
+  btn.textContent = '✓ Copiado!';
+  setTimeout(() => btn.textContent = orig, 1500);
+});
+
+document.getElementById('downloadBtn').addEventListener('click', () => {
+  if (!lastCorrected) return;
+  const blob = new Blob([lastCorrected], { type: 'text/plain;charset=utf-8' });
+  downloadBlob(blob, `texto_corrigido_${new Date().toISOString().slice(0,10)}.txt`);
+});
+
+document.getElementById('useBtn').addEventListener('click', () => {
+  if (!lastCorrected) return;
+  orig.value = lastCorrected;
+  origCount.textContent = countWords(orig.value) + ' palavras';
+});
+
+document.getElementById('sindiBtn').addEventListener('click', () => {
+  const text = lastCorrected || orig.value;
+  if (!text.trim()) return;
+  askSindiAbout('texto', text, 'Avalie a clareza e o tom deste texto. Sugira melhorias.');
+});
+
+processBtn.addEventListener('click', async () => {
+  const text = orig.value.trim();
+  if (!text) { alert('Cole um texto primeiro.'); return; }
+  if (text.length > 50000) { alert('Texto muito longo. Máximo 50.000 caracteres.'); return; }
+
+  processBtn.disabled = true;
+  btnText.textContent = 'Corrigindo…';
+  showStatus(statusEl, 'Enviando para análise…');
+  setProgress(statusEl, 30);
+  changesList.style.display = 'none';
+
+  try {
+    const res = await fetch('/api/corretor', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text }),
+    });
+    setProgress(statusEl, 70);
+    const data = await res.json();
+    if (!res.ok) {
+      if (data.configured === false) document.getElementById('configWarn').style.display = 'block';
+      throw new Error(data.error || 'Erro');
+    }
+
+    lastCorrected = data.corrigido || text;
+    corrected.classList.remove('empty');
+    corrected.textContent = lastCorrected;
+    corrCount.textContent = countWords(lastCorrected) + ' palavras';
+
+    const mudancas = data.mudancas || [];
+    if (mudancas.length) {
+      changesTitle.textContent = `${mudancas.length} correção${mudancas.length > 1 ? 'ões' : ''} feita${mudancas.length > 1 ? 's' : ''}`;
+      changesContainer.innerHTML = mudancas.map(m => `
+        <div class="change-item">
+          <div class="change-row">
+            <span class="change-from">${escapeHtml(m.antes || '')}</span>
+            <span class="change-arrow">→</span>
+            <span class="change-to">${escapeHtml(m.depois || '')}</span>
+          </div>
+          ${m.motivo ? `<div class="change-reason">${escapeHtml(m.motivo)}</div>` : ''}
+        </div>
+      `).join('');
+      changesList.style.display = 'block';
+    } else {
+      changesTitle.textContent = '✅ Texto sem correções necessárias';
+      changesContainer.innerHTML = '<p style="color:var(--text-muted);font-size:13px">O texto já está bem escrito.</p>';
+      changesList.style.display = 'block';
+    }
+
+    setProgress(statusEl, 100);
+    showStatus(statusEl, `✓ Pronto! ${mudancas.length} correção${mudancas.length === 1 ? '' : 'ões'} aplicada${mudancas.length === 1 ? '' : 's'}.`, 'success');
+    trackUsage('corretor-texto', { changes: mudancas.length });
+  } catch (err) {
+    showStatus(statusEl, 'Erro: ' + err.message, 'error');
+    setProgress(statusEl, 0);
+  } finally {
+    processBtn.disabled = false;
+    btnText.textContent = 'Corrigir texto';
+  }
+});
+
+function escapeHtml(s) {
+  return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
+}
+</script>
+</body>
+</html>

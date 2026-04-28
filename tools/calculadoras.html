@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calculadoras — Sindicompany Hub</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="icon" href="/logo.svg">
+<link rel="stylesheet" href="/assets/shared.css">
+<style>
+  .calc-tabs{
+    display:flex;gap:6px;margin-bottom:18px;flex-wrap:wrap;
+    background:var(--bg-elev);padding:6px;border-radius:12px;
+  }
+  .calc-tab{
+    padding:10px 16px;border:none;background:transparent;border-radius:8px;
+    cursor:pointer;font-family:inherit;font-size:13px;font-weight:500;
+    color:var(--text-dim);transition:all 0.15s;
+  }
+  .calc-tab:hover{color:var(--text)}
+  .calc-tab.active{background:var(--card);color:var(--text);box-shadow:var(--shadow)}
+
+  .calc-panel{display:none}
+  .calc-panel.active{display:block}
+
+  .result-box{
+    margin-top:18px;padding:24px;background:linear-gradient(135deg,var(--accent-glow),var(--info-glow));
+    border:1px solid rgba(16,185,129,0.2);border-radius:14px;
+  }
+  .result-main{font-size:14px;color:var(--text-dim);margin-bottom:6px;font-weight:500}
+  .result-value{font-size:36px;font-weight:800;color:var(--text);letter-spacing:-0.02em;line-height:1}
+  .result-detail{margin-top:12px;font-size:13px;color:var(--text-dim);line-height:1.6}
+  .result-detail strong{color:var(--text)}
+  .result-table{width:100%;border-collapse:collapse;margin-top:12px;font-size:13px}
+  .result-table td{padding:6px 0;border-bottom:1px dashed var(--border)}
+  .result-table td:last-child{text-align:right;font-weight:600;color:var(--text)}
+
+  .indices-info{
+    margin-top:14px;padding:10px 14px;background:var(--info-glow);
+    border-radius:8px;font-size:12px;color:var(--info);line-height:1.5;
+  }
+</style>
+</head>
+<body>
+<div id="app-nav"></div>
+<div class="container">
+  <section class="tool-hero">
+    <span class="eyebrow">🧮 Calculadoras</span>
+    <h1>Calculadoras do dia a dia</h1>
+    <p>Reajuste de aluguel, multa por inadimplência, rateio de despesa e projeção de caixa — tudo em um só lugar.</p>
+  </section>
+
+  <div class="card">
+    <div class="calc-tabs">
+      <button class="calc-tab active" data-tab="reajuste">📈 Reajuste de aluguel</button>
+      <button class="calc-tab" data-tab="multa">⚠️ Multa de inadimplência</button>
+      <button class="calc-tab" data-tab="rateio">⚖️ Rateio de despesa</button>
+      <button class="calc-tab" data-tab="projecao">📊 Projeção de caixa</button>
+    </div>
+
+    <!-- ===== REAJUSTE ===== -->
+    <div class="calc-panel active" id="panel-reajuste">
+      <div class="field-row">
+        <div class="field">
+          <label>Valor atual do aluguel (R$)</label>
+          <input type="number" id="reaj-valor" placeholder="2500.00" step="0.01">
+        </div>
+        <div class="field">
+          <label>Índice de reajuste</label>
+          <select id="reaj-indice">
+            <option value="igpm">IGP-M (FGV)</option>
+            <option value="ipca" selected>IPCA (IBGE)</option>
+            <option value="ivar">IVAR (FGV)</option>
+            <option value="custom">Outro (informar %)</option>
+          </select>
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field" id="reaj-acum-field">
+          <label>Acumulado nos últimos 12 meses (%)</label>
+          <input type="number" id="reaj-acum" placeholder="ex: 4.50" step="0.01">
+        </div>
+        <div class="field">
+          <label>Data de início do contrato</label>
+          <input type="date" id="reaj-data">
+        </div>
+      </div>
+
+      <button class="btn-primary" onclick="calcReajuste()">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+        Calcular novo aluguel
+      </button>
+
+      <div id="reaj-result"></div>
+
+      <div class="indices-info">
+        💡 Índices de referência (atualize conforme dado oficial):
+        IGP-M acumulado em 12 meses ≈ <strong>3.2%</strong> · IPCA ≈ <strong>4.5%</strong> · IVAR ≈ <strong>2.1%</strong>.
+        Consulte: <a href="https://www.ibge.gov.br/explica/inflacao.php" target="_blank" style="color:var(--info)">IBGE</a> ou <a href="https://portalibre.fgv.br/" target="_blank" style="color:var(--info)">FGV</a>.
+      </div>
+    </div>
+
+    <!-- ===== MULTA ===== -->
+    <div class="calc-panel" id="panel-multa">
+      <div class="field-row">
+        <div class="field">
+          <label>Valor original devido (R$)</label>
+          <input type="number" id="multa-valor" placeholder="850.00" step="0.01">
+        </div>
+        <div class="field">
+          <label>Data do vencimento</label>
+          <input type="date" id="multa-vencimento">
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>Multa (%) [padrão Cód. Civil: 2%]</label>
+          <input type="number" id="multa-perc" value="2" step="0.1">
+        </div>
+        <div class="field">
+          <label>Juros mensais (%) [padrão: 1%]</label>
+          <input type="number" id="multa-juros" value="1" step="0.1">
+        </div>
+      </div>
+      <div class="field">
+        <label>Correção monetária (%) [opcional]</label>
+        <input type="number" id="multa-correcao" placeholder="ex: 4.5 (acumulado)" step="0.01" value="0">
+      </div>
+
+      <button class="btn-primary" onclick="calcMulta()">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        Calcular total atualizado
+      </button>
+
+      <div id="multa-result"></div>
+
+      <div class="indices-info">
+        💡 Padrão jurídico: <strong>multa de 2% + juros de mora de 1% ao mês</strong> (art. 1.336 §1º CC) + correção monetária (geralmente IPCA). Configure conforme convenção do condomínio.
+      </div>
+    </div>
+
+    <!-- ===== RATEIO ===== -->
+    <div class="calc-panel" id="panel-rateio">
+      <div class="field-row">
+        <div class="field">
+          <label>Valor total da despesa (R$)</label>
+          <input type="number" id="rateio-total" placeholder="12000.00" step="0.01">
+        </div>
+        <div class="field">
+          <label>Critério de rateio</label>
+          <select id="rateio-criterio">
+            <option value="igual">Igual entre unidades</option>
+            <option value="fracao" selected>Fração ideal (%)</option>
+            <option value="m2">Área (m²)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Unidades (uma por linha — formato: <code>identificador, fração ou m²</code>)</label>
+        <textarea id="rateio-unidades" rows="6" placeholder="Apto 101, 1.667
+Apto 102, 1.667
+Apto 201, 2.083
+Apto 202, 2.083
+..." style="width:100%;padding:12px;border:1.5px solid var(--border);border-radius:10px;font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--text);background:var(--card);resize:vertical"></textarea>
+      </div>
+
+      <button class="btn-primary" onclick="calcRateio()">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"/></svg>
+        Calcular rateio
+      </button>
+
+      <div id="rateio-result"></div>
+    </div>
+
+    <!-- ===== PROJEÇÃO ===== -->
+    <div class="calc-panel" id="panel-projecao">
+      <div class="field-row">
+        <div class="field">
+          <label>Saldo inicial em caixa (R$)</label>
+          <input type="number" id="proj-saldo" placeholder="50000" step="0.01">
+        </div>
+        <div class="field">
+          <label>Receita mensal total (R$)</label>
+          <input type="number" id="proj-receita" placeholder="35000" step="0.01">
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>Despesa mensal total (R$)</label>
+          <input type="number" id="proj-despesa" placeholder="32000" step="0.01">
+        </div>
+        <div class="field">
+          <label>Inadimplência média (%)</label>
+          <input type="number" id="proj-inad" value="5" step="0.5">
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>Reajuste anual receita (%)</label>
+          <input type="number" id="proj-rec-aj" value="4.5" step="0.1">
+        </div>
+        <div class="field">
+          <label>Reajuste anual despesa (%)</label>
+          <input type="number" id="proj-desp-aj" value="6" step="0.1">
+        </div>
+      </div>
+
+      <button class="btn-primary" onclick="calcProjecao()">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+        Projetar 12 meses
+      </button>
+
+      <div id="proj-result"></div>
+    </div>
+  </div>
+</div>
+<div id="app-footer"></div>
+
+<script src="/assets/shared.js"></script>
+<script>
+const tabs = document.querySelectorAll('.calc-tab');
+const panels = document.querySelectorAll('.calc-panel');
+tabs.forEach(t => t.addEventListener('click', () => {
+  tabs.forEach(x => x.classList.remove('active'));
+  panels.forEach(p => p.classList.remove('active'));
+  t.classList.add('active');
+  document.getElementById('panel-' + t.dataset.tab).classList.add('active');
+}));
+
+const fmt = n => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(n);
+const fmtPct = n => n.toFixed(2).replace('.', ',') + '%';
+
+// ===== REAJUSTE =====
+function calcReajuste() {
+  const valor = parseFloat(document.getElementById('reaj-valor').value);
+  const indice = document.getElementById('reaj-indice').value;
+  const acum = parseFloat(document.getElementById('reaj-acum').value);
+  const dataIni = document.getElementById('reaj-data').value;
+
+  if (!valor || isNaN(acum)) { alert('Preencha valor e acumulado.'); return; }
+  const novoValor = valor * (1 + acum / 100);
+  const aumento = novoValor - valor;
+  const indiceNome = { igpm: 'IGP-M', ipca: 'IPCA', ivar: 'IVAR', custom: 'personalizado' }[indice];
+  document.getElementById('reaj-result').innerHTML = `
+    <div class="result-box">
+      <div class="result-main">Novo aluguel</div>
+      <div class="result-value">${fmt(novoValor)}</div>
+      <table class="result-table">
+        <tr><td>Valor anterior</td><td>${fmt(valor)}</td></tr>
+        <tr><td>Aumento (R$)</td><td>+ ${fmt(aumento)}</td></tr>
+        <tr><td>Índice aplicado (${indiceNome})</td><td>${fmtPct(acum)}</td></tr>
+        ${dataIni ? `<tr><td>Aniversário do contrato</td><td>${new Date(dataIni + 'T00:00:00').toLocaleDateString('pt-BR')}</td></tr>` : ''}
+      </table>
+    </div>
+  `;
+  trackUsage('calculadoras', { type: 'reajuste' });
+}
+
+// ===== MULTA =====
+function calcMulta() {
+  const valor = parseFloat(document.getElementById('multa-valor').value);
+  const venc = document.getElementById('multa-vencimento').value;
+  const multaPct = parseFloat(document.getElementById('multa-perc').value);
+  const jurosPct = parseFloat(document.getElementById('multa-juros').value);
+  const correcao = parseFloat(document.getElementById('multa-correcao').value) || 0;
+
+  if (!valor || !venc) { alert('Preencha valor e data de vencimento.'); return; }
+  const hoje = new Date();
+  const dVenc = new Date(venc + 'T00:00:00');
+  const diasAtraso = Math.max(0, Math.floor((hoje - dVenc) / (1000 * 60 * 60 * 24)));
+  const mesesAtraso = diasAtraso / 30;
+
+  const multa = valor * (multaPct / 100);
+  const juros = valor * (jurosPct / 100) * mesesAtraso;
+  const corr = valor * (correcao / 100);
+  const total = valor + multa + juros + corr;
+
+  document.getElementById('multa-result').innerHTML = `
+    <div class="result-box">
+      <div class="result-main">Total atualizado a cobrar</div>
+      <div class="result-value">${fmt(total)}</div>
+      <table class="result-table">
+        <tr><td>Valor original</td><td>${fmt(valor)}</td></tr>
+        <tr><td>Multa (${fmtPct(multaPct)})</td><td>+ ${fmt(multa)}</td></tr>
+        <tr><td>Juros mora (${fmtPct(jurosPct)} a.m. × ${mesesAtraso.toFixed(1)} meses)</td><td>+ ${fmt(juros)}</td></tr>
+        ${correcao ? `<tr><td>Correção monetária (${fmtPct(correcao)})</td><td>+ ${fmt(corr)}</td></tr>` : ''}
+        <tr><td>Dias de atraso</td><td>${diasAtraso} dias</td></tr>
+      </table>
+    </div>
+  `;
+  trackUsage('calculadoras', { type: 'multa' });
+}
+
+// ===== RATEIO =====
+function calcRateio() {
+  const total = parseFloat(document.getElementById('rateio-total').value);
+  const criterio = document.getElementById('rateio-criterio').value;
+  const linhas = document.getElementById('rateio-unidades').value.trim().split('\n').filter(l => l.trim());
+
+  if (!total || !linhas.length) { alert('Preencha o total e as unidades.'); return; }
+
+  let unidades;
+  if (criterio === 'igual') {
+    unidades = linhas.map(l => ({ id: l.split(',')[0].trim(), peso: 1 }));
+  } else {
+    unidades = linhas.map(l => {
+      const parts = l.split(',').map(s => s.trim());
+      return { id: parts[0], peso: parseFloat(parts[1]) || 0 };
+    });
+  }
+  const somaPesos = unidades.reduce((a, u) => a + u.peso, 0);
+  if (somaPesos === 0) { alert('Pesos somam zero. Verifique os dados.'); return; }
+
+  unidades.forEach(u => u.valor = total * (u.peso / somaPesos));
+
+  let rows = unidades.map(u => `
+    <tr>
+      <td>${u.id}</td>
+      <td>${criterio === 'igual' ? '—' : (criterio === 'fracao' ? fmtPct(u.peso) : u.peso + ' m²')}</td>
+      <td>${fmt(u.valor)}</td>
+    </tr>
+  `).join('');
+
+  document.getElementById('rateio-result').innerHTML = `
+    <div class="result-box">
+      <div class="result-main">Rateio entre ${unidades.length} unidades</div>
+      <div class="result-value">${fmt(total)}</div>
+      <table class="result-table" style="margin-top:14px">
+        <tr style="font-weight:600;color:var(--text-muted);text-transform:uppercase;font-size:11px"><td>Unidade</td><td>Peso</td><td>Valor</td></tr>
+        ${rows}
+      </table>
+    </div>
+  `;
+  trackUsage('calculadoras', { type: 'rateio' });
+}
+
+// ===== PROJEÇÃO =====
+function calcProjecao() {
+  const saldo0 = parseFloat(document.getElementById('proj-saldo').value);
+  const receita = parseFloat(document.getElementById('proj-receita').value);
+  const despesa = parseFloat(document.getElementById('proj-despesa').value);
+  const inad = parseFloat(document.getElementById('proj-inad').value) || 0;
+  const recAj = parseFloat(document.getElementById('proj-rec-aj').value) || 0;
+  const despAj = parseFloat(document.getElementById('proj-desp-aj').value) || 0;
+
+  if (isNaN(saldo0) || !receita || !despesa) { alert('Preencha saldo, receita e despesa.'); return; }
+
+  let saldo = saldo0;
+  const meses = [];
+  for (let i = 1; i <= 12; i++) {
+    const recAtual = receita * Math.pow(1 + recAj / 100, (i - 1) / 12) * (1 - inad / 100);
+    const despAtual = despesa * Math.pow(1 + despAj / 100, (i - 1) / 12);
+    const liq = recAtual - despAtual;
+    saldo += liq;
+    meses.push({ i, recAtual, despAtual, liq, saldo });
+  }
+
+  const finalSaldo = meses[11].saldo;
+  const cor = finalSaldo >= saldo0 ? 'var(--accent-bright)' : 'var(--danger)';
+  const tendencia = finalSaldo >= saldo0 ? '📈 saudável' : '📉 atenção';
+
+  let rows = meses.map(m => `
+    <tr>
+      <td>Mês ${m.i}</td>
+      <td>${fmt(m.recAtual)}</td>
+      <td>${fmt(m.despAtual)}</td>
+      <td style="color:${m.liq >= 0 ? 'var(--accent-bright)' : 'var(--danger)'}">${m.liq >= 0 ? '+' : ''}${fmt(m.liq)}</td>
+      <td style="font-weight:700">${fmt(m.saldo)}</td>
+    </tr>
+  `).join('');
+
+  document.getElementById('proj-result').innerHTML = `
+    <div class="result-box">
+      <div class="result-main">Saldo projetado em 12 meses</div>
+      <div class="result-value" style="color:${cor}">${fmt(finalSaldo)}</div>
+      <div class="result-detail"><strong>${tendencia}</strong> · ${finalSaldo >= saldo0 ? 'crescimento' : 'consumo'} de ${fmt(Math.abs(finalSaldo - saldo0))} em relação ao saldo inicial.</div>
+      <table class="result-table" style="margin-top:14px;font-size:12px">
+        <tr style="font-weight:600;color:var(--text-muted);text-transform:uppercase;font-size:11px">
+          <td>Período</td><td>Receita líq.</td><td>Despesa</td><td>Resultado</td><td>Saldo</td>
+        </tr>
+        ${rows}
+      </table>
+    </div>
+  `;
+  trackUsage('calculadoras', { type: 'projecao' });
+}
+</script>
+</body>
+</html>

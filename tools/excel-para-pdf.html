@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Excel → PDF — Sindicompany Hub</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="icon" href="/logo.svg">
+<link rel="stylesheet" href="/assets/shared.css">
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+<style>
+  .preview-frame{
+    margin-top:18px;border:1px solid var(--border);border-radius:10px;
+    background:white;max-height:500px;overflow:auto;padding:18px;
+  }
+  .preview-frame table{
+    border-collapse:collapse;width:100%;font-family:Calibri,'Segoe UI',sans-serif;
+    font-size:12px;color:#222;
+  }
+  .preview-frame th,.preview-frame td{
+    border:1px solid #d1d5db;padding:6px 10px;text-align:left;
+  }
+  .preview-frame th{background:#f3f4f6;font-weight:600}
+  .preview-frame tr:nth-child(even) td{background:#fafbfc}
+  .sheet-tabs{
+    display:flex;gap:4px;flex-wrap:wrap;margin-bottom:8px;
+  }
+  .sheet-tab{
+    padding:6px 12px;background:var(--bg-elev);border:1px solid var(--border);
+    border-radius:6px;font-size:12px;cursor:pointer;color:var(--text-dim);
+    font-family:inherit;
+  }
+  .sheet-tab.active{background:var(--card);border-color:var(--accent);color:var(--accent-bright)}
+</style>
+</head>
+<body>
+<div id="app-nav"></div>
+<div class="container">
+  <section class="tool-hero">
+    <span class="eyebrow">📊 Conversão</span>
+    <h1>Excel → PDF</h1>
+    <p>Converta planilhas .xlsx em PDF com tabelas formatadas. Suporta múltiplas abas (escolha as que quer incluir).</p>
+  </section>
+
+  <div class="card">
+    <label for="fileInput" class="drop-zone" id="dropZone">
+      <div class="drop-icon">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+      </div>
+      <div class="drop-title">Arraste o .xlsx aqui</div>
+      <div class="drop-sub">Excel 2007+ (.xlsx, .xls, .ods, .csv) · processado no seu navegador</div>
+    </label>
+    <input type="file" id="fileInput" accept=".xlsx,.xls,.ods,.csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet">
+
+    <div id="fileInfo" style="display:none;margin-top:12px;padding:12px 14px;background:var(--bg-elev);border-radius:10px;font-size:13px;color:var(--text-dim);"></div>
+
+    <div id="optionsBlock" style="display:none">
+      <h3 style="margin-top:18px;margin-bottom:8px;font-size:13px;font-weight:600;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.05em">Abas detectadas</h3>
+      <div class="sheet-tabs" id="sheetTabs"></div>
+      <div class="field-row">
+        <div class="field">
+          <label>Orientação</label>
+          <select id="orient">
+            <option value="auto" selected>Automática</option>
+            <option value="portrait">Retrato (A4)</option>
+            <option value="landscape">Paisagem (A4)</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Incluir</label>
+          <select id="includeMode">
+            <option value="active">Apenas aba ativa</option>
+            <option value="all" selected>Todas as abas</option>
+          </select>
+        </div>
+      </div>
+
+      <h3 style="margin-top:18px;margin-bottom:8px;font-size:13px;font-weight:600;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.05em">Prévia</h3>
+      <div class="preview-frame" id="preview"></div>
+    </div>
+
+    <button class="btn-primary" id="processBtn" disabled>
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+      <span id="btnText">Selecione um arquivo</span>
+    </button>
+
+    <div class="status" id="status">
+      <div class="status-text">Aguardando…</div>
+      <div class="progress"><div class="progress-bar"></div></div>
+    </div>
+  </div>
+</div>
+<div id="app-footer"></div>
+
+<script src="/assets/shared.js"></script>
+<script>
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+const fileInfo = document.getElementById('fileInfo');
+const optionsBlock = document.getElementById('optionsBlock');
+const sheetTabs = document.getElementById('sheetTabs');
+const preview = document.getElementById('preview');
+const processBtn = document.getElementById('processBtn');
+const btnText = document.getElementById('btnText');
+const statusEl = document.getElementById('status');
+
+let file = null;
+let workbook = null;
+let activeSheet = null;
+
+setupDropZone(dropZone, fileInput, async newFiles => {
+  file = newFiles[0];
+  if (!file) return;
+  fileInfo.style.display = 'block';
+  fileInfo.innerHTML = `<strong>${file.name}</strong> · ${formatBytes(file.size)} · <em>lendo planilha…</em>`;
+
+  try {
+    const buf = await file.arrayBuffer();
+    workbook = XLSX.read(buf, { cellStyles: true });
+    const sheets = workbook.SheetNames;
+    fileInfo.innerHTML = `<strong>${file.name}</strong> · ${formatBytes(file.size)} · <strong>${sheets.length}</strong> aba${sheets.length > 1 ? 's' : ''}`;
+
+    sheetTabs.innerHTML = sheets.map((s, i) => `<button class="sheet-tab ${i === 0 ? 'active' : ''}" data-sheet="${s}">${s}</button>`).join('');
+    sheetTabs.querySelectorAll('.sheet-tab').forEach(b => {
+      b.addEventListener('click', () => {
+        sheetTabs.querySelectorAll('.sheet-tab').forEach(x => x.classList.remove('active'));
+        b.classList.add('active');
+        activeSheet = b.dataset.sheet;
+        renderPreview();
+      });
+    });
+    activeSheet = sheets[0];
+    renderPreview();
+    optionsBlock.style.display = 'block';
+    processBtn.disabled = false;
+    btnText.textContent = 'Converter para PDF';
+  } catch (err) {
+    fileInfo.innerHTML = `<strong>${file.name}</strong> · ❌ Erro: ${err.message}`;
+  }
+});
+
+function renderPreview() {
+  const ws = workbook.Sheets[activeSheet];
+  const html = XLSX.utils.sheet_to_html(ws, { header: '', footer: '' });
+  // pega só o conteúdo da tabela
+  const m = html.match(/<table[^>]*>([\s\S]+?)<\/table>/i);
+  preview.innerHTML = m ? `<table>${m[1]}</table>` : html;
+}
+
+processBtn.addEventListener('click', async () => {
+  if (!workbook) return;
+  processBtn.disabled = true;
+  btnText.textContent = 'Processando…';
+  showStatus(statusEl, 'Renderizando planilha…');
+  setProgress(statusEl, 5);
+
+  try {
+    const orient = document.getElementById('orient').value;
+    const mode = document.getElementById('includeMode').value;
+    const sheetsToInclude = mode === 'all' ? workbook.SheetNames : [activeSheet];
+
+    const pdf = await PDFLib.PDFDocument.create();
+
+    for (let s = 0; s < sheetsToInclude.length; s++) {
+      const sheetName = sheetsToInclude[s];
+      const ws = workbook.Sheets[sheetName];
+      showStatus(statusEl, `Renderizando aba "${sheetName}" (${s + 1}/${sheetsToInclude.length})…`);
+      setProgress(statusEl, 5 + (s / sheetsToInclude.length) * 85);
+
+      // Cria container offscreen com a tabela
+      const html = XLSX.utils.sheet_to_html(ws, { header: '', footer: '' });
+      const m = html.match(/<table[^>]*>([\s\S]+?)<\/table>/i);
+      const tableHtml = m ? `<table>${m[1]}</table>` : html;
+
+      const container = document.createElement('div');
+      container.style.position = 'absolute';
+      container.style.top = '-99999px';
+      container.style.left = '0';
+      container.style.background = 'white';
+      container.style.padding = '20px';
+      container.style.fontFamily = "Calibri, 'Segoe UI', sans-serif";
+      container.innerHTML = `
+        <h2 style="margin-bottom:12px;font-size:16px;color:#222">${sheetName}</h2>
+        <style>
+          .xls-tbl{border-collapse:collapse;font-size:11px;color:#222}
+          .xls-tbl th,.xls-tbl td{border:1px solid #d1d5db;padding:5px 8px;text-align:left;white-space:nowrap}
+          .xls-tbl th{background:#f3f4f6;font-weight:600}
+          .xls-tbl tr:nth-child(even) td{background:#fafbfc}
+        </style>
+        ${tableHtml.replace('<table>', '<table class="xls-tbl">')}
+      `;
+      document.body.appendChild(container);
+
+      const tableEl = container.querySelector('table');
+      const tableW = tableEl.scrollWidth;
+      const tableH = tableEl.scrollHeight;
+
+      // Decide orientação: paisagem se tabela for muito larga
+      const isLandscape = orient === 'landscape' || (orient === 'auto' && tableW > tableH * 1.3);
+      const pageW = isLandscape ? 841.89 : 595.28;
+      const pageH = isLandscape ? 595.28 : 841.89;
+
+      const canvas = await html2canvas(container, {
+        scale: 1.5,
+        backgroundColor: '#ffffff',
+        windowWidth: container.scrollWidth + 80,
+      });
+      document.body.removeChild(container);
+
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+      const jpgBytes = await fetch(dataUrl).then(r => r.arrayBuffer());
+      const img = await pdf.embedJpg(jpgBytes);
+
+      // Quebra em páginas se for muito alto
+      const ratio = (pageW - 60) / img.width;
+      const renderedH = img.height * ratio;
+      const usableH = pageH - 60;
+      const pages = Math.max(1, Math.ceil(renderedH / usableH));
+
+      for (let p = 0; p < pages; p++) {
+        const page = pdf.addPage([pageW, pageH]);
+        const yOffset = p * (usableH / ratio);
+        const sliceH = Math.min(usableH / ratio, img.height - yOffset);
+
+        // Cria sub-imagem da fatia
+        const sliceCanvas = document.createElement('canvas');
+        sliceCanvas.width = canvas.width;
+        sliceCanvas.height = sliceH * (canvas.width / img.width);
+        const ctx = sliceCanvas.getContext('2d');
+        ctx.drawImage(canvas, 0, -yOffset * (canvas.width / img.width));
+        const sliceUrl = sliceCanvas.toDataURL('image/jpeg', 0.92);
+        const sliceBytes = await fetch(sliceUrl).then(r => r.arrayBuffer());
+        const sliceImg = await pdf.embedJpg(sliceBytes);
+
+        const drawW = (pageW - 60);
+        const drawH = sliceImg.height * (drawW / sliceImg.width);
+        page.drawImage(sliceImg, { x: 30, y: pageH - drawH - 30, width: drawW, height: drawH });
+      }
+    }
+
+    setProgress(statusEl, 95);
+    const bytes = await pdf.save();
+    const blob = new Blob([bytes], { type: 'application/pdf' });
+    const baseName = file.name.replace(/\.(xlsx|xls|ods|csv)$/i, '');
+    downloadBlob(blob, `${baseName}.pdf`);
+
+    setProgress(statusEl, 100);
+    showStatus(statusEl, `✓ Pronto! ${sheetsToInclude.length} aba${sheetsToInclude.length > 1 ? 's' : ''} convertidas (${formatBytes(blob.size)}).`, 'success');
+    trackUsage('excel-para-pdf', { sheets: sheetsToInclude.length });
+  } catch (err) {
+    console.error(err);
+    showStatus(statusEl, 'Erro: ' + err.message, 'error');
+    setProgress(statusEl, 0);
+  } finally {
+    processBtn.disabled = false;
+    btnText.textContent = 'Converter para PDF';
+  }
+});
+</script>
+</body>
+</html>

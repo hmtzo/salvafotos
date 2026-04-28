@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Word → PDF — Sindicompany Hub</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="icon" href="/logo.svg">
+<link rel="stylesheet" href="/assets/shared.css">
+<script src="https://cdn.jsdelivr.net/npm/mammoth@1.7.2/mammoth.browser.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+<style>
+  .preview-frame{
+    margin-top:18px;border:1px solid var(--border);border-radius:10px;
+    background:white;max-height:500px;overflow:auto;padding:30px 40px;
+    font-family:Calibri,'Segoe UI',sans-serif;color:#222;
+  }
+  .preview-frame h1{font-size:22px;margin-bottom:10px}
+  .preview-frame h2{font-size:18px;margin-bottom:8px;margin-top:14px}
+  .preview-frame p{margin-bottom:8px;line-height:1.5;font-size:14px}
+  .preview-frame table{border-collapse:collapse;margin:8px 0}
+  .preview-frame td,.preview-frame th{border:1px solid #ccc;padding:6px 10px}
+</style>
+</head>
+<body>
+<div id="app-nav"></div>
+<div class="container">
+  <section class="tool-hero">
+    <span class="eyebrow">📊 Conversão</span>
+    <h1>Word → PDF</h1>
+    <p>Converta arquivos .docx em PDF preservando formatação, tabelas e imagens. Útil pra padronizar documentos antes de enviar pra terceiros.</p>
+  </section>
+
+  <div class="card">
+    <label for="fileInput" class="drop-zone" id="dropZone">
+      <div class="drop-icon">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+      </div>
+      <div class="drop-title">Arraste o arquivo .docx aqui</div>
+      <div class="drop-sub">Word 2007+ (.docx) · processado no seu navegador</div>
+    </label>
+    <input type="file" id="fileInput" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
+
+    <div id="fileInfo" style="display:none;margin-top:12px;padding:12px 14px;background:var(--bg-elev);border-radius:10px;font-size:13px;color:var(--text-dim);"></div>
+
+    <div id="previewWrap" style="display:none">
+      <h3 style="margin-top:18px;margin-bottom:8px;font-size:13px;font-weight:600;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.05em">Prévia</h3>
+      <div class="preview-frame" id="preview"></div>
+    </div>
+
+    <button class="btn-primary" id="processBtn" disabled>
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+      <span id="btnText">Selecione um .docx</span>
+    </button>
+
+    <div class="status" id="status">
+      <div class="status-text">Aguardando…</div>
+      <div class="progress"><div class="progress-bar"></div></div>
+    </div>
+  </div>
+</div>
+<div id="app-footer"></div>
+
+<script src="/assets/shared.js"></script>
+<script>
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+const fileInfo = document.getElementById('fileInfo');
+const previewWrap = document.getElementById('previewWrap');
+const preview = document.getElementById('preview');
+const processBtn = document.getElementById('processBtn');
+const btnText = document.getElementById('btnText');
+const statusEl = document.getElementById('status');
+
+let file = null;
+
+setupDropZone(dropZone, fileInput, async newFiles => {
+  file = newFiles[0];
+  if (!file) return;
+  fileInfo.style.display = 'block';
+  fileInfo.innerHTML = `<strong>${file.name}</strong> · ${formatBytes(file.size)} · <em>convertendo prévia…</em>`;
+
+  try {
+    const arrBuf = await file.arrayBuffer();
+    const result = await mammoth.convertToHtml({ arrayBuffer: arrBuf });
+    preview.innerHTML = result.value;
+    previewWrap.style.display = 'block';
+    fileInfo.innerHTML = `<strong>${file.name}</strong> · ${formatBytes(file.size)} · prévia carregada`;
+    processBtn.disabled = false;
+    btnText.textContent = 'Converter para PDF';
+  } catch (err) {
+    fileInfo.innerHTML = `<strong>${file.name}</strong> · ❌ Erro ao ler: ${err.message}`;
+  }
+});
+
+processBtn.addEventListener('click', async () => {
+  if (!file) return;
+  processBtn.disabled = true;
+  btnText.textContent = 'Processando…';
+  showStatus(statusEl, 'Renderizando documento…');
+  setProgress(statusEl, 10);
+
+  try {
+    // Renderiza HTML em um container fora da viewport com largura A4
+    const container = document.createElement('div');
+    container.style.width = '794px'; // ~A4 em 96dpi
+    container.style.padding = '60px 70px';
+    container.style.fontFamily = "Calibri, 'Segoe UI', sans-serif";
+    container.style.fontSize = '14px';
+    container.style.lineHeight = '1.5';
+    container.style.color = '#222';
+    container.style.background = 'white';
+    container.style.position = 'absolute';
+    container.style.top = '-99999px';
+    container.style.left = '0';
+    container.innerHTML = preview.innerHTML;
+    document.body.appendChild(container);
+
+    setProgress(statusEl, 30);
+    showStatus(statusEl, 'Capturando páginas…');
+
+    const totalHeight = container.scrollHeight;
+    const a4HeightPx = Math.round(794 * 1.414); // ratio A4 portrait
+    const pages = Math.max(1, Math.ceil(totalHeight / a4HeightPx));
+
+    const pdf = await PDFLib.PDFDocument.create();
+    for (let p = 0; p < pages; p++) {
+      setProgress(statusEl, 30 + (p / pages) * 60);
+      showStatus(statusEl, `Renderizando página ${p + 1}/${pages}…`);
+      // Captura a área específica desta página
+      const canvas = await html2canvas(container, {
+        y: p * a4HeightPx,
+        height: Math.min(a4HeightPx, totalHeight - p * a4HeightPx),
+        windowWidth: 794,
+        scale: 1.5,
+        backgroundColor: '#ffffff',
+      });
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+      const jpgBytes = await fetch(dataUrl).then(r => r.arrayBuffer());
+      const img = await pdf.embedJpg(jpgBytes);
+      const page = pdf.addPage([595.28, 841.89]); // A4 em pontos
+      const ratio = Math.min(595.28 / img.width, 841.89 / img.height);
+      page.drawImage(img, {
+        x: 0,
+        y: 841.89 - img.height * ratio,
+        width: img.width * ratio,
+        height: img.height * ratio,
+      });
+      await new Promise(r => setTimeout(r, 0));
+    }
+
+    document.body.removeChild(container);
+
+    setProgress(statusEl, 95);
+    const bytes = await pdf.save();
+    const blob = new Blob([bytes], { type: 'application/pdf' });
+    const baseName = file.name.replace(/\.docx?$/i, '');
+    downloadBlob(blob, `${baseName}.pdf`);
+
+    setProgress(statusEl, 100);
+    showStatus(statusEl, `✓ Pronto! ${pages} página${pages > 1 ? 's' : ''} convertidas (${formatBytes(blob.size)}).`, 'success');
+    trackUsage('word-para-pdf', { pages });
+  } catch (err) {
+    console.error(err);
+    showStatus(statusEl, 'Erro: ' + err.message, 'error');
+    setProgress(statusEl, 0);
+  } finally {
+    processBtn.disabled = false;
+    btnText.textContent = 'Converter para PDF';
+  }
+});
+</script>
+</body>
+</html>

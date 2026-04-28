@@ -171,6 +171,24 @@ const docBannerText = document.getElementById('docBannerText');
 const messages = [];
 let docContext = null;
 
+// === Pickup de handoff vindo de outra ferramenta ===
+(function checkHandoff() {
+  try {
+    const raw = sessionStorage.getItem('sf_sindi_handoff');
+    if (!raw) return;
+    sessionStorage.removeItem('sf_sindi_handoff');
+    const ho = JSON.parse(raw);
+    if (Date.now() - ho.ts > 5 * 60 * 1000) return; // expira em 5min
+    docContext = { name: ho.filename || 'documento', text: ho.text || '' };
+    docBannerText.textContent = `📎 Anexado de outra ferramenta: ${docContext.name}`;
+    docBanner.classList.add('show');
+    if (ho.question) {
+      input.value = ho.question;
+      input.focus();
+    }
+  } catch (e) { console.warn('handoff pickup failed', e); }
+})();
+
 input.addEventListener('input', () => {
   input.style.height = 'auto';
   input.style.height = Math.min(input.scrollHeight, 140) + 'px';

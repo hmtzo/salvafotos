@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PDF → Excel — Sindicompany Hub</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="icon" href="/logo.svg">
+<link rel="stylesheet" href="/assets/shared.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+  .preview-table-wrap{margin-top:14px;max-height:420px;overflow:auto;border:1px solid var(--border);border-radius:10px}
+  .preview-table-wrap table{width:100%;border-collapse:collapse;font-size:12px;background:white}
+  .preview-table-wrap th{position:sticky;top:0;background:var(--bg-elev);padding:8px 10px;border-bottom:1px solid var(--border);text-align:left;font-weight:600;font-size:11px;color:var(--text-muted);text-transform:uppercase}
+  .preview-table-wrap td{padding:6px 10px;border-bottom:1px solid var(--border);color:var(--text)}
+  .preview-table-wrap tr:nth-child(even) td{background:#fafbfc}
+  .page-tab{padding:6px 12px;background:var(--bg-elev);border:1px solid var(--border);border-radius:6px;cursor:pointer;font-size:12px;color:var(--text-dim);font-family:inherit;margin-right:4px}
+  .page-tab.active{background:var(--card);border-color:var(--accent);color:var(--accent-bright)}
+</style>
+</head>
+<body>
+<div id="app-nav"></div>
+<div class="container">
+  <section class="tool-hero">
+    <span class="eyebrow">📊 Conversão</span>
+    <h1>PDF → Excel</h1>
+    <p>Extrai tabelas de PDFs (boletos, demonstrativos, planilhas escaneadas com texto). Detecta linhas e colunas automaticamente.</p>
+  </section>
+
+  <div class="card">
+    <label for="fileInput" class="drop-zone" id="dropZone">
+      <div class="drop-icon">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+      </div>
+      <div class="drop-title">Arraste o PDF aqui</div>
+      <div class="drop-sub">PDF com texto (não funciona em PDFs 100% imagem — use OCR antes)</div>
+    </label>
+    <input type="file" id="fileInput" accept="application/pdf">
+
+    <div id="fileInfo" style="display:none;margin-top:12px;padding:12px 14px;background:var(--bg-elev);border-radius:10px;font-size:13px;color:var(--text-dim);"></div>
+
+    <div id="optionsBlock" style="display:none">
+      <div class="field-row" style="margin-top:14px">
+        <div class="field">
+          <label>Tolerância de coluna (px)</label>
+          <select id="tolerance">
+            <option value="3">3 — preciso (tabelas alinhadas)</option>
+            <option value="6" selected>6 — padrão</option>
+            <option value="12">12 — flexível</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Páginas</label>
+          <select id="scope">
+            <option value="all" selected>Todas</option>
+            <option value="single">Apenas página atual</option>
+          </select>
+        </div>
+      </div>
+
+      <div id="pageTabs" style="margin-top:12px"></div>
+      <div class="preview-table-wrap" id="previewTable"></div>
+    </div>
+
+    <button class="btn-primary" id="processBtn" disabled>
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+      <span id="btnText">Selecione um PDF</span>
+    </button>
+
+    <div class="status" id="status">
+      <div class="status-text">Aguardando…</div>
+      <div class="progress"><div class="progress-bar"></div></div>
+    </div>
+  </div>
+</div>
+<div id="app-footer"></div>
+
+<script src="/assets/shared.js"></script>
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+const fileInfo = document.getElementById('fileInfo');
+const optionsBlock = document.getElementById('optionsBlock');
+const pageTabs = document.getElementById('pageTabs');
+const previewTable = document.getElementById('previewTable');
+const processBtn = document.getElementById('processBtn');
+const btnText = document.getElementById('btnText');
+const statusEl = document.getElementById('status');
+
+let file = null;
+let allPagesData = []; // [pageIdx -> rows[]]
+let activePageIdx = 0;
+
+setupDropZone(dropZone, fileInput, async newFiles => {
+  file = newFiles[0];
+  if (!file) return;
+  fileInfo.style.display = 'block';
+  fileInfo.innerHTML = `<strong>${file.name}</strong> · ${formatBytes(file.size)} · <em>extraindo tabelas…</em>`;
+  await extractAll();
+});
+
+document.getElementById('tolerance').addEventListener('change', extractAll);
+
+async function extractAll() {
+  if (!file) return;
+  try {
+    const tolerance = parseFloat(document.getElementById('tolerance').value);
+    const buf = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+    allPagesData = [];
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const tc = await page.getTextContent();
+      const rows = extractTable(tc.items, tolerance);
+      allPagesData.push(rows);
+    }
+    fileInfo.innerHTML = `<strong>${file.name}</strong> · ${formatBytes(file.size)} · <strong>${pdf.numPages}</strong> páginas analisadas`;
+    renderPageTabs();
+    renderActivePage();
+    optionsBlock.style.display = 'block';
+    processBtn.disabled = false;
+    btnText.textContent = 'Baixar Excel';
+  } catch (err) {
+    fileInfo.innerHTML = `<strong>${file.name}</strong> · ❌ Erro: ${err.message}`;
+  }
+}
+
+function extractTable(items, tolerance) {
+  // Agrupa itens por linha (mesmo Y aproximado)
+  const lines = [];
+  for (const item of items) {
+    if (!item.str.trim()) continue;
+    const x = item.transform[4];
+    const y = Math.round(item.transform[5]);
+    let line = lines.find(l => Math.abs(l.y - y) < tolerance);
+    if (!line) {
+      line = { y, items: [] };
+      lines.push(line);
+    }
+    line.items.push({ x, text: item.str });
+  }
+  // ordena por Y desc (de cima pra baixo no PDF)
+  lines.sort((a, b) => b.y - a.y);
+
+  // Detecta colunas: pega todas as posições X, agrupa próximas
+  const allX = [];
+  lines.forEach(l => l.items.forEach(it => allX.push(it.x)));
+  allX.sort((a, b) => a - b);
+  const cols = [];
+  for (const x of allX) {
+    if (!cols.length || x - cols[cols.length - 1] > tolerance * 3) cols.push(x);
+  }
+
+  // Para cada linha, alinha os itens nas colunas
+  const rows = lines.map(line => {
+    const row = new Array(cols.length).fill('');
+    line.items.sort((a, b) => a.x - b.x);
+    line.items.forEach(it => {
+      let bestCol = 0, bestDist = Infinity;
+      for (let c = 0; c < cols.length; c++) {
+        const d = Math.abs(it.x - cols[c]);
+        if (d < bestDist) { bestDist = d; bestCol = c; }
+      }
+      row[bestCol] = (row[bestCol] ? row[bestCol] + ' ' : '') + it.text;
+    });
+    return row.map(c => c.trim());
+  });
+
+  // Remove linhas totalmente vazias
+  return rows.filter(r => r.some(c => c.length));
+}
+
+function renderPageTabs() {
+  if (allPagesData.length <= 1) { pageTabs.innerHTML = ''; return; }
+  pageTabs.innerHTML = allPagesData.map((_, i) => `<button class="page-tab ${i === activePageIdx ? 'active' : ''}" data-i="${i}">Pág ${i + 1} (${allPagesData[i].length} linhas)</button>`).join('');
+  pageTabs.querySelectorAll('.page-tab').forEach(b => b.addEventListener('click', () => {
+    activePageIdx = parseInt(b.dataset.i);
+    renderPageTabs();
+    renderActivePage();
+  }));
+}
+
+function renderActivePage() {
+  const rows = allPagesData[activePageIdx] || [];
+  if (!rows.length) {
+    previewTable.innerHTML = '<div style="padding:24px;text-align:center;color:var(--text-muted)">Sem tabelas detectadas nesta página.</div>';
+    return;
+  }
+  // primeira linha = header
+  const [header, ...body] = rows;
+  let html = '<table><thead><tr>';
+  header.forEach(h => html += `<th>${escapeHtml(h)}</th>`);
+  html += '</tr></thead><tbody>';
+  for (const row of body.slice(0, 100)) {
+    html += '<tr>';
+    row.forEach(c => html += `<td>${escapeHtml(c)}</td>`);
+    html += '</tr>';
+  }
+  html += '</tbody></table>';
+  if (body.length > 100) html += `<div style="padding:8px;text-align:center;font-size:11px;color:var(--text-muted)">… e mais ${body.length - 100} linhas (todas vão no Excel)</div>`;
+  previewTable.innerHTML = html;
+}
+
+processBtn.addEventListener('click', async () => {
+  if (!allPagesData.length) return;
+  processBtn.disabled = true;
+  btnText.textContent = 'Gerando Excel…';
+  showStatus(statusEl, 'Construindo planilha…');
+  setProgress(statusEl, 30);
+
+  try {
+    const scope = document.getElementById('scope').value;
+    const wb = XLSX.utils.book_new();
+
+    if (scope === 'single') {
+      const ws = XLSX.utils.aoa_to_sheet(allPagesData[activePageIdx]);
+      XLSX.utils.book_append_sheet(wb, ws, `Pág ${activePageIdx + 1}`);
+    } else {
+      allPagesData.forEach((rows, i) => {
+        if (rows.length === 0) return;
+        const ws = XLSX.utils.aoa_to_sheet(rows);
+        XLSX.utils.book_append_sheet(wb, ws, `Pág ${i + 1}`);
+      });
+    }
+
+    setProgress(statusEl, 90);
+    const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+    const blob = new Blob([wbout], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const baseName = file.name.replace(/\.pdf$/i, '');
+    downloadBlob(blob, `${baseName}.xlsx`);
+
+    setProgress(statusEl, 100);
+    const total = allPagesData.reduce((a, r) => a + r.length, 0);
+    showStatus(statusEl, `✓ Pronto! ${total} linhas extraídas em ${allPagesData.filter(p => p.length).length} aba${allPagesData.filter(p => p.length).length > 1 ? 's' : ''}.`, 'success');
+    trackUsage('pdf-para-excel', { rows: total });
+  } catch (err) {
+    console.error(err);
+    showStatus(statusEl, 'Erro: ' + err.message, 'error');
+    setProgress(statusEl, 0);
+  } finally {
+    processBtn.disabled = false;
+    btnText.textContent = 'Baixar Excel';
+  }
+});
+
+function escapeHtml(s) { return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]); }
+</script>
+</body>
+</html>

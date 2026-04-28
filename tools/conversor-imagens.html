@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Conversor de Imagens — Sindicompany Hub</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="icon" href="/logo.svg">
+<link rel="stylesheet" href="/assets/shared.css">
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<style>
+  .img-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px;margin-top:14px}
+  .img-card{
+    background:var(--card);border:1px solid var(--border);border-radius:8px;
+    padding:6px;position:relative;
+  }
+  .img-card img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:4px;background:var(--bg-elev);display:block}
+  .img-card .meta{font-size:10px;color:var(--text-muted);margin-top:4px;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .img-card .remove{position:absolute;top:4px;right:4px;width:20px;height:20px;background:rgba(0,0,0,0.6);color:white;border:none;border-radius:50%;cursor:pointer;font-size:11px;display:flex;align-items:center;justify-content:center}
+</style>
+</head>
+<body>
+<div id="app-nav"></div>
+<div class="container">
+  <section class="tool-hero">
+    <span class="eyebrow">🎨 Imagens</span>
+    <h1>Conversor de Imagens</h1>
+    <p>Converte entre PNG, JPG, WEBP. Redimensiona, comprime e processa em lote. Ideal pra preparar fotos pra documentos, sites ou WhatsApp.</p>
+  </section>
+
+  <div class="card">
+    <label for="fileInput" class="drop-zone" id="dropZone">
+      <div class="drop-icon">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+      </div>
+      <div class="drop-title">Arraste imagens aqui</div>
+      <div class="drop-sub">JPG, PNG, WEBP, GIF, BMP, HEIC · vários arquivos suportados</div>
+    </label>
+    <input type="file" id="fileInput" accept="image/*" multiple>
+
+    <div class="img-grid" id="imgGrid"></div>
+
+    <div id="options" style="display:none;margin-top:18px">
+      <h3 style="margin-bottom:10px;font-size:13px;font-weight:600;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.05em">Opções de saída</h3>
+      <div class="field-row">
+        <div class="field">
+          <label>Formato</label>
+          <select id="format">
+            <option value="image/jpeg" selected>JPG</option>
+            <option value="image/png">PNG</option>
+            <option value="image/webp">WEBP</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Qualidade</label>
+          <select id="quality">
+            <option value="0.6">Baixa (60%)</option>
+            <option value="0.8" selected>Média (80%)</option>
+            <option value="0.92">Alta (92%)</option>
+            <option value="1.0">Máxima (100%)</option>
+          </select>
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>Redimensionar</label>
+          <select id="resize">
+            <option value="none" selected>Manter tamanho</option>
+            <option value="max1920">Máximo 1920px (Full HD)</option>
+            <option value="max1280">Máximo 1280px (HD)</option>
+            <option value="max800">Máximo 800px (Web)</option>
+            <option value="custom">Personalizado</option>
+          </select>
+        </div>
+        <div class="field" id="customWField" style="display:none">
+          <label>Largura máx (px)</label>
+          <input type="number" id="customW" placeholder="ex: 1024">
+        </div>
+      </div>
+    </div>
+
+    <button class="btn-primary" id="processBtn" disabled>
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+      <span id="btnText">Selecione imagens</span>
+    </button>
+
+    <div class="status" id="status">
+      <div class="status-text">Aguardando…</div>
+      <div class="progress"><div class="progress-bar"></div></div>
+    </div>
+  </div>
+</div>
+<div id="app-footer"></div>
+
+<script src="/assets/shared.js"></script>
+<script>
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+const imgGrid = document.getElementById('imgGrid');
+const opts = document.getElementById('options');
+const processBtn = document.getElementById('processBtn');
+const btnText = document.getElementById('btnText');
+const statusEl = document.getElementById('status');
+
+let images = []; // { file, url }
+
+document.getElementById('resize').addEventListener('change', e => {
+  document.getElementById('customWField').style.display = e.target.value === 'custom' ? 'flex' : 'none';
+});
+
+setupDropZone(dropZone, fileInput, addFiles);
+
+function addFiles(files) {
+  for (const f of files) {
+    if (!f.type.startsWith('image/') && !/\.(jpe?g|png|webp|gif|bmp|heic)$/i.test(f.name)) continue;
+    const url = URL.createObjectURL(f);
+    images.push({ file: f, url });
+  }
+  renderGrid();
+}
+
+function renderGrid() {
+  if (!images.length) { imgGrid.innerHTML = ''; opts.style.display = 'none'; updateBtn(); return; }
+  imgGrid.innerHTML = images.map((im, i) => `
+    <div class="img-card">
+      <button class="remove" data-i="${i}" title="Remover">×</button>
+      <img src="${im.url}" alt="">
+      <div class="meta">${im.file.name.length > 18 ? im.file.name.slice(0, 15) + '…' : im.file.name}</div>
+      <div class="meta">${formatBytes(im.file.size)}</div>
+    </div>
+  `).join('');
+  imgGrid.querySelectorAll('.remove').forEach(b => b.addEventListener('click', e => {
+    const i = parseInt(b.dataset.i);
+    URL.revokeObjectURL(images[i].url);
+    images.splice(i, 1);
+    renderGrid();
+  }));
+  opts.style.display = 'block';
+  updateBtn();
+}
+
+function updateBtn() {
+  if (!images.length) {
+    processBtn.disabled = true;
+    btnText.textContent = 'Selecione imagens';
+  } else {
+    processBtn.disabled = false;
+    btnText.textContent = images.length === 1 ? 'Converter imagem' : `Converter ${images.length} imagens`;
+  }
+}
+
+processBtn.addEventListener('click', async () => {
+  processBtn.disabled = true;
+  btnText.textContent = 'Processando…';
+  showStatus(statusEl, 'Convertendo…');
+  setProgress(statusEl, 5);
+
+  try {
+    const format = document.getElementById('format').value;
+    const quality = parseFloat(document.getElementById('quality').value);
+    const resizeMode = document.getElementById('resize').value;
+    const customW = parseInt(document.getElementById('customW').value) || 0;
+    const maxDim = { max1920: 1920, max1280: 1280, max800: 800, custom: customW, none: 0 }[resizeMode];
+    const ext = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' }[format];
+
+    const single = images.length === 1;
+    const zip = single ? null : new JSZip();
+
+    for (let i = 0; i < images.length; i++) {
+      showStatus(statusEl, `Processando ${i + 1}/${images.length}: ${images[i].file.name}…`);
+      setProgress(statusEl, 5 + (i / images.length) * 85);
+
+      const img = await loadImage(images[i].url);
+      let { width, height } = img;
+      if (maxDim && Math.max(width, height) > maxDim) {
+        const r = maxDim / Math.max(width, height);
+        width = Math.round(width * r);
+        height = Math.round(height * r);
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      // Para JPG, preencher fundo branco (PNG transparente vira preto sem isso)
+      if (format === 'image/jpeg') { ctx.fillStyle = 'white'; ctx.fillRect(0, 0, width, height); }
+      ctx.drawImage(img, 0, 0, width, height);
+
+      const blob = await new Promise(r => canvas.toBlob(r, format, quality));
+      const baseName = images[i].file.name.replace(/\.[^.]+$/, '');
+      const outName = `${baseName}.${ext}`;
+
+      if (single) {
+        downloadBlob(blob, outName);
+      } else {
+        const arrBuf = await blob.arrayBuffer();
+        zip.file(outName, arrBuf);
+      }
+
+      await new Promise(r => setTimeout(r, 0));
+    }
+
+    if (zip) {
+      setProgress(statusEl, 95);
+      showStatus(statusEl, 'Compactando ZIP…');
+      const zipBlob = await zip.generateAsync({ type: 'blob' });
+      downloadBlob(zipBlob, `imagens_convertidas_${new Date().toISOString().slice(0,10)}.zip`);
+    }
+
+    setProgress(statusEl, 100);
+    showStatus(statusEl, `✓ Pronto! ${images.length} imagem${images.length > 1 ? 's' : ''} convertida${images.length > 1 ? 's' : ''}.`, 'success');
+    trackUsage('conversor-imagens', { count: images.length, format });
+  } catch (err) {
+    console.error(err);
+    showStatus(statusEl, 'Erro: ' + err.message, 'error');
+    setProgress(statusEl, 0);
+  } finally {
+    updateBtn();
+  }
+});
+
+function loadImage(url) {
+  return new Promise((res, rej) => {
+    const img = new Image();
+    img.onload = () => res(img);
+    img.onerror = rej;
+    img.src = url;
+  });
+}
+</script>
+</body>
+</html>

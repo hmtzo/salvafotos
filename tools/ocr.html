@@ -92,6 +92,7 @@
         <button id="copyBtn">📋 Copiar</button>
         <button id="downloadBtn">💾 Baixar .txt</button>
         <button id="downloadDocBtn">📄 Baixar .docx</button>
+        <button id="sindiBtn" style="background:linear-gradient(135deg,#84c7d3,#dabda9);color:#1a1c29;border:none;font-weight:600">🤖 Perguntar à Sindi</button>
       </div>
     </div>
   </div>
@@ -218,6 +219,11 @@ document.getElementById('downloadBtn').addEventListener('click', () => {
   const blob = new Blob([outputText.value], { type: 'text/plain;charset=utf-8' });
   const baseName = file.name.replace(/\.[^.]+$/, '');
   downloadBlob(blob, `${baseName}_ocr.txt`);
+});
+
+document.getElementById('sindiBtn').addEventListener('click', () => {
+  if (!outputText.value.trim()) return;
+  askSindiAbout(file?.name || 'documento OCR', outputText.value, 'Resuma o conteúdo deste documento em 5 bullets e diga se há algo que eu deva prestar atenção.');
 });
 
 document.getElementById('downloadDocBtn').addEventListener('click', () => {
