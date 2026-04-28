@@ -226,15 +226,16 @@ let messages = [];
 let docContext = null;
 
 // =============================================================================
-// CONVERSATION STORAGE — salva tudo em localStorage
+// CONVERSATION STORAGE — server-side (Vercel KV) com fallback localStorage
 // =============================================================================
 const CHATS_KEY = 'sf_sindi_chats_v1';
+let useServer = true; // tenta server primeiro; se falhar, cai pra localStorage
 
 function escapeHtml(s) {
   return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
 }
 
-function loadAllChats() {
+function loadFromLocal() {
   try {
     const raw = localStorage.getItem(CHATS_KEY);
     if (!raw) return { conversations: [], activeId: null };
@@ -244,14 +245,63 @@ function loadAllChats() {
   }
 }
 
-function saveAllChats(state) {
-  try {
-    localStorage.setItem(CHATS_KEY, JSON.stringify(state));
-  } catch (e) { console.warn('saveAllChats failed', e); }
+function saveToLocal(state) {
+  try { localStorage.setItem(CHATS_KEY, JSON.stringify(state)); } catch (e) {}
 }
 
-let chatState = loadAllChats();
-let activeConvId = chatState.activeId;
+async function loadFromServer() {
+  try {
+    const res = await fetch('/api/sindi-chats', { method: 'GET' });
+    if (res.status === 503) { useServer = false; return null; }
+    if (!res.ok) return null;
+    return await res.json();
+  } catch (e) { return null; }
+}
+
+async function saveToServer(state) {
+  try {
+    const res = await fetch('/api/sindi-chats', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(state),
+    });
+    if (res.status === 503) { useServer = false; return false; }
+    return res.ok;
+  } catch (e) { return false; }
+}
+
+// Carga inicial — tenta server, senão local. Faz migração se necessário.
+async function loadAllChats() {
+  if (useServer) {
+    const fromServer = await loadFromServer();
+    if (fromServer) {
+      // Migração: se server tá vazio E local tem dados, sobe local pro server
+      if (!fromServer.conversations?.length) {
+        const local = loadFromLocal();
+        if (local.conversations?.length) {
+          await saveToServer(local);
+          return local;
+        }
+      }
+      return fromServer;
+    }
+  }
+  return loadFromLocal();
+}
+
+let chatState = { conversations: [], activeId: null };
+let activeConvId = null;
+let saveTimer = null;
+
+async function persistChatState() {
+  // Salva em ambos (server primário, local como cache offline)
+  saveToLocal(chatState);
+  if (useServer) {
+    if (saveTimer) clearTimeout(saveTimer);
+    // debounce: agrupa saves rápidos
+    saveTimer = setTimeout(() => saveToServer(chatState), 400);
+  }
+}
 
 function newConversation() {
   const id = 'c_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7);
@@ -260,7 +310,7 @@ function newConversation() {
   chatState.activeId = id;
   activeConvId = id;
   messages = [];
-  saveAllChats(chatState);
+  persistChatState();
   resetChatUI();
   renderConvList();
   return conv;
@@ -272,7 +322,7 @@ function loadConversation(id) {
   chatState.activeId = id;
   activeConvId = id;
   messages = JSON.parse(JSON.stringify(conv.messages || []));
-  saveAllChats(chatState);
+  persistChatState();
   resetChatUI();
   // re-renderiza mensagens
   for (const m of messages) {
@@ -295,7 +345,7 @@ function deleteConversation(id) {
     if (activeConvId) loadConversation(activeConvId);
     else { messages = []; resetChatUI(); }
   }
-  saveAllChats(chatState);
+  persistChatState();
   renderConvList();
 }
 
@@ -304,7 +354,7 @@ function renameConversation(id, newTitle) {
   if (!conv) return;
   conv.title = newTitle.trim() || conv.title;
   conv.updatedAt = Date.now();
-  saveAllChats(chatState);
+  persistChatState();
   renderConvList();
 }
 
@@ -325,7 +375,7 @@ function persistCurrent() {
       conv.title = txt.slice(0, 50).trim() + (txt.length > 50 ? '…' : '');
     }
   }
-  saveAllChats(chatState);
+  persistChatState();
   renderConvList();
 }
 
@@ -397,29 +447,47 @@ function formatRelative(ts) {
   return Math.floor(sec / 86400) + 'd';
 }
 
-// Inicialização: carrega conversa ativa ou cria nova
-if (activeConvId && chatState.conversations.find(c => c.id === activeConvId)) {
-  loadConversation(activeConvId);
-} else if (chatState.conversations.length) {
-  loadConversation(chatState.conversations[0].id);
-} else {
-  newConversation();
-}
+// Inicialização async: carrega de server (com fallback localStorage)
+(async function init() {
+  // Mostra loading na sidebar enquanto busca
+  convListEl.innerHTML = '<div class="empty-list">Carregando…</div>';
+  chatState = await loadAllChats();
+  activeConvId = chatState.activeId;
 
-// === Pickup de handoff vindo de outra ferramenta ===
-(function checkHandoff() {
+  if (activeConvId && chatState.conversations.find(c => c.id === activeConvId)) {
+    loadConversation(activeConvId);
+  } else if (chatState.conversations.length) {
+    loadConversation(chatState.conversations[0].id);
+  } else {
+    newConversation();
+  }
+  renderConvList();
+
+  if (!useServer) {
+    // Mostra um aviso sutil na sidebar
+    const banner = document.createElement('div');
+    banner.style.cssText = 'padding:8px 12px;background:#fef3c7;border-bottom:1px solid #f59e0b;font-size:11px;color:#78350f;text-align:center';
+    banner.innerHTML = '⚠️ Modo offline (localStorage). Conversas ficam só neste navegador.';
+    document.querySelector('.sidebar').insertBefore(banner, document.querySelector('.conv-list'));
+  }
+
+  // Pickup de handoff vindo de outra ferramenta — depois de carregar
   try {
     const raw = sessionStorage.getItem('sf_sindi_handoff');
-    if (!raw) return;
-    sessionStorage.removeItem('sf_sindi_handoff');
-    const ho = JSON.parse(raw);
-    if (Date.now() - ho.ts > 5 * 60 * 1000) return; // expira em 5min
-    docContext = { name: ho.filename || 'documento', text: ho.text || '' };
-    docBannerText.textContent = `📎 Anexado de outra ferramenta: ${docContext.name}`;
-    docBanner.classList.add('show');
-    if (ho.question) {
-      input.value = ho.question;
-      input.focus();
+    if (raw) {
+      sessionStorage.removeItem('sf_sindi_handoff');
+      const ho = JSON.parse(raw);
+      if (Date.now() - ho.ts <= 5 * 60 * 1000) {
+        // Cria uma nova conversa para o handoff
+        newConversation();
+        docContext = { name: ho.filename || 'documento', text: ho.text || '' };
+        docBannerText.textContent = `📎 Anexado de outra ferramenta: ${docContext.name}`;
+        docBanner.classList.add('show');
+        if (ho.question) {
+          input.value = ho.question;
+          input.focus();
+        }
+      }
     }
   } catch (e) { console.warn('handoff pickup failed', e); }
 })();
