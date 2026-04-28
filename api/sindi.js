@@ -1,8 +1,14 @@
 // =====================================================================
-// API SINDI — Copiloto IA da Sindicompany (Claude)
+// API SINDI — Copiloto IA da Sindicompany (Google Gemini, free tier)
 // =====================================================================
-// Variavel de ambiente necessaria: ANTHROPIC_API_KEY
-// Configure em: https://vercel.com/hmtzos-projects/whatsapp-fotos/settings/environment-variables
+// Variavel de ambiente necessaria: GOOGLE_API_KEY
+// Crie a chave grátis em: https://aistudio.google.com/apikey
+// Configure em: Vercel > Settings > Environment Variables
+//
+// Limites do plano grátis Gemini 2.0 Flash:
+// - 15 requisições por minuto
+// - 1.500 requisições por dia
+// - 1M tokens de contexto
 // =====================================================================
 
 export const config = { runtime: 'edge' };
@@ -24,10 +30,13 @@ DIRETRIZES:
 - Cite artigos de lei quando relevante (mas explique em linguagem simples)
 - Se a pergunta exige análise jurídica complexa, oriente a consultar advogado
 - Se não souber, diga "não tenho essa informação" — nunca invente
-- Use markdown leve (negrito, listas) para organizar respostas longas
+- Use markdown leve (negrito com **, listas com - ou 1.) para organizar respostas longas
 - Se o usuário enviar texto de documento, analise e responda objetivamente
 
 Responda diretamente. Sem preâmbulos como "ótima pergunta!".`;
+
+// Modelo grátis e rápido. Alternativas: 'gemini-2.5-flash' (qualidade maior, ainda grátis)
+const MODEL = 'gemini-2.0-flash';
 
 export default async function handler(request) {
   if (request.method !== 'POST') {
@@ -36,10 +45,10 @@ export default async function handler(request) {
     });
   }
 
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+  const apiKey = process.env.GOOGLE_API_KEY;
   if (!apiKey) {
     return new Response(JSON.stringify({
-      error: 'Sindi não está configurada ainda. O administrador precisa adicionar a chave da API Anthropic nas variáveis de ambiente do Vercel.',
+      error: 'Sindi não está configurada ainda. O administrador precisa adicionar a chave do Google Gemini nas variáveis de ambiente do Vercel (GOOGLE_API_KEY).',
       configured: false,
     }), { status: 503, headers: { 'Content-Type': 'application/json' } });
   }
@@ -58,42 +67,71 @@ export default async function handler(request) {
     });
   }
 
-  // Limita histórico a últimas 20 trocas para controle de custo
+  // Limita histórico a últimas 20 trocas para controle de tokens
   const trimmed = messages.slice(-20);
 
+  // Converte formato {role:'user'|'assistant', content:'…'} para o formato do Gemini
+  // Gemini usa 'user' e 'model' (em vez de 'assistant')
+  const contents = trimmed.map(m => ({
+    role: m.role === 'assistant' ? 'model' : 'user',
+    parts: [{ text: m.content }],
+  }));
+
   try {
-    const upstream = await fetch('https://api.anthropic.com/v1/messages', {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${apiKey}`;
+    const upstream = await fetch(url, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-5',
-        max_tokens: 1500,
-        system: [
-          { type: 'text', text: SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } },
+        systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+        contents,
+        generationConfig: {
+          temperature: 0.7,
+          maxOutputTokens: 2000,
+          topP: 0.95,
+        },
+        safetySettings: [
+          // Permite discutir tópicos jurídicos (notificações, conflitos, multas) sem bloquear
+          { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_ONLY_HIGH' },
+          { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_ONLY_HIGH' },
+          { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_ONLY_HIGH' },
+          { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_ONLY_HIGH' },
         ],
-        messages: trimmed,
       }),
     });
 
     if (!upstream.ok) {
       const errText = await upstream.text();
-      console.error('Anthropic error:', upstream.status, errText);
+      console.error('Gemini error:', upstream.status, errText);
+      let userMsg = `Erro na API Gemini (${upstream.status})`;
+      if (upstream.status === 429) userMsg = 'Limite de requisições atingido. Aguarde 1 minuto e tente novamente.';
+      if (upstream.status === 400) userMsg = 'Mensagem rejeitada. Tente reformular.';
+      if (upstream.status === 403) userMsg = 'Chave da API inválida ou sem permissão. Avise o administrador.';
       return new Response(JSON.stringify({
-        error: `Erro na API (${upstream.status})`,
-        detail: errText.slice(0, 200),
+        error: userMsg,
+        detail: errText.slice(0, 300),
       }), { status: 502, headers: { 'Content-Type': 'application/json' } });
     }
 
     const data = await upstream.json();
-    const text = data.content?.[0]?.text || '';
+    const candidate = data.candidates?.[0];
+    const text = candidate?.content?.parts?.map(p => p.text).join('') || '';
+
+    if (!text) {
+      // Pode ter sido bloqueado por safety
+      const blockReason = candidate?.finishReason || data.promptFeedback?.blockReason;
+      return new Response(JSON.stringify({
+        reply: blockReason
+          ? `Não consegui responder por questão de segurança automática (${blockReason}). Tente reformular a pergunta.`
+          : '(sem resposta da IA)',
+        usage: data.usageMetadata,
+      }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+    }
 
     return new Response(JSON.stringify({
       reply: text,
-      usage: data.usage,
+      usage: data.usageMetadata,
+      model: MODEL,
     }), { status: 200, headers: { 'Content-Type': 'application/json' } });
   } catch (err) {
     console.error('Sindi error:', err);
