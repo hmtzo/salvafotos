@@ -7,9 +7,12 @@
 // =====================================================================
 
 const USERS = {
-  'admin':  'sindi2026',
-  'heitor': 'troque-essa-senha',
-  // 'fulano': 'senha-do-fulano',
+  // formato: 'email-completo': 'senha',
+  'luciane@sindicompany.com.br': 'Sindi-luciane-7042',
+  'juliana@sindicompany.com.br': 'Sindi-juliana-3815',
+  'raquel@sindicompany.com.br':  'Sindi-raquel-9263',
+  'mkt@sindicompany.com.br':     'Sindi-mkt-5197',
+  'admin':                       'SindiAdmin2026!', // backup do administrador
 };
 
 export const config = {
