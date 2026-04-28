@@ -3,26 +3,27 @@
    ========================================================================== */
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --bg:#09090b;
-  --bg-elev:#18181b;
-  --card:#1F2023;
+  --bg:#0a0a0c;
+  --bg-elev:#15151a;
+  --card:#1a1a20;
   --border:rgba(255,255,255,0.08);
-  --border-bright:rgba(255,255,255,0.16);
-  --text:#f4f4f5;
+  --border-bright:rgba(255,255,255,0.18);
+  --text:#fafafa;
   --text-dim:#a1a1aa;
   --text-muted:#71717a;
-  --accent:#10b981;
-  --accent-bright:#34d399;
-  --accent-dim:#059669;
-  --accent-glow:rgba(16,185,129,0.15);
+  /* ACCENT — indigo/azul (sem verde) */
+  --accent:#6366f1;
+  --accent-bright:#818cf8;
+  --accent-dim:#4f46e5;
+  --accent-glow:rgba(99,102,241,0.18);
   --info:#3b82f6;
   --info-glow:rgba(59,130,246,0.15);
   --warn:#f59e0b;
   --danger:#ef4444;
   --radius:14px;
   --radius-lg:20px;
-  --shadow:0 1px 3px rgba(0,0,0,0.4),0 4px 16px rgba(0,0,0,0.3);
-  --shadow-lg:0 10px 40px rgba(0,0,0,0.5);
+  --shadow:0 1px 3px rgba(0,0,0,0.5),0 4px 16px rgba(0,0,0,0.4);
+  --shadow-lg:0 10px 40px rgba(0,0,0,0.6);
 }
 html,body{min-height:100%}
 body{
@@ -33,9 +34,8 @@ body{
 body::before{
   content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
   background:
-    radial-gradient(ellipse 1000px 600px at 0% 0%, rgba(16,185,129,0.08), transparent 60%),
-    radial-gradient(ellipse 1000px 600px at 100% 100%, rgba(59,130,246,0.08), transparent 60%),
-    radial-gradient(ellipse 600px 400px at 50% 50%, rgba(139,92,246,0.04), transparent 70%);
+    radial-gradient(ellipse 1200px 700px at 50% 0%, rgba(99,102,241,0.12), transparent 60%),
+    radial-gradient(ellipse 800px 500px at 100% 100%, rgba(59,130,246,0.06), transparent 70%);
 }
 /* Dotted surface 3D — fica atrás de tudo */
 #dotted-surface{
@@ -48,35 +48,41 @@ body::before{
 }
 .container{max-width:1100px;margin:0 auto;padding:0 24px;position:relative;z-index:1}
 
-/* ===== NAVBAR (compartilhado) ===== */
+/* ===== NAVBAR (compartilhado, dark glassmorphism) ===== */
 nav.app-nav{
-  padding:18px 0;display:flex;align-items:center;justify-content:space-between;
-  border-bottom:1px solid var(--border);margin-bottom:32px;background:rgba(255,255,255,0.7);
-  backdrop-filter:blur(10px);
+  padding:14px 0;display:flex;align-items:center;justify-content:space-between;
+  border-bottom:1px solid var(--border);margin-bottom:24px;
+  background:rgba(10,10,12,0.6);
+  backdrop-filter:blur(20px) saturate(180%);
+  -webkit-backdrop-filter:blur(20px) saturate(180%);
+  position:sticky;top:0;z-index:100;
 }
 nav.app-nav .nav-inner{
   max-width:1100px;margin:0 auto;padding:0 24px;width:100%;
   display:flex;align-items:center;justify-content:space-between;
 }
 .logo{display:flex;align-items:center;gap:12px;color:var(--text);text-decoration:none}
-.logo svg{height:32px;width:auto;display:block}
-.nav-actions{display:flex;align-items:center;gap:14px;font-size:13px}
+.logo svg{height:30px;width:auto;display:block}
+.logo svg path[fill="#1a1c29"]{fill:#fafafa}
+.nav-actions{display:flex;align-items:center;gap:8px;font-size:13px}
 .nav-actions a{color:var(--text-dim);text-decoration:none;transition:color 0.15s}
 .nav-actions a:hover{color:var(--text)}
 .nav-actions .badge{
   display:inline-flex;align-items:center;gap:6px;
-  background:var(--info-glow);color:var(--info);
-  padding:5px 11px;border-radius:100px;font-size:11px;font-weight:500;
-  border:1px solid rgba(37,99,235,0.2);
+  background:rgba(255,255,255,0.04);color:var(--text-dim);
+  padding:6px 12px;border-radius:100px;font-size:11px;font-weight:500;
+  border:1px solid rgba(255,255,255,0.08);
 }
+.nav-actions .badge svg{width:13px;height:13px;opacity:0.85}
 .btn-icon{
   display:inline-flex;align-items:center;gap:6px;
-  padding:7px 12px;border-radius:8px;
-  background:transparent;border:1px solid var(--border);
+  padding:8px 12px;border-radius:10px;
+  background:transparent;border:1px solid transparent;
   color:var(--text-dim);font-size:13px;font-weight:500;
   cursor:pointer;transition:all 0.15s;text-decoration:none;
 }
-.btn-icon:hover{border-color:var(--border-bright);color:var(--text);background:var(--card)}
+.btn-icon svg{width:15px;height:15px;flex-shrink:0;color:currentColor}
+.btn-icon:hover{border-color:var(--border);color:var(--text);background:rgba(255,255,255,0.04)}
 
 /* ===== HEADINGS ===== */
 h1{

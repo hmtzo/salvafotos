@@ -3,401 +3,551 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Sindicompany Hub — Ferramentas internas</title>
-<meta name="description" content="Hub de ferramentas internas Sindicompany — PDFs, conversões, geradores e automações para o dia a dia do escritório.">
+<title>Sindicompany Hub</title>
+<meta name="description" content="Hub de ferramentas internas Sindicompany — 26 ferramentas, IA integrada, processado no navegador.">
 <meta name="robots" content="noindex, nofollow">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="icon" href="/logo.svg">
-<link rel="stylesheet" href="/assets/shared.css">
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
 <style>
-  /* ===== Cinematic background (subtle grid + film grain) — DARK ===== */
-  body::after{
-    content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
-    background:
-      linear-gradient(to right, rgba(255,255,255,0.04) 1px, transparent 1px) 0 0/60px 60px,
-      linear-gradient(to bottom, rgba(255,255,255,0.04) 1px, transparent 1px) 0 0/60px 60px;
+  :root{
+    --fg:#fafafa;
+    --fg-dim:#a1a1aa;
+    --fg-muted:#71717a;
+    --bg:#0a0a0c;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{background:var(--bg);color:var(--fg);font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+  body{perspective:1500px;min-height:100vh}
+
+  /* === Top minimal nav === */
+  .land-nav{
+    position:fixed;top:0;left:0;right:0;z-index:200;
+    padding:16px 24px;display:flex;align-items:center;justify-content:space-between;
+    background:rgba(10,10,12,0.5);backdrop-filter:blur(20px);
+    border-bottom:1px solid rgba(255,255,255,0.06);
+  }
+  .land-nav .logo{display:flex;align-items:center;gap:10px;color:var(--fg);text-decoration:none}
+  .land-nav .logo svg{height:28px;width:auto}
+  .land-nav .logo svg path[fill="#1a1c29"]{fill:#fafafa}
+  .land-nav .cta-btn{
+    padding:9px 18px;background:#fafafa;color:#0a0a0c;border:none;border-radius:100px;
+    font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;text-decoration:none;
+    display:inline-flex;align-items:center;gap:6px;transition:all 0.2s;
+  }
+  .land-nav .cta-btn:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(255,255,255,0.15)}
+  .land-nav .cta-btn svg{width:14px;height:14px}
+
+  /* === Hero text ====================================================== */
+  .hero-stage{
+    position:relative;min-height:100vh;
+    display:flex;align-items:center;justify-content:center;text-align:center;
+    overflow:hidden;
+  }
+  .film-grain{
+    position:fixed;inset:0;z-index:50;pointer-events:none;opacity:0.04;mix-blend-mode:overlay;
+    background:url("data:image/svg+xml;utf8,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  .bg-grid{
+    position:fixed;inset:0;z-index:0;pointer-events:none;opacity:0.4;
+    background-size:60px 60px;
+    background-image:
+      linear-gradient(to right, rgba(255,255,255,0.05) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(255,255,255,0.05) 1px, transparent 1px);
     -webkit-mask-image:radial-gradient(ellipse at center, black 0%, transparent 70%);
             mask-image:radial-gradient(ellipse at center, black 0%, transparent 70%);
   }
-  .film-grain{
-    position:fixed;inset:0;z-index:1;pointer-events:none;opacity:0.04;mix-blend-mode:overlay;
-    background-image:url("data:image/svg+xml;utf8,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  .hero-glow{
+    position:fixed;inset:0;z-index:0;pointer-events:none;
+    background:
+      radial-gradient(ellipse 1200px 700px at 50% 0%, rgba(99,102,241,0.18), transparent 60%),
+      radial-gradient(ellipse 800px 500px at 100% 100%, rgba(59,130,246,0.10), transparent 70%);
   }
 
-  /* ===== Hub Hero — silver matte typography (dark) ===== */
-  .hub-hero{padding:48px 0 36px;text-align:center;position:relative;z-index:2}
-  .hub-eyebrow{
-    display:inline-block;padding:6px 14px;border-radius:100px;
-    background:linear-gradient(135deg, rgba(255,255,255,0.06), rgba(255,255,255,0.02));
-    border:1px solid rgba(255,255,255,0.08);
-    font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.1em;
-    color:var(--text-dim);margin-bottom:20px;
-    backdrop-filter:blur(20px);
+  .hero-text-wrapper{
+    position:relative;z-index:10;padding:0 16px;will-change:transform;
   }
-  .hub-hero h1{
-    font-size:clamp(40px, 7vw, 78px);
-    font-weight:800;letter-spacing:-0.04em;line-height:1;margin-bottom:14px;
+  .text-track,.text-days{
+    font-size:clamp(40px, 8.5vw, 110px);
+    font-weight:800;letter-spacing:-0.04em;line-height:1;
+    display:block;
   }
-  .hub-hero h1 .silver-matte{
-    background:linear-gradient(180deg, #ffffff 0%, rgba(255,255,255,0.4) 100%);
+  .text-track{
+    color:var(--fg);
+    text-shadow:0 10px 30px rgba(255,255,255,0.18), 0 2px 4px rgba(255,255,255,0.08);
+    margin-bottom:6px;
+    visibility:hidden;
+  }
+  .text-days{
+    background:linear-gradient(180deg, #ffffff 0%, rgba(255,255,255,0.45) 100%);
     -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
     transform:translateZ(0);
-    filter:
-      drop-shadow(0 10px 20px rgba(255,255,255,0.08))
-      drop-shadow(0 2px 4px rgba(0,0,0,0.4));
-    display:inline-block;
+    filter:drop-shadow(0 12px 24px rgba(255,255,255,0.18)) drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+    visibility:hidden;
   }
-  .hub-hero h1 .highlight{
-    background:linear-gradient(135deg, var(--accent-bright) 0%, var(--info) 100%);
+
+  /* === CTA wrapper (aparece no fim do scroll) ========================= */
+  .cta-wrapper{
+    position:fixed;inset:0;z-index:10;visibility:hidden;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;
+    padding:0 24px;will-change:transform,opacity,filter;
+  }
+  .cta-wrapper h2{
+    font-size:clamp(36px, 6vw, 80px);font-weight:800;letter-spacing:-0.03em;line-height:1.05;
+    margin-bottom:18px;
+    background:linear-gradient(180deg, #ffffff 0%, rgba(255,255,255,0.45) 100%);
     -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
-    display:inline-block;
+    filter:drop-shadow(0 10px 20px rgba(255,255,255,0.15));
   }
-  .hub-hero p{
-    font-size:17px;color:var(--text-dim);max-width:600px;margin:0 auto;
-    line-height:1.5;font-weight:400;
+  .cta-wrapper p{
+    color:var(--fg-dim);font-size:clamp(15px, 2vw, 19px);line-height:1.55;
+    max-width:540px;margin:0 auto 36px;font-weight:400;
   }
+  .cta-buttons{display:flex;flex-wrap:wrap;gap:16px;justify-content:center}
 
-  .search-wrap{max-width:520px;margin:24px auto 8px;position:relative}
-  .search-wrap input{
-    width:100%;padding:14px 18px 14px 46px;
-    border:1.5px solid var(--border);border-radius:12px;
-    font-size:15px;font-family:inherit;color:var(--text);
-    background:var(--card);transition:all 0.15s;
-    box-shadow:var(--shadow);
+  /* Tactile buttons (light + dark) */
+  .btn-tactile{
+    display:inline-flex;align-items:center;gap:12px;
+    padding:14px 28px;border-radius:18px;
+    font-family:inherit;text-decoration:none;cursor:pointer;border:none;
+    transition:all 0.4s cubic-bezier(0.25,1,0.5,1);
   }
-  .search-wrap input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-glow)}
-  .search-wrap svg{
-    position:absolute;left:16px;top:50%;transform:translateY(-50%);
-    width:18px;height:18px;color:var(--text-muted);pointer-events:none;
+  .btn-tactile.light{
+    background:linear-gradient(180deg, #ffffff 0%, #f1f5f9 100%);
+    color:#0f172a;
+    box-shadow:0 0 0 1px rgba(0,0,0,0.05), 0 2px 4px rgba(0,0,0,0.1),
+      0 12px 24px -4px rgba(0,0,0,0.3),
+      inset 0 1px 1px rgba(255,255,255,1),
+      inset 0 -3px 6px rgba(0,0,0,0.06);
   }
-
-  /* ===== LimelightNav style category tabs (dark) ===== */
-  .category-tabs{
-    display:inline-flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:0;
-    margin:18px auto 32px;padding:6px 8px;position:relative;
-    background:rgba(31,32,35,0.6);border:1px solid rgba(255,255,255,0.06);
-    border-radius:14px;backdrop-filter:blur(20px);
-    box-shadow:0 4px 20px -4px rgba(0,0,0,0.4);
-  }
-  .category-tabs-wrap{display:flex;justify-content:center;flex-wrap:wrap}
-  .cat-tab{
-    position:relative;z-index:2;padding:10px 16px;background:transparent;border:none;
-    color:var(--text-dim);font-size:13px;font-weight:500;cursor:pointer;
-    transition:all 0.15s;font-family:inherit;border-radius:10px;
-  }
-  .cat-tab:hover{color:var(--text)}
-  .cat-tab.active{color:var(--text);font-weight:600}
-  .limelight{
-    position:absolute;top:0;z-index:1;
-    width:32px;height:4px;border-radius:999px;background:var(--accent);
-    box-shadow:0 0 24px var(--accent), 0 0 8px var(--accent);
-    transition:left 0.4s cubic-bezier(.4,1.4,.5,1);
-    pointer-events:none;
-  }
-  .limelight::after{
-    content:'';position:absolute;top:4px;left:-40%;width:180%;height:60px;
-    clip-path:polygon(5% 100%, 28% 0, 72% 0, 95% 100%);
-    background:linear-gradient(180deg, rgba(16,185,129,0.32) 0%, transparent 100%);
-    pointer-events:none;
-  }
-
-  .tools-grid{
-    display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));
-    gap:16px;margin-bottom:40px;position:relative;z-index:2;
-  }
-  /* ===== GlowCard tool cards (cursor-tracking spotlight, dark) ===== */
-  .tool-card{
-    --base:220;--spread:200;
-    --hue:calc(var(--base) + (var(--xp, 0) * var(--spread)));
-    --card-x:-200px;--card-y:-200px;
-    background:rgba(31,32,35,0.7);border:1px solid rgba(255,255,255,0.08);
-    border-radius:16px;padding:22px;
-    text-decoration:none;color:inherit;display:block;
-    transition:transform 0.2s cubic-bezier(.4,1.4,.5,1), box-shadow 0.25s;
-    cursor:pointer;position:relative;overflow:hidden;
-    background-image:
-      radial-gradient(
-        260px 260px at var(--card-x) var(--card-y),
-        hsl(var(--hue) 95% 60% / 0.18),
-        transparent 70%
-      ),
-      linear-gradient(180deg, rgba(255,255,255,0.02), transparent);
-    backdrop-filter:blur(8px);
-  }
-  .tool-card.disabled{opacity:0.45;cursor:not-allowed;pointer-events:none}
-  .tool-card::before{
-    content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;
-    border:1.5px solid transparent;
-    background:radial-gradient(
-      180px 180px at var(--card-x) var(--card-y),
-      hsl(var(--hue) 95% 60% / 0.85),
-      transparent 70%
-    );
-    -webkit-mask:linear-gradient(#000,#000) padding-box, linear-gradient(#000,#000);
-            mask:linear-gradient(#000,#000) padding-box, linear-gradient(#000,#000);
-    -webkit-mask-composite:xor;
-            mask-composite:exclude;
-    opacity:0;transition:opacity 0.25s;
-  }
-  .tool-card:hover:not(.disabled)::before{opacity:1}
-  .tool-card:hover:not(.disabled){
+  .btn-tactile.light:hover{
     transform:translateY(-3px);
-    box-shadow:0 16px 40px -12px hsl(var(--hue) 80% 50% / 0.25),
-               0 4px 12px -4px hsl(var(--hue) 80% 50% / 0.15);
+    box-shadow:0 0 0 1px rgba(0,0,0,0.05), 0 6px 12px -2px rgba(0,0,0,0.15),
+      0 20px 32px -6px rgba(0,0,0,0.4),
+      inset 0 1px 1px rgba(255,255,255,1),
+      inset 0 -3px 6px rgba(0,0,0,0.06);
   }
-  /* hue por categoria */
-  .tool-card[data-cat="pdf"]    {--base:0}
-  .tool-card[data-cat="image"]  {--base:280}
-  .tool-card[data-cat="doc"]    {--base:220}
-  .tool-card[data-cat="org"]    {--base:30}
-  .tool-card[data-cat="secure"] {--base:140}
-  .tool-card[data-cat="ai"]     {--base:320}
-  .tool-card[data-cat="calc"]   {--base:170}
-  .tool-card[data-cat="convert"]{--base:250}
-  .tool-card .tool-icon{
-    width:42px;height:42px;border-radius:10px;
+  .btn-tactile.dark{
+    background:linear-gradient(180deg, #27272a 0%, #18181b 100%);
+    color:#fff;
+    box-shadow:0 0 0 1px rgba(255,255,255,0.1), 0 2px 4px rgba(0,0,0,0.6),
+      0 12px 24px -4px rgba(0,0,0,0.9),
+      inset 0 1px 1px rgba(255,255,255,0.15),
+      inset 0 -3px 6px rgba(0,0,0,0.8);
+  }
+  .btn-tactile.dark:hover{
+    transform:translateY(-3px);
+    background:linear-gradient(180deg, #3f3f46 0%, #27272a 100%);
+  }
+  .btn-tactile svg{width:24px;height:24px;flex-shrink:0}
+  .btn-tactile .meta{display:flex;flex-direction:column;align-items:flex-start;gap:0px;line-height:1.1}
+  .btn-tactile .meta .small{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;opacity:0.6}
+  .btn-tactile .meta .big{font-size:18px;font-weight:800;letter-spacing:-0.02em}
+
+  /* === Premium depth card =========================================== */
+  .main-card-stage{
+    position:fixed;inset:0;z-index:20;
     display:flex;align-items:center;justify-content:center;
-    margin-bottom:14px;font-size:22px;
+    pointer-events:none;
+    perspective:1500px;
   }
-  .tool-card .tool-icon svg{width:22px;height:22px}
-  .tool-card h3{font-size:15px;font-weight:600;margin-bottom:4px;letter-spacing:-0.01em}
-  .tool-card p{font-size:13px;color:var(--text-dim);line-height:1.45}
-  .tool-card .tool-badge{
-    position:absolute;top:14px;right:14px;
-    font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;
-    padding:3px 8px;border-radius:100px;
+  .main-card{
+    position:relative;width:92vw;height:92vh;
+    border-radius:32px;
+    background:linear-gradient(145deg, #1e3a8a 0%, #0a101d 100%);
+    border:1px solid rgba(255,255,255,0.06);
+    box-shadow:
+      0 40px 100px -20px rgba(0,0,0,0.9),
+      0 20px 40px -20px rgba(0,0,0,0.8),
+      inset 0 1px 2px rgba(255,255,255,0.2),
+      inset 0 -2px 4px rgba(0,0,0,0.8);
+    overflow:hidden;
+    pointer-events:auto;
+    visibility:hidden;
   }
-  .tool-card .tool-badge.new{background:var(--accent-glow);color:var(--accent-bright)}
-  .tool-card .tool-badge.soon{background:var(--bg-elev);color:var(--text-muted)}
-
-  /* Cores por categoria (dark) */
-  .icon-pdf{background:rgba(239,68,68,0.15);color:#fca5a5}
-  .icon-image{background:rgba(168,85,247,0.15);color:#c4b5fd}
-  .icon-doc{background:rgba(59,130,246,0.15);color:#93c5fd}
-  .icon-org{background:rgba(245,158,11,0.15);color:#fcd34d}
-  .icon-secure{background:rgba(16,185,129,0.15);color:#6ee7b7}
-  .icon-ai{background:rgba(236,72,153,0.15);color:#f9a8d4}
-  .icon-calc{background:rgba(20,184,166,0.15);color:#5eead4}
-  .icon-convert{background:rgba(99,102,241,0.15);color:#a5b4fc}
-
-  .section-title{
-    font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;
-    color:var(--text-muted);margin:32px 0 14px;
+  @media(min-width:768px){.main-card{width:85vw;height:85vh;border-radius:40px}}
+  .card-sheen{
+    position:absolute;inset:0;border-radius:inherit;pointer-events:none;z-index:50;
+    background:radial-gradient(800px circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(255,255,255,0.06) 0%, transparent 40%);
+    mix-blend-mode:screen;
   }
 
-  .empty{
-    text-align:center;padding:40px 20px;color:var(--text-muted);
-    background:var(--bg-elev);border-radius:var(--radius);
+  .card-grid{
+    position:relative;width:100%;height:100%;max-width:1400px;margin:0 auto;
+    padding:24px;display:flex;flex-direction:column;justify-content:space-evenly;align-items:center;gap:8px;
+    z-index:10;
   }
+  @media(min-width:1024px){
+    .card-grid{padding:0 48px;display:grid;grid-template-columns:1fr 1fr 1fr;align-items:center;gap:32px}
+  }
+
+  .card-left-text{order:3;text-align:center;visibility:hidden}
+  .card-right-text{order:1;display:flex;justify-content:center;visibility:hidden}
+  .mockup-scroll-wrapper{order:2;position:relative;width:100%;height:380px;display:flex;align-items:center;justify-content:center;perspective:1000px;visibility:hidden}
+  @media(min-width:1024px){
+    .card-left-text{order:1;text-align:left}
+    .card-right-text{order:3;justify-content:flex-end}
+    .mockup-scroll-wrapper{order:2;height:600px}
+  }
+
+  .card-left-text h3{
+    color:#fff;font-size:clamp(20px, 2.5vw, 36px);font-weight:700;
+    letter-spacing:-0.02em;margin-bottom:10px;line-height:1.2;
+  }
+  .card-left-text p{
+    color:rgba(199,210,254,0.7);font-size:clamp(13px, 1.4vw, 17px);line-height:1.55;
+    font-weight:400;
+  }
+  @media(max-width:768px){.card-left-text p{display:none}}
+
+  .brand-name{
+    font-size:clamp(56px, 9vw, 130px);font-weight:900;
+    letter-spacing:-0.05em;text-transform:uppercase;line-height:0.9;
+    background:linear-gradient(180deg, #ffffff 0%, #a1a1aa 100%);
+    -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+    transform:translateZ(0);
+    filter:drop-shadow(0 12px 24px rgba(0,0,0,0.8)) drop-shadow(0 4px 8px rgba(0,0,0,0.6));
+  }
+
+  /* iPhone mockup */
+  .mockup-inner{
+    position:relative;width:100%;height:100%;display:flex;align-items:center;justify-content:center;
+    transform:scale(0.65);
+  }
+  @media(min-width:1024px){.mockup-inner{transform:scale(1)}}
+  .iphone{
+    position:relative;width:280px;height:580px;border-radius:48px;
+    background:#111;
+    box-shadow:
+      inset 0 0 0 2px #52525B,
+      inset 0 0 0 7px #000,
+      0 40px 80px -15px rgba(0,0,0,0.9),
+      0 15px 25px -5px rgba(0,0,0,0.7);
+    transform-style:preserve-3d;will-change:transform;
+  }
+  .hw-btn{
+    position:absolute;background:linear-gradient(90deg, #404040 0%, #171717 100%);
+    box-shadow:-2px 0 5px rgba(0,0,0,0.8), inset -1px 0 1px rgba(255,255,255,0.15), inset 1px 0 2px rgba(0,0,0,0.8);
+    border-left:1px solid rgba(255,255,255,0.05);
+  }
+  .hw-btn.l1{top:120px;left:-3px;width:3px;height:25px;border-radius:0 0 0 6px}
+  .hw-btn.l2{top:160px;left:-3px;width:3px;height:45px;border-radius:6px 0 0 6px}
+  .hw-btn.l3{top:220px;left:-3px;width:3px;height:45px;border-radius:6px 0 0 6px}
+  .hw-btn.r1{top:170px;right:-3px;width:3px;height:70px;border-radius:0 6px 6px 0;transform:scaleX(-1)}
+
+  .iphone-screen{
+    position:absolute;inset:7px;background:#050914;border-radius:42px;overflow:hidden;
+    color:#fff;box-shadow:inset 0 0 15px rgba(0,0,0,1);
+  }
+  .screen-glare{position:absolute;inset:0;z-index:40;pointer-events:none;background:linear-gradient(110deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0) 45%)}
+  .dynamic-island{
+    position:absolute;top:5px;left:50%;transform:translateX(-50%);
+    width:100px;height:28px;background:#000;border-radius:100px;z-index:50;
+    display:flex;align-items:center;justify-content:flex-end;padding:0 12px;
+    box-shadow:inset 0 -1px 2px rgba(255,255,255,0.1);
+  }
+  .di-dot{width:6px;height:6px;border-radius:50%;background:#84c7d3;box-shadow:0 0 8px rgba(132,199,211,0.8);animation:pulse 2s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}
+
+  .app-ui{position:relative;width:100%;height:100%;padding:48px 20px 24px;display:flex;flex-direction:column}
+  .phone-widget{visibility:hidden}
+  .ui-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px}
+  .ui-header .label{font-size:10px;color:#a1a1aa;text-transform:uppercase;letter-spacing:0.08em;font-weight:700;margin-bottom:4px;display:block}
+  .ui-header .title{font-size:18px;font-weight:700;letter-spacing:-0.02em;color:#fff}
+  .ui-header .avatar{
+    width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,0.05);
+    display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;color:#fafafa;
+    border:1px solid rgba(255,255,255,0.1);box-shadow:0 4px 8px rgba(0,0,0,0.5);
+  }
+  .progress-widget{
+    position:relative;width:170px;height:170px;margin:0 auto 24px;
+    display:flex;align-items:center;justify-content:center;
+    filter:drop-shadow(0 15px 25px rgba(0,0,0,0.8));
+  }
+  .progress-widget svg{position:absolute;inset:0;width:100%;height:100%}
+  .progress-ring{transform:rotate(-90deg);transform-origin:center;stroke-dasharray:402;stroke-dashoffset:402;stroke-linecap:round}
+  .progress-content{text-align:center;position:relative;z-index:10}
+  .progress-content .num{font-size:42px;font-weight:800;letter-spacing:-0.03em}
+  .progress-content .lbl{font-size:9px;color:rgba(199,210,254,0.5);text-transform:uppercase;letter-spacing:0.1em;font-weight:700;margin-top:2px}
+
+  .phone-list-item{
+    display:flex;align-items:center;padding:12px;border-radius:16px;margin-bottom:10px;
+    background:linear-gradient(180deg, rgba(255,255,255,0.04) 0%, rgba(255,255,255,0.01) 100%);
+    border:1px solid rgba(255,255,255,0.04);
+    box-shadow:0 8px 16px rgba(0,0,0,0.3), inset 0 1px 1px rgba(255,255,255,0.05);
+  }
+  .phone-list-item .icon{
+    width:38px;height:38px;border-radius:12px;display:flex;align-items:center;justify-content:center;
+    margin-right:10px;border:1px solid;flex-shrink:0;
+  }
+  .phone-list-item .icon.blue{background:linear-gradient(135deg, rgba(59,130,246,0.2), rgba(59,130,246,0.05));border-color:rgba(59,130,246,0.2);color:#60a5fa}
+  .phone-list-item .icon.indigo{background:linear-gradient(135deg, rgba(99,102,241,0.2), rgba(99,102,241,0.05));border-color:rgba(99,102,241,0.2);color:#a5b4fc}
+  .phone-list-item .icon svg{width:16px;height:16px}
+  .phone-list-item .text-bars{flex:1}
+  .phone-list-item .text-bars .b1{height:7px;width:80px;background:rgba(255,255,255,0.85);border-radius:99px;margin-bottom:5px}
+  .phone-list-item .text-bars .b2{height:5px;width:50px;background:rgba(255,255,255,0.3);border-radius:99px}
+  .home-indicator{position:absolute;bottom:7px;left:50%;transform:translateX(-50%);width:120px;height:4px;background:rgba(255,255,255,0.25);border-radius:99px}
+
+  /* Floating glass badges */
+  .float-badge{
+    position:absolute;display:flex;align-items:center;gap:12px;padding:14px;
+    background:linear-gradient(135deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.01) 100%);
+    backdrop-filter:blur(24px);border-radius:18px;z-index:30;visibility:hidden;
+    box-shadow:
+      0 0 0 1px rgba(255,255,255,0.1),
+      0 25px 50px -12px rgba(0,0,0,0.8),
+      inset 0 1px 1px rgba(255,255,255,0.2),
+      inset 0 -1px 1px rgba(0,0,0,0.5);
+  }
+  .float-badge .icon-circle{
+    width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    border:1px solid;
+  }
+  .float-badge.b1{top:30px;left:-20px}
+  .float-badge.b1 .icon-circle{
+    background:linear-gradient(180deg, rgba(99,102,241,0.2), rgba(99,102,241,0.05));border-color:rgba(99,102,241,0.3);
+  }
+  .float-badge.b2{bottom:50px;right:-20px}
+  .float-badge.b2 .icon-circle{
+    background:linear-gradient(180deg, rgba(132,199,211,0.2), rgba(132,199,211,0.05));border-color:rgba(132,199,211,0.3);
+  }
+  @media(min-width:1024px){
+    .float-badge.b1{top:50px;left:-100px}
+    .float-badge.b2{bottom:80px;right:-100px}
+  }
+  .float-badge .icon-circle svg{width:20px;height:20px}
+  .float-badge .b-info p:first-child{color:#fff;font-size:14px;font-weight:700;letter-spacing:-0.02em;margin:0}
+  .float-badge .b-info p:last-child{color:rgba(199,210,254,0.5);font-size:11px;font-weight:500;margin:0;margin-top:2px}
+
+  .gsap-reveal{visibility:hidden}
 </style>
 </head>
 <body>
 
+<div class="bg-grid"></div>
+<div class="hero-glow"></div>
 <div class="film-grain"></div>
-<div id="app-nav" data-hub="self"></div>
 
-<div class="container">
+<nav class="land-nav">
+  <a href="/" class="logo">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 392 81" aria-label="Sindicompany"><path fill="#84c7d3" fill-rule="evenodd" d="M 29 12 L 27 14 L 26 14 L 20 20 L 19 20 L 14 25 L 13 25 L 9 29 L 9 58 L 40 58 L 40 50 L 41 49 L 48 49 L 49 48 L 49 29 L 43 23 L 42 23 L 36 17 L 35 17 L 30 12 Z M 29 30 L 31 32 L 32 32 L 35 35 L 35 43 L 34 44 L 24 44 L 23 43 L 23 35 L 25 33 L 26 33 Z M 28 19 L 29 18 L 30 18 L 34 22 L 35 22 L 40 27 L 41 27 L 45 31 L 45 43 L 44 44 L 41 44 L 40 43 L 40 33 L 39 33 L 33 27 L 32 27 L 29 24 L 24 29 L 23 29 L 19 33 L 19 49 L 34 49 L 35 50 L 35 53 L 34 54 L 14 54 L 13 53 L 13 31 L 14 30 L 15 30 L 21 24 L 22 24 L 27 19 Z"/><path fill="#84c7d3" fill-rule="evenodd" d="M 29 0 L 26 3 L 25 3 L 20 8 L 19 8 L 13 14 L 12 14 L 7 19 L 6 19 L 0 25 L 0 67 L 45 67 L 45 65 L 46 64 L 46 63 L 5 63 L 4 62 L 4 27 L 7 24 L 8 24 L 14 18 L 15 18 L 20 13 L 21 13 L 27 7 L 28 7 L 29 6 L 30 6 L 35 11 L 36 11 L 41 16 L 42 16 L 48 22 L 49 22 L 54 27 L 54 55 L 56 55 L 57 54 L 58 54 L 58 24 L 57 23 L 56 23 L 50 17 L 49 17 L 44 12 L 43 12 L 37 6 L 36 6 L 31 1 L 30 1 Z"/><path fill="#dabda9" fill-rule="evenodd" d="M 57 55 L 56 56 L 53 56 L 52 57 L 51 57 L 48 60 L 48 61 L 47 62 L 47 64 L 46 65 L 46 72 L 47 73 L 47 74 L 52 79 L 53 79 L 54 80 L 62 80 L 63 79 L 64 79 L 65 78 L 66 78 L 69 75 L 69 74 L 70 73 L 70 72 L 71 71 L 71 65 L 70 64 L 70 62 L 68 60 L 68 59 L 67 58 L 66 58 L 64 56 L 62 56 L 61 55 Z"/><path fill="#fafafa" fill-rule="evenodd" d="M 385 31 L 384 32 L 383 32 L 382 33 L 382 34 L 381 35 L 381 37 L 382 38 L 382 39 L 383 39 L 385 41 L 387 41 L 388 40 L 389 40 L 391 38 L 391 34 L 388 31 Z"/><path fill="#fafafa" fill-rule="evenodd" d="M 339 31 L 338 32 L 337 32 L 336 33 L 335 32 L 326 32 L 326 55 L 335 55 L 335 40 L 337 38 L 340 38 L 342 40 L 342 55 L 351 55 L 351 38 L 352 37 L 353 38 L 353 39 L 354 40 L 354 42 L 355 43 L 355 44 L 356 45 L 356 46 L 357 47 L 357 49 L 358 50 L 358 51 L 359 52 L 359 54 L 360 55 L 358 57 L 356 57 L 355 58 L 354 58 L 354 64 L 357 64 L 358 63 L 360 63 L 361 62 L 362 62 L 363 61 L 364 61 L 368 57 L 368 56 L 369 55 L 369 54 L 370 53 L 370 52 L 371 51 L 371 49 L 372 48 L 372 46 L 373 45 L 373 44 L 374 43 L 374 41 L 375 40 L 375 38 L 376 37 L 376 35 L 377 34 L 377 33 L 378 32 L 368 32 L 367 33 L 367 35 L 366 36 L 366 39 L 365 40 L 365 42 L 364 43 L 363 42 L 363 40 L 362 39 L 362 37 L 361 36 L 361 33 L 360 32 L 350 32 L 351 33 L 351 34 L 350 35 L 346 31 Z"/><path fill="#fafafa" fill-rule="evenodd" d="M 282 31 L 280 33 L 279 32 L 270 32 L 270 62 L 279 62 L 279 53 L 280 52 L 282 54 L 289 54 L 290 53 L 291 53 L 295 49 L 295 48 L 296 47 L 298 49 L 298 50 L 300 52 L 300 53 L 301 53 L 303 55 L 305 55 L 306 56 L 309 56 L 310 55 L 312 55 L 313 54 L 314 55 L 323 55 L 323 32 L 314 32 L 313 33 L 312 32 L 310 32 L 309 31 L 307 31 L 306 32 L 303 32 L 301 34 L 300 34 L 300 35 L 298 37 L 298 38 L 297 39 L 295 37 L 295 36 L 291 32 L 290 32 L 289 31 Z"/><path fill="#fafafa" fill-rule="evenodd" d="M 241 31 L 238 34 L 237 33 L 237 32 L 229 32 L 229 55 L 237 55 L 237 41 L 238 40 L 238 39 L 239 38 L 241 38 L 244 41 L 244 55 L 252 55 L 252 41 L 253 40 L 253 39 L 254 38 L 256 38 L 258 40 L 258 41 L 259 42 L 259 55 L 267 55 L 267 36 L 266 35 L 266 34 L 264 32 L 263 32 L 262 31 L 256 31 L 255 32 L 254 32 L 252 34 L 251 34 L 249 32 L 248 32 L 247 31 Z"/><path fill="#fafafa" fill-rule="evenodd" d="M 188 30 L 187 31 L 183 31 L 181 33 L 180 33 L 177 36 L 177 37 L 176 38 L 176 39 L 175 40 L 174 39 L 174 32 L 165 32 L 165 55 L 173 55 L 174 54 L 174 47 L 175 46 L 176 47 L 176 49 L 181 54 L 182 54 L 183 55 L 184 55 L 185 56 L 192 56 L 193 55 L 195 55 L 196 54 L 197 54 L 201 50 L 205 54 L 206 54 L 207 55 L 208 55 L 209 56 L 218 56 L 219 55 L 220 55 L 222 53 L 223 53 L 224 52 L 224 51 L 226 49 L 226 48 L 227 47 L 227 40 L 226 39 L 226 37 L 221 32 L 220 32 L 219 31 L 217 31 L 216 30 L 212 30 L 211 31 L 208 31 L 207 32 L 206 32 L 201 37 L 200 36 L 200 35 L 197 32 L 196 32 L 195 31 L 192 31 L 191 30 Z"/><path fill="#fafafa" fill-rule="evenodd" d="M 84 30 L 83 31 L 79 31 L 78 32 L 77 32 L 75 34 L 75 35 L 74 36 L 74 41 L 75 42 L 75 43 L 76 44 L 77 44 L 78 45 L 79 45 L 80 46 L 83 46 L 84 47 L 85 47 L 87 49 L 86 50 L 82 50 L 81 49 L 78 49 L 77 48 L 76 48 L 74 50 L 74 51 L 73 52 L 73 53 L 74 54 L 75 54 L 76 55 L 78 55 L 79 56 L 90 56 L 91 55 L 92 55 L 95 52 L 95 50 L 96 49 L 97 50 L 97 54 L 98 55 L 106 55 L 106 32 L 97 32 L 97 47 L 96 48 L 95 47 L 95 45 L 92 42 L 91 42 L 90 41 L 88 41 L 87 40 L 84 40 L 83 39 L 83 38 L 84 37 L 88 37 L 89 38 L 92 38 L 93 37 L 93 36 L 94 35 L 94 34 L 95 33 L 94 33 L 93 32 L 92 32 L 91 31 L 87 31 L 86 30 Z"/><path fill="#fafafa" fill-rule="evenodd" d="M 165 23 L 165 29 L 173 29 L 174 28 L 174 23 Z"/><path fill="#fafafa" fill-rule="evenodd" d="M 153 23 L 153 32 L 152 33 L 151 33 L 150 32 L 148 32 L 147 31 L 145 31 L 144 32 L 141 32 L 137 36 L 137 37 L 136 38 L 136 39 L 135 40 L 134 39 L 134 38 L 133 37 L 133 35 L 129 31 L 122 31 L 121 32 L 120 32 L 119 33 L 118 32 L 109 32 L 109 55 L 118 55 L 118 40 L 120 38 L 123 38 L 125 40 L 125 55 L 134 55 L 134 47 L 135 46 L 136 47 L 136 49 L 137 50 L 137 51 L 140 54 L 141 54 L 142 55 L 143 55 L 144 56 L 147 56 L 148 55 L 150 55 L 151 54 L 152 54 L 153 55 L 162 55 L 162 23 Z"/><path fill="#fafafa" fill-rule="evenodd" d="M 97 23 L 97 28 L 98 29 L 106 29 L 106 23 Z"/></svg>
+  </a>
+  <a href="/login.html" class="cta-btn">
+    Entrar
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+  </a>
+</nav>
 
-  <section class="hub-hero">
-    <span class="hub-eyebrow">Sindicompany Hub · Uso interno</span>
-    <h1>
-      <span class="silver-matte">Ferramentas para o</span><br>
-      <span class="highlight">dia a dia do escritório</span>
-    </h1>
-    <p>26 ferramentas, IA integrada, processado direto no navegador. Tudo num só lugar.</p>
-
-    <div class="search-wrap">
-      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-      <input type="text" id="search" placeholder="Buscar ferramenta…" autocomplete="off">
-    </div>
-
-    <div class="category-tabs-wrap">
-      <div class="category-tabs" id="catTabs">
-        <button class="cat-tab active" data-cat="all">Todas</button>
-        <button class="cat-tab" data-cat="ai">IA</button>
-        <button class="cat-tab" data-cat="doc">Documentos</button>
-        <button class="cat-tab" data-cat="calc">Cálculos</button>
-        <button class="cat-tab" data-cat="convert">Conversões</button>
-        <button class="cat-tab" data-cat="pdf">PDF</button>
-        <button class="cat-tab" data-cat="image">Imagens</button>
-        <button class="cat-tab" data-cat="org">Organização</button>
-        <button class="cat-tab" data-cat="secure">Segurança</button>
-        <div class="limelight" id="limelight"></div>
-      </div>
-    </div>
-  </section>
-
-  <div class="tools-grid" id="toolsGrid"></div>
-
+<!-- HERO STAGE: gigante texto silver-matte -->
+<div class="hero-stage" id="container">
+  <div class="hero-text-wrapper">
+    <span class="text-track gsap-reveal">Ferramentas pro dia a dia,</span>
+    <span class="text-days gsap-reveal">não burocracia.</span>
+  </div>
 </div>
 
-<div id="app-footer"></div>
-
-<script src="/assets/shared.js"></script>
-<script>
-// === Lucide-style icon paths (24x24, stroke-currentColor, stroke-width=1.75) ===
-const ICONS = {
-  bot:        '<path d="M12 8V4H8"/><rect x="4" y="8" width="16" height="12" rx="2"/><path d="M2 14h2M20 14h2M15 13v2M9 13v2"/>',
-  pencil:     '<path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>',
-  fileText:   '<path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/>',
-  filePen:    '<path d="M12.5 22H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8.5L20 7.5V11"/><path d="M14 2v6h6"/><path d="m18.4 9.6 3 3-7 7H11v-3.4z"/>',
-  fileSign:   '<path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><path d="M14 2v6h6"/><path d="m11 14-3 3 1.5 1.5L13 15"/>',
-  calculator: '<rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="14" x2="8" y2="14"/><line x1="12" y1="14" x2="12" y2="14"/><line x1="16" y1="14" x2="16" y2="14"/><line x1="8" y1="18" x2="8" y2="18"/><line x1="12" y1="18" x2="12" y2="18"/><line x1="16" y1="18" x2="16" y2="18"/>',
-  fileDown:   '<path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><path d="M14 2v6h6"/><path d="M12 18v-6"/><path d="m9 15 3 3 3-3"/>',
-  table:      '<path d="M12 3v18M3 9h18M3 15h18"/><rect x="3" y="3" width="18" height="18" rx="2"/>',
-  fileSpread: '<path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><path d="M14 2v6h6"/><path d="M8 13h2v5H8zM12 11h2v7h-2zM16 14h-2"/>',
-  image:      '<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>',
-  images:     '<path d="M18 22H4a2 2 0 0 1-2-2V6"/><path d="m22 13-1.296-1.296a2.41 2.41 0 0 0-3.408 0L11 18"/><circle cx="12" cy="8" r="2"/><rect x="6" y="2" width="16" height="16" rx="2"/>',
-  palette:    '<circle cx="13.5" cy="6.5" r=".5"/><circle cx="17.5" cy="10.5" r=".5"/><circle cx="8.5" cy="7.5" r=".5"/><circle cx="6.5" cy="12.5" r=".5"/><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"/>',
-  pdfEdit:    '<path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>',
-  files:      '<path d="M15.5 2H8.6c-.4 0-.8.2-1.1.5-.3.3-.5.7-.5 1.1v12.8c0 .4.2.8.5 1.1.3.3.7.5 1.1.5h9.8c.4 0 .8-.2 1.1-.5.3-.3.5-.7.5-1.1V6.5L15.5 2z"/><path d="M3 7.6v12.8c0 .4.2.8.5 1.1.3.3.7.5 1.1.5h9.8"/><path d="M15 2v5h5"/>',
-  scissors:   '<circle cx="6" cy="6" r="3"/><path d="M8.12 8.12 12 12"/><path d="M20 4 8.12 15.88"/><circle cx="6" cy="18" r="3"/><path d="M14.8 14.8 20 20"/>',
-  archive:    '<path d="M22 8v13H2V8M20 4H4l-2 4h20l-2-4z"/><line x1="10" y1="12" x2="14" y2="12"/>',
-  scale:      '<path d="m16 16 3-8 3 8c-2 1-4 1-6 0M2 16l3-8 3 8c-2 1-4 1-6 0M7 21h10M12 3v18M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"/>',
-  layoutGrid: '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/>',
-  rotate:     '<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/>',
-  hash:       '<line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/><line x1="10" y1="3" x2="8" y2="21"/><line x1="16" y1="3" x2="14" y2="21"/>',
-  droplet:    '<path d="M12 2.69 5.64 9.06a8 8 0 1 0 12.72 0Z"/>',
-  message:    '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
-  search:     '<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
-  lock:       '<rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>',
-  unlock:     '<rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 9.9-1"/>',
-  shield:     '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/>',
-  signature:  '<path d="m6 17 6-6"/><path d="m20 4-9 9-3-3 9-9 3 3z"/><path d="M15 10 9.5 4.5"/><path d="M2 22h20"/>',
-  sparkles:   '<path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3z"/><path d="M19 13l.7 2.1 2.1.7-2.1.7L19 19l-.7-2.5-2.1-.7 2.1-.7L19 13z"/><path d="M5 14l.5 1.5L7 16l-1.5.5L5 18l-.5-1.5L3 16l1.5-.5L5 14z"/>',
-};
-function svg(name, size = 22) {
-  const p = ICONS[name] || '';
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
-}
-
-const TOOLS = [
-  // === IA (destaque) ===
-  { slug: 'sindi', cat: 'ai', name: 'Sindi (IA)', desc: 'Copiloto IA que lê documentos e responde dúvidas sobre direito condominial.', icon: 'bot', iconClass: 'icon-ai' },
-  { slug: 'corretor-texto', cat: 'ai', name: 'Corretor de Texto PT-BR', desc: 'Corrige ortografia, gramática e pontuação. Mantém o tom do texto.', icon: 'pencil', iconClass: 'icon-ai', badge: 'new' },
-
-  // === GERADORES ===
-  { slug: 'gerador-notificacao', cat: 'doc', name: 'Gerar Notificação', desc: 'Notificações extrajudiciais prontas: inadimplência, barulho, animal, obra.', icon: 'fileText', iconClass: 'icon-doc' },
-  { slug: 'gerador-ata', cat: 'doc', name: 'Gerar Ata', desc: 'Wizard de ata de assembleia (ordinária ou extraordinária) com deliberações.', icon: 'filePen', iconClass: 'icon-doc' },
-  { slug: 'gerador-contrato', cat: 'doc', name: 'Gerar Contrato', desc: 'Modelos: prestação de serviço, locação salão, manutenção mensal.', icon: 'fileSign', iconClass: 'icon-doc' },
-
-  // === CALCULADORAS ===
-  { slug: 'calculadoras', cat: 'calc', name: 'Calculadoras', desc: 'Reajuste de aluguel, multa de inadimplência, rateio e projeção de caixa.', icon: 'calculator', iconClass: 'icon-calc', badge: 'new' },
-
-  // === CONVERSÕES ===
-  { slug: 'word-para-pdf', cat: 'convert', name: 'Word → PDF', desc: 'Converte .docx em PDF preservando formatação.', icon: 'fileText', iconClass: 'icon-convert', badge: 'new' },
-  { slug: 'excel-para-pdf', cat: 'convert', name: 'Excel → PDF', desc: 'Converte .xlsx em PDF (suporta múltiplas abas).', icon: 'fileSpread', iconClass: 'icon-convert', badge: 'new' },
-  { slug: 'pdf-para-excel', cat: 'convert', name: 'PDF → Excel', desc: 'Extrai tabelas de PDFs em planilha .xlsx.', icon: 'table', iconClass: 'icon-convert', badge: 'new' },
-  { slug: 'pdf-para-jpg', cat: 'convert', name: 'PDF → JPG', desc: 'Converta cada página do PDF em imagem JPG.', icon: 'image', iconClass: 'icon-convert' },
-  { slug: 'jpg-para-pdf', cat: 'convert', name: 'Imagens → PDF', desc: 'Junte várias imagens em um PDF.', icon: 'images', iconClass: 'icon-convert' },
-  { slug: 'conversor-imagens', cat: 'convert', name: 'Conversor de Imagens', desc: 'PNG ↔ JPG ↔ WEBP. Redimensiona, comprime, em lote.', icon: 'palette', iconClass: 'icon-image', badge: 'new' },
-
-  // === PDF (manipulação) ===
-  { slug: 'editor-pdf', cat: 'pdf', name: 'Editor de PDF', desc: 'Adicione texto, destaque, risque, anote o PDF.', icon: 'pdfEdit', iconClass: 'icon-pdf', badge: 'new' },
-  { slug: 'juntar-pdf', cat: 'pdf', name: 'Juntar PDF', desc: 'Combine vários PDFs em um único arquivo.', icon: 'files', iconClass: 'icon-pdf' },
-  { slug: 'dividir-pdf', cat: 'pdf', name: 'Dividir PDF', desc: 'Separe páginas ou intervalos em arquivos individuais.', icon: 'scissors', iconClass: 'icon-pdf' },
-  { slug: 'comprimir-pdf', cat: 'pdf', name: 'Comprimir PDF', desc: 'Reduz o tamanho do PDF rasterizando em JPEG.', icon: 'archive', iconClass: 'icon-pdf' },
-  { slug: 'comparar-pdf', cat: 'pdf', name: 'Comparar Documentos', desc: 'Veja o que mudou entre duas versões (com resumo IA).', icon: 'scale', iconClass: 'icon-pdf', badge: 'new' },
-
-  // === ORGANIZAÇÃO ===
-  { slug: 'organizar-pdf', cat: 'org', name: 'Organizar Páginas', desc: 'Reordene e remova páginas arrastando miniaturas.', icon: 'layoutGrid', iconClass: 'icon-org' },
-  { slug: 'girar-pdf', cat: 'org', name: 'Girar PDF', desc: 'Rotacione páginas que vieram de cabeça pra baixo.', icon: 'rotate', iconClass: 'icon-org' },
-  { slug: 'numerar-paginas', cat: 'org', name: 'Numerar Páginas', desc: 'Adicione número em cada página automaticamente.', icon: 'hash', iconClass: 'icon-org' },
-  { slug: 'marca-dagua', cat: 'org', name: 'Marca d\'água', desc: 'Texto como marca d\'água em todas as páginas.', icon: 'droplet', iconClass: 'icon-org' },
-
-  // === DOCUMENTOS / DADOS ===
-  { slug: 'whatsapp-fotos', cat: 'doc', name: 'Fotos do WhatsApp', desc: 'Extrai fotos com legenda, data e remetente.', icon: 'message', iconClass: 'icon-doc' },
-  { slug: 'ocr', cat: 'doc', name: 'OCR (Texto em Imagem)', desc: 'Extrai texto de fotos e PDFs escaneados (PT/EN/ES).', icon: 'search', iconClass: 'icon-doc' },
-
-  // === SEGURANÇA ===
-  { slug: 'proteger-pdf', cat: 'secure', name: 'Proteger PDF', desc: 'Adicione senha (AES-256) antes de enviar.', icon: 'lock', iconClass: 'icon-secure' },
-  { slug: 'desbloquear-pdf', cat: 'secure', name: 'Desbloquear PDF', desc: 'Remove senha de PDF (precisa saber a senha).', icon: 'unlock', iconClass: 'icon-secure' },
-  { slug: 'redigir-lgpd', cat: 'secure', name: 'Redigir LGPD', desc: 'Tarja CPF, RG, e-mail, telefone automaticamente.', icon: 'shield', iconClass: 'icon-secure', badge: 'new' },
-  { slug: 'assinatura', cat: 'secure', name: 'Assinatura Eletrônica', desc: 'Assine PDF digitalmente com trilha de auditoria.', icon: 'signature', iconClass: 'icon-secure', badge: 'new' },
-];
-
-const grid = document.getElementById('toolsGrid');
-const search = document.getElementById('search');
-const catTabs = document.getElementById('catTabs');
-let currentCat = 'all';
-
-function renderTools() {
-  const q = search.value.trim().toLowerCase();
-  const filtered = TOOLS.filter(t => {
-    const matchCat = currentCat === 'all' || t.cat === currentCat;
-    const matchQ = !q || t.name.toLowerCase().includes(q) || t.desc.toLowerCase().includes(q);
-    return matchCat && matchQ;
-  });
-
-  if (!filtered.length) {
-    grid.innerHTML = '<div class="empty" style="grid-column:1/-1">Nenhuma ferramenta encontrada.</div>';
-    return;
-  }
-
-  // Separa disponíveis e em breve
-  const ready = filtered.filter(t => !t.disabled);
-  const soon = filtered.filter(t => t.disabled);
-  let html = '';
-  if (ready.length) {
-    html += ready.map(toolCard).join('');
-  }
-  if (soon.length) {
-    html += `<div style="grid-column:1/-1" class="section-title">Em breve</div>`;
-    html += soon.map(toolCard).join('');
-  }
-  grid.innerHTML = html;
-}
-
-function toolCard(t) {
-  const href = t.disabled ? '#' : `/tools/${t.slug}.html`;
-  const badge = t.badge ? `<span class="tool-badge ${t.badge}">${t.badge === 'new' ? 'novo' : 'em breve'}</span>` : '';
-  return `
-    <a href="${href}" class="tool-card ${t.disabled ? 'disabled' : ''}" data-cat="${t.cat}">
-      ${badge}
-      <div class="tool-icon ${t.iconClass}">${svg(t.icon, 22)}</div>
-      <h3>${t.name}</h3>
-      <p>${t.desc}</p>
+<!-- CTA WRAPPER: aparece no fim do scroll -->
+<div class="cta-wrapper" id="ctaWrap">
+  <h2>Pronto pra começar?</h2>
+  <p>Acesse o hub interno da Sindicompany. 26 ferramentas, IA integrada, processado direto no navegador. Zero instalação.</p>
+  <div class="cta-buttons">
+    <a href="/login.html" class="btn-tactile light">
+      <svg fill="currentColor" viewBox="0 0 24 24" stroke="none"><path d="M3 12a9 9 0 1 0 18 0 9 9 0 0 0-18 0zm9-7v14M5 12h14"/></svg>
+      <div class="meta">
+        <span class="small">Acessar agora</span>
+        <span class="big">Entrar no Hub</span>
+      </div>
     </a>
-  `;
-}
+    <a href="#" class="btn-tactile dark" onclick="document.getElementById('container').scrollIntoView({behavior:'smooth'});return false;">
+      <svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+      <div class="meta">
+        <span class="small">Saber mais</span>
+        <span class="big">Conhecer</span>
+      </div>
+    </a>
+  </div>
+</div>
 
-// ===== GlowCard: cursor-tracking spotlight nos tool cards =====
-document.addEventListener('pointermove', e => {
-  document.querySelectorAll('.tool-card').forEach(card => {
-    const r = card.getBoundingClientRect();
-    if (e.clientX < r.left - 100 || e.clientX > r.right + 100 ||
-        e.clientY < r.top - 100  || e.clientY > r.bottom + 100) return;
-    card.style.setProperty('--card-x', (e.clientX - r.left) + 'px');
-    card.style.setProperty('--card-y', (e.clientY - r.top) + 'px');
-    card.style.setProperty('--xp', ((e.clientX - r.left) / r.width).toFixed(2));
+<!-- MAIN CARD: card profundo com mockup -->
+<div class="main-card-stage">
+  <div class="main-card" id="mainCard">
+    <div class="card-sheen"></div>
+
+    <div class="card-grid">
+      <!-- 1. Brand name (right desktop / top mobile) -->
+      <div class="card-right-text">
+        <h2 class="brand-name">SINDICOMPANY</h2>
+      </div>
+
+      <!-- 2. iPhone mockup (center) -->
+      <div class="mockup-scroll-wrapper">
+        <div class="mockup-inner">
+          <div class="iphone" id="iphone">
+            <span class="hw-btn l1"></span>
+            <span class="hw-btn l2"></span>
+            <span class="hw-btn l3"></span>
+            <span class="hw-btn r1"></span>
+
+            <div class="iphone-screen">
+              <div class="screen-glare"></div>
+              <div class="dynamic-island"><div class="di-dot"></div></div>
+
+              <div class="app-ui">
+                <div class="phone-widget ui-header">
+                  <div>
+                    <span class="label">Hoje</span>
+                    <span class="title">Sindicompany Hub</span>
+                  </div>
+                  <div class="avatar">SC</div>
+                </div>
+
+                <div class="phone-widget progress-widget">
+                  <svg viewBox="0 0 176 176">
+                    <circle cx="88" cy="88" r="64" fill="none" stroke="rgba(255,255,255,0.04)" stroke-width="12"/>
+                    <circle id="progRing" class="progress-ring" cx="88" cy="88" r="64" fill="none" stroke="#84c7d3" stroke-width="12"/>
+                  </svg>
+                  <div class="progress-content">
+                    <div class="num counter-val">0</div>
+                    <div class="lbl">Ferramentas</div>
+                  </div>
+                </div>
+
+                <div>
+                  <div class="phone-widget phone-list-item">
+                    <div class="icon blue">
+                      <svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    </div>
+                    <div class="text-bars"><div class="b1"></div><div class="b2"></div></div>
+                  </div>
+                  <div class="phone-widget phone-list-item">
+                    <div class="icon indigo">
+                      <svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M5 13l4 4L19 7"/></svg>
+                    </div>
+                    <div class="text-bars"><div class="b1" style="width:64px"></div><div class="b2" style="width:96px"></div></div>
+                  </div>
+                </div>
+
+                <div class="home-indicator"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Floating badges -->
+          <div class="float-badge b1">
+            <div class="icon-circle">
+              <svg fill="none" stroke="#a5b4fc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M12 8V4H8"/><rect x="4" y="8" width="16" height="12" rx="2"/><path d="M2 14h2M20 14h2M15 13v2M9 13v2"/></svg>
+            </div>
+            <div class="b-info">
+              <p>Sindi IA online</p>
+              <p>Resposta em segundos</p>
+            </div>
+          </div>
+          <div class="float-badge b2">
+            <div class="icon-circle">
+              <svg fill="none" stroke="#84c7d3" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+            </div>
+            <div class="b-info">
+              <p>100% privado</p>
+              <p>Processado no browser</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. Feature text (left desktop / bottom mobile) -->
+      <div class="card-left-text">
+        <h3>26 ferramentas. Uma plataforma.</h3>
+        <p>Editor de PDF estilo Acrobat, IA que lê documentos jurídicos, geradores de ata e notificação, calculadoras, conversores Word/Excel — tudo num só lugar, processado direto no seu navegador.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+gsap.registerPlugin(ScrollTrigger);
+
+// === Mouse parallax no iPhone ===
+const iphone = document.getElementById('iphone');
+const mainCard = document.getElementById('mainCard');
+let rafId;
+window.addEventListener('mousemove', e => {
+  if (window.scrollY > window.innerHeight * 2) return;
+  cancelAnimationFrame(rafId);
+  rafId = requestAnimationFrame(() => {
+    if (mainCard) {
+      const r = mainCard.getBoundingClientRect();
+      mainCard.style.setProperty('--mouse-x', (e.clientX - r.left) + 'px');
+      mainCard.style.setProperty('--mouse-y', (e.clientY - r.top) + 'px');
+    }
+    if (iphone) {
+      const xVal = (e.clientX / window.innerWidth - 0.5) * 2;
+      const yVal = (e.clientY / window.innerHeight - 0.5) * 2;
+      gsap.to(iphone, { rotationY: xVal * 12, rotationX: -yVal * 12, ease: 'power3.out', duration: 1.2 });
+    }
   });
 });
 
-// ===== LimelightNav: posiciona o glow embaixo da tab ativa =====
-function moveLimelight() {
-  const limelight = document.getElementById('limelight');
-  const active = document.querySelector('.cat-tab.active');
-  if (!limelight || !active) return;
-  const left = active.offsetLeft + active.offsetWidth/2 - limelight.offsetWidth/2;
-  limelight.style.left = left + 'px';
-}
-window.addEventListener('resize', moveLimelight);
+// === Cinematic scroll timeline ===
+const isMobile = window.innerWidth < 768;
+const METRIC_VALUE = 26;
 
-search.addEventListener('input', renderTools);
-catTabs.addEventListener('click', e => {
-  if (e.target.classList.contains('cat-tab')) {
-    catTabs.querySelectorAll('.cat-tab').forEach(t => t.classList.remove('active'));
-    e.target.classList.add('active');
-    currentCat = e.target.dataset.cat;
-    renderTools();
-    moveLimelight();
-  }
+// Posições iniciais
+gsap.set('.text-track', { autoAlpha: 0, y: 60, scale: 0.85, filter: 'blur(20px)', rotationX: -20 });
+gsap.set('.text-days', { autoAlpha: 1, clipPath: 'inset(0 100% 0 0)', visibility: 'visible' });
+gsap.set('.main-card', { y: window.innerHeight + 200, autoAlpha: 1, visibility: 'visible' });
+gsap.set(['.card-left-text', '.card-right-text', '.mockup-scroll-wrapper', '.float-badge', '.phone-widget'], { autoAlpha: 0, visibility: 'visible' });
+gsap.set('.cta-wrapper', { autoAlpha: 0, scale: 0.8, filter: 'blur(30px)', visibility: 'visible' });
+
+// Animação de entrada
+const introTl = gsap.timeline({ delay: 0.3 });
+introTl
+  .to('.text-track', { duration: 1.6, autoAlpha: 1, y: 0, scale: 1, filter: 'blur(0px)', rotationX: 0, ease: 'expo.out' })
+  .to('.text-days', { duration: 1.4, clipPath: 'inset(0 0% 0 0)', ease: 'power4.inOut' }, '-=1.0');
+
+// Scroll timeline
+const scrollTl = gsap.timeline({
+  scrollTrigger: {
+    trigger: '#container',
+    start: 'top top',
+    end: '+=6000',
+    pin: true,
+    scrub: 1,
+    anticipatePin: 1,
+  },
 });
-
-renderTools();
-requestAnimationFrame(moveLimelight);
+scrollTl
+  .to(['.hero-text-wrapper', '.bg-grid'], { scale: 1.15, filter: 'blur(20px)', opacity: 0.2, ease: 'power2.inOut', duration: 2 }, 0)
+  .to('.main-card', { y: 0, ease: 'power3.inOut', duration: 2 }, 0)
+  .to('.main-card', { width: '100%', height: '100%', borderRadius: '0px', ease: 'power3.inOut', duration: 1.5 })
+  .fromTo('.mockup-scroll-wrapper',
+    { y: 300, z: -500, rotationX: 50, rotationY: -30, autoAlpha: 0, scale: 0.6 },
+    { y: 0, z: 0, rotationX: 0, rotationY: 0, autoAlpha: 1, scale: 1, ease: 'expo.out', duration: 2.5 }, '-=0.8'
+  )
+  .fromTo('.phone-widget', { y: 40, autoAlpha: 0, scale: 0.95 }, { y: 0, autoAlpha: 1, scale: 1, stagger: 0.15, ease: 'back.out(1.2)', duration: 1.5 }, '-=1.5')
+  .to('#progRing', { strokeDashoffset: 120, duration: 2, ease: 'power3.inOut' }, '-=1.2')
+  .to('.counter-val', { innerHTML: METRIC_VALUE, snap: { innerHTML: 1 }, duration: 2, ease: 'expo.out' }, '-=2.0')
+  .fromTo('.float-badge', { y: 100, autoAlpha: 0, scale: 0.7 }, { y: 0, autoAlpha: 1, scale: 1, ease: 'back.out(1.5)', duration: 1.5, stagger: 0.2 }, '-=2.0')
+  .fromTo('.card-left-text', { x: -50, autoAlpha: 0 }, { x: 0, autoAlpha: 1, ease: 'power4.out', duration: 1.5 }, '-=1.5')
+  .fromTo('.card-right-text', { x: 50, autoAlpha: 0, scale: 0.8 }, { x: 0, autoAlpha: 1, scale: 1, ease: 'expo.out', duration: 1.5 }, '<')
+  .to({}, { duration: 2 })
+  .set('.hero-text-wrapper', { autoAlpha: 0 })
+  .set('.cta-wrapper', { autoAlpha: 1 })
+  .to({}, { duration: 1 })
+  .to(['.mockup-scroll-wrapper', '.float-badge', '.card-left-text', '.card-right-text'], {
+    scale: 0.9, y: -40, autoAlpha: 0, ease: 'power3.in', duration: 1.2, stagger: 0.05,
+  })
+  .to('.main-card', {
+    width: isMobile ? '92vw' : '85vw',
+    height: isMobile ? '92vh' : '85vh',
+    borderRadius: isMobile ? '32px' : '40px',
+    ease: 'expo.inOut',
+    duration: 1.8,
+  }, 'pullback')
+  .to('.cta-wrapper', { scale: 1, filter: 'blur(0px)', ease: 'expo.inOut', duration: 1.8 }, 'pullback')
+  .to('.main-card', { y: -window.innerHeight - 300, ease: 'power3.in', duration: 1.5 });
 </script>
 </body>
 </html>

@@ -241,7 +241,7 @@ form.addEventListener('submit', async (e) => {
 
     // Redireciona pra página solicitada (?next=) ou pra home
     const params = new URLSearchParams(location.search);
-    const next = params.get('next') || '/';
+    const next = params.get('next') || '/hub.html';
     location.href = next;
   } catch (err) {
     errorEl.textContent = err.message;

@@ -18,9 +18,8 @@ const USERS = new Set([
 ]);
 
 export const config = {
-  // Protege tudo, EXCETO endpoints públicos de auth e arquivos estáticos da página de login
-  // (Vercel não aceita grupos de captura — use (?:...) ou regex separadas)
-  matcher: '/((?!api/(?:login|logout)|_next/|_vercel/|favicon|logo|login\\.html).*)',
+  // Protege APENAS rotas autenticadas. Resto (/, /login.html, /assets/*, /api/login etc) público.
+  matcher: ['/hub.html', '/tools/:path*', '/dashboard.html', '/api/sindi', '/api/sindi-chats', '/api/corretor'],
 };
 
 export default function middleware(request) {
@@ -46,8 +45,6 @@ export default function middleware(request) {
 
   // Sem cookie valido -> redireciona pro login preservando a URL solicitada
   const loginUrl = new URL('/login.html', url.origin);
-  if (url.pathname !== '/' && url.pathname !== '/login.html') {
-    loginUrl.searchParams.set('next', url.pathname + url.search);
-  }
+  loginUrl.searchParams.set('next', url.pathname + url.search);
   return Response.redirect(loginUrl, 302);
 }
