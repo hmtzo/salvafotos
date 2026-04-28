@@ -68,28 +68,42 @@
     padding:2px 4px;min-width:60px;outline:1.5px dashed rgba(0,0,0,0.3);
   }
   .annotation.text-ann[contenteditable="true"]{outline-color:var(--accent)}
-  .annotation.highlight-ann{background:rgba(252,211,77,0.5);pointer-events:none}
-  .annotation.underline-ann{background:transparent;border-top:none;border-bottom:2px solid red;pointer-events:none;height:auto}
-  .annotation.strike-ann{background:transparent;border-top:2px solid red;height:2px;pointer-events:none}
-  .annotation.rect-ann{border:2px solid red;background:transparent;pointer-events:none}
-  .annotation.ellipse-ann{border:2px solid red;background:transparent;pointer-events:none;border-radius:50%}
+  .annotation.highlight-ann{background:rgba(252,211,77,0.5)}
+  .annotation.underline-ann{background:transparent;border-top:none;border-bottom:2px solid red;height:auto}
+  .annotation.strike-ann{background:transparent;border-top:2px solid red;height:2px}
+  .annotation.rect-ann{border:2px solid red;background:transparent}
+  .annotation.ellipse-ann{border:2px solid red;background:transparent;border-radius:50%}
   .annotation.image-ann{background:transparent;border:1.5px dashed var(--accent);padding:0;cursor:move}
   .annotation.image-ann img{display:block;width:100%;height:100%;object-fit:contain;pointer-events:none;user-select:none}
   .annotation.image-ann .resize-handle{position:absolute;width:14px;height:14px;background:var(--accent);border:2px solid white;border-radius:50%;cursor:nwse-resize;box-shadow:0 0 0 1px rgba(0,0,0,0.2);z-index:5}
   .annotation.image-ann .resize-handle.br{bottom:-7px;right:-7px}
   .annotation.image-ann.dragging{opacity:0.7;border-style:solid}
-  .annotation.line-ann,.annotation.arrow-ann{background:transparent;pointer-events:none;border:none}
-  .annotation.line-ann svg,.annotation.arrow-ann svg{width:100%;height:100%;display:block}
+  .annotation.line-ann,.annotation.arrow-ann{background:transparent;border:none}
+  .annotation.line-ann svg,.annotation.arrow-ann svg{width:100%;height:100%;display:block;pointer-events:none}
   .annotation.stamp-ann{
     background:transparent;border:2px solid;border-radius:6px;padding:3px 10px;
     font-weight:800;font-size:14px;text-transform:uppercase;letter-spacing:0.05em;
-    transform:rotate(-8deg);pointer-events:none;
+    transform:rotate(-8deg);
   }
   .annotation.note-ann{
     background:#fef3c7;border:1px solid #f59e0b;border-radius:6px;padding:6px 10px;
     font-size:12px;max-width:200px;color:#78350f;cursor:move;
   }
   .annotation.del-btn{position:absolute;top:-10px;right:-10px;width:20px;height:20px;background:var(--danger);color:white;border:none;border-radius:50%;cursor:pointer;font-size:12px;line-height:1;display:flex;align-items:center;justify-content:center;z-index:11}
+
+  /* Annotation selecionada (ctrl+c/v) */
+  .annotation.selected{box-shadow:0 0 0 3px var(--accent),0 0 0 5px rgba(16,185,129,0.3) !important;outline:none !important}
+
+  /* Toast de feedback */
+  .editor-toast{
+    position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
+    background:var(--text);color:white;padding:10px 18px;border-radius:100px;
+    font-size:13px;font-weight:500;z-index:9999;
+    animation:toastIn 0.2s, toastOut 0.3s 1.7s forwards;
+    box-shadow:0 8px 24px rgba(0,0,0,0.2);
+  }
+  @keyframes toastIn{from{opacity:0;transform:translate(-50%,10px)}to{opacity:1;transform:translate(-50%,0)}}
+  @keyframes toastOut{to{opacity:0;transform:translate(-50%,10px)}}
 
   .color-picker{display:flex;gap:4px;flex-wrap:wrap;margin-top:4px}
   .color-swatch{width:22px;height:22px;border-radius:4px;border:2px solid white;cursor:pointer;box-shadow:0 0 0 1px var(--border)}
@@ -208,6 +222,181 @@ let activeColor = '#fcd34d';
 let activeStroke = 2;
 let annotations = [];
 let pendingImagePlace = null;
+let selectedAnn = null;     // anotação selecionada (para copy/paste)
+let clipboardAnn = null;    // anotação na área de transferência
+
+// =============== SELEÇÃO + COPY/PASTE ===============
+function selectAnnotation(ann) {
+  if (selectedAnn && selectedAnn.el) selectedAnn.el.classList.remove('selected');
+  selectedAnn = ann;
+  if (ann && ann.el) ann.el.classList.add('selected');
+}
+
+function deselect() {
+  if (selectedAnn && selectedAnn.el) selectedAnn.el.classList.remove('selected');
+  selectedAnn = null;
+}
+
+function makeSelectable(ann) {
+  if (!ann || !ann.el) return;
+  ann.el.addEventListener('click', e => {
+    if (activeTool !== 'select') return;
+    if (e.target.classList.contains('del-btn')) return;
+    if (e.target.classList.contains('resize-handle')) return;
+    e.stopPropagation();
+    selectAnnotation(ann);
+  });
+  // mousedown também marca como selecionada (útil pra drag em imagens/notas)
+  ann.el.addEventListener('mousedown', e => {
+    if (e.target.classList.contains('del-btn')) return;
+    if (e.target.classList.contains('resize-handle')) return;
+    selectAnnotation(ann);
+  });
+}
+
+function showToast(msg) {
+  const t = document.createElement('div');
+  t.className = 'editor-toast';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2100);
+}
+
+function getCurrentVisiblePage() {
+  // determina qual page-wrap está mais visível dentro do canvas-area
+  const area = canvasArea;
+  const areaRect = area.getBoundingClientRect();
+  const wraps = canvasArea.querySelectorAll('.page-wrap');
+  let best = null, bestScore = -1;
+  for (const w of wraps) {
+    const r = w.getBoundingClientRect();
+    const visible = Math.max(0, Math.min(r.bottom, areaRect.bottom) - Math.max(r.top, areaRect.top));
+    if (visible > bestScore) { bestScore = visible; best = w; }
+  }
+  return best ? parseInt(best.dataset.page) : 1;
+}
+
+function cloneAnnotation(src) {
+  // Clone independente dos campos serializáveis
+  const c = {};
+  for (const k of Object.keys(src)) {
+    if (k === 'el') continue;
+    if (src[k] instanceof Uint8Array) c[k] = new Uint8Array(src[k]);
+    else if (Array.isArray(src[k])) c[k] = src[k].map(p => typeof p === 'object' ? { ...p } : p);
+    else c[k] = src[k];
+  }
+  c.id = Date.now() + Math.random();
+  return c;
+}
+
+function pasteAnnotation(targetPage) {
+  if (!clipboardAnn) return;
+  const cloned = cloneAnnotation(clipboardAnn);
+  cloned.page = targetPage;
+  // Pequeno offset pra não sobrepor 100%
+  cloned.x = (cloned.x || 0) + 20;
+  cloned.y = (cloned.y || 0) + 20;
+
+  const wrap = canvasArea.querySelector(`.page-wrap[data-page="${targetPage}"]`);
+  if (!wrap) return;
+
+  // Garante que cabe na página
+  const pw = wrap.offsetWidth, phh = wrap.offsetHeight;
+  if (cloned.w && cloned.x + cloned.w > pw - 10) cloned.x = Math.max(10, pw - cloned.w - 10);
+  if (cloned.h && cloned.y + cloned.h > phh - 10) cloned.y = Math.max(10, phh - cloned.h - 10);
+
+  // Recria o elemento DOM conforme o tipo
+  if (cloned.type === 'image') {
+    const ann = createAnnotation(targetPage, 'image', cloned.x, cloned.y, cloned.w, cloned.h, '', null);
+    ann.imageDataUrl = cloned.imageDataUrl;
+    ann.imageBytes = new Uint8Array(cloned.imageBytes);
+    ann.imageType = cloned.imageType;
+    ann.naturalRatio = cloned.naturalRatio;
+
+    const imgEl = document.createElement('img');
+    imgEl.src = ann.imageDataUrl;
+    ann.el.appendChild(imgEl);
+
+    const handle = document.createElement('div');
+    handle.className = 'resize-handle br';
+    ann.el.appendChild(handle);
+
+    attachImageDragResize(ann, handle);
+    selectAnnotation(ann);
+    return ann;
+  }
+
+  if (cloned.type === 'pen') {
+    // pen: redesenha pontos no canvas da página alvo
+    const newPoints = (cloned.points || []).map(p => ({ x: p.x + 20, y: p.y + 20 }));
+    annotations.push({ ...cloned, points: newPoints });
+    const draw = wrap.querySelector('canvas.draw');
+    const ctx = draw.getContext('2d');
+    ctx.strokeStyle = cloned.color;
+    ctx.lineWidth = cloned.stroke || 2;
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.beginPath();
+    ctx.moveTo(newPoints[0].x, newPoints[0].y);
+    for (let i = 1; i < newPoints.length; i++) ctx.lineTo(newPoints[i].x, newPoints[i].y);
+    ctx.stroke();
+    return;
+  }
+
+  if (cloned.type === 'line' || cloned.type === 'arrow') {
+    createLineOrArrow(targetPage,
+      cloned.x + cloned.x1, cloned.y + cloned.y1,
+      cloned.x + cloned.x2, cloned.y + cloned.y2,
+      cloned.type, cloned.color);
+    return;
+  }
+
+  // tipos genéricos (text, highlight, underline, strike, rect, ellipse, stamp, note)
+  const ann = createAnnotation(targetPage, cloned.type, cloned.x, cloned.y, cloned.w, cloned.h, cloned.text || '', cloned.color);
+  if (cloned.fontSize) ann.fontSize = cloned.fontSize;
+  selectAnnotation(ann);
+}
+
+// Listener global de copy/paste
+document.addEventListener('keydown', e => {
+  // Ctrl+C ou Cmd+C
+  const isCopy = (e.ctrlKey || e.metaKey) && e.key === 'c';
+  const isPaste = (e.ctrlKey || e.metaKey) && e.key === 'v';
+  const isCut = (e.ctrlKey || e.metaKey) && e.key === 'x';
+  const isDel = e.key === 'Delete' || e.key === 'Backspace';
+
+  // Ignora se está editando texto num input/textarea/contenteditable
+  const tag = (e.target.tagName || '').toLowerCase();
+  if (tag === 'input' || tag === 'textarea' || e.target.isContentEditable) return;
+
+  if (isCopy && selectedAnn) {
+    e.preventDefault();
+    clipboardAnn = cloneAnnotation(selectedAnn);
+    showToast(`Copiado: ${selectedAnn.type === 'image' ? 'imagem' : selectedAnn.type}`);
+  } else if (isCut && selectedAnn) {
+    e.preventDefault();
+    clipboardAnn = cloneAnnotation(selectedAnn);
+    annotations = annotations.filter(a => a.id !== selectedAnn.id);
+    if (selectedAnn.el) selectedAnn.el.remove();
+    selectedAnn = null;
+    showToast('Recortado');
+  } else if (isPaste && clipboardAnn) {
+    e.preventDefault();
+    const target = getCurrentVisiblePage();
+    pasteAnnotation(target);
+    showToast(`Colado na página ${target}`);
+  } else if (isDel && selectedAnn && document.activeElement === document.body) {
+    e.preventDefault();
+    annotations = annotations.filter(a => a.id !== selectedAnn.id);
+    if (selectedAnn.el) selectedAnn.el.remove();
+    selectedAnn = null;
+  }
+});
+
+// Clica fora -> deseleciona
+document.addEventListener('click', e => {
+  if (e.target.closest('.annotation') || e.target.closest('.toolbar')) return;
+  deselect();
+});
 
 // ===== TOOL SWITCHING =====
 document.querySelectorAll('.tool-btn[data-tool]').forEach(b => b.addEventListener('click', () => {
@@ -532,6 +721,7 @@ function createLineOrArrow(pageNum, x1, y1, x2, y2, type, color) {
   el.appendChild(del);
   wrap.appendChild(el);
   ann.el = el;
+  makeSelectable(ann);
 }
 
 // ===== STAMPS =====
@@ -629,6 +819,7 @@ function createAnnotation(page, type, x, y, w, h, text, color) {
   el.appendChild(del);
   wrap.appendChild(el);
   ann.el = el;
+  makeSelectable(ann);
   return ann;
 }
 
@@ -682,12 +873,22 @@ document.getElementById('imageInput').addEventListener('change', async e => {
   handle.className = 'resize-handle br';
   ann.el.appendChild(handle);
 
-  // Drag para mover
+  attachImageDragResize(ann, handle);
+  makeSelectable(ann);
+  selectAnnotation(ann); // já seleciona após inserir
+
+  URL.revokeObjectURL(url);
+  pendingImagePlace = null;
+});
+
+// ===== HELPERS DRAG/RESIZE PARA IMAGEM (reutilizável no paste) =====
+function attachImageDragResize(ann, handle) {
   let dragging = null;
   ann.el.addEventListener('mousedown', e => {
     if (e.target.classList.contains('resize-handle')) return;
     if (e.target.classList.contains('del-btn')) return;
     e.stopPropagation(); e.preventDefault();
+    selectAnnotation(ann);
     const wrap = ann.el.parentElement;
     const wrapRect = wrap.getBoundingClientRect();
     dragging = { offsetX: e.clientX - wrapRect.left - ann.x, offsetY: e.clientY - wrapRect.top - ann.y };
@@ -706,21 +907,17 @@ document.getElementById('imageInput').addEventListener('change', async e => {
   });
   document.addEventListener('mouseup', () => { if (dragging) { ann.el.classList.remove('dragging'); dragging = null; } });
 
-  // Resize
   let resizing = null;
   handle.addEventListener('mousedown', e => { e.stopPropagation(); e.preventDefault(); resizing = { startX: e.clientX, startW: ann.w }; });
   document.addEventListener('mousemove', e => {
     if (!resizing) return;
     let newW = Math.max(40, resizing.startW + (e.clientX - resizing.startX));
-    let newH = newW * ann.naturalRatio;
+    let newH = newW * (ann.naturalRatio || 1);
     ann.w = newW; ann.h = newH;
     ann.el.style.width = newW + 'px'; ann.el.style.height = newH + 'px';
   });
   document.addEventListener('mouseup', () => { resizing = null; });
-
-  URL.revokeObjectURL(url);
-  pendingImagePlace = null;
-});
+}
 
 // ===== AÇÕES =====
 document.getElementById('undoBtn').addEventListener('click', () => {
