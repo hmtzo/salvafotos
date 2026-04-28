@@ -150,6 +150,7 @@ processBtn.addEventListener('click', async () => {
 
     setProgress(statusEl, 100);
     showStatus(statusEl, `✓ Pronto! ${targetIndices.size} páginas giradas em ${angle}°.`, 'success');
+    trackUsage('girar-pdf', { pages: targetIndices.size, angle });
   } catch (err) {
     console.error(err);
     showStatus(statusEl, 'Erro: ' + err.message, 'error');

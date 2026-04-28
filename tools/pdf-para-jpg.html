@@ -3,29 +3,29 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Comprimir PDF — Sindicompany Hub</title>
+<title>PDF → JPG — Sindicompany Hub</title>
 <meta name="robots" content="noindex, nofollow">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="icon" href="/logo.svg">
 <link rel="stylesheet" href="/assets/shared.css">
-<script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 </head>
 <body>
 <div id="app-nav"></div>
 <div class="container">
   <section class="tool-hero">
-    <span class="eyebrow">🗜️ PDF</span>
-    <h1>Comprimir PDF</h1>
-    <p>Reduza o tamanho do PDF rasterizando as páginas em JPEG. Funciona melhor em PDFs com imagens/escaneados.</p>
+    <span class="eyebrow">🖼️ PDF</span>
+    <h1>PDF → JPG</h1>
+    <p>Converta cada página do PDF em uma imagem JPG. Útil pra mandar pelo WhatsApp ou inserir em outros documentos.</p>
   </section>
 
   <div class="card">
     <label for="fileInput" class="drop-zone" id="dropZone">
       <div class="drop-icon">
-        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"/></svg>
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
       </div>
       <div class="drop-title">Arraste o PDF aqui ou clique para selecionar</div>
       <div class="drop-sub">Aceita 1 arquivo PDF</div>
@@ -35,19 +35,28 @@
     <div id="fileInfo" style="display:none;margin-top:12px;padding:12px 14px;background:var(--bg-elev);border-radius:10px;font-size:13px;color:var(--text-dim);"></div>
 
     <div id="options" style="display:none;margin-top:18px;">
-      <div class="field">
-        <label>Nível de compressão</label>
-        <select id="level">
-          <option value="high">Alta — máxima compressão (qualidade média)</option>
-          <option value="medium" selected>Média — bom equilíbrio (recomendado)</option>
-          <option value="low">Leve — qualidade alta, menor compressão</option>
-        </select>
+      <div class="field-row">
+        <div class="field">
+          <label>Qualidade</label>
+          <select id="quality">
+            <option value="0.7">Padrão (mais leve)</option>
+            <option value="0.85" selected>Alta (recomendado)</option>
+            <option value="0.95">Máxima</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Resolução</label>
+          <select id="scale">
+            <option value="1.5">Tela (1.5x)</option>
+            <option value="2" selected>Impressão (2x)</option>
+            <option value="3">Alta (3x)</option>
+          </select>
+        </div>
       </div>
-      <p style="font-size:12px;color:var(--text-muted);">⚠️ Compressão por rasterização: o texto vira imagem. Não use se precisa selecionar texto depois.</p>
     </div>
 
     <button class="btn-primary" id="processBtn" disabled>
-      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"/></svg>
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
       <span id="btnText">Selecione um PDF</span>
     </button>
 
@@ -72,23 +81,15 @@ const btnText = document.getElementById('btnText');
 const statusEl = document.getElementById('status');
 
 let file = null;
-let originalSize = 0;
-
-const LEVELS = {
-  high:   { scale: 1.0, quality: 0.55 },
-  medium: { scale: 1.3, quality: 0.72 },
-  low:    { scale: 1.6, quality: 0.85 },
-};
 
 setupDropZone(dropZone, fileInput, newFiles => {
   file = newFiles[0];
   if (!file) return;
-  originalSize = file.size;
   fileInfo.style.display = 'block';
   fileInfo.innerHTML = `<strong>${file.name}</strong> · ${formatBytes(file.size)}`;
   opts.style.display = 'block';
   processBtn.disabled = false;
-  btnText.textContent = 'Comprimir PDF';
+  btnText.textContent = 'Converter para JPG';
 });
 
 processBtn.addEventListener('click', async () => {
@@ -99,19 +100,19 @@ processBtn.addEventListener('click', async () => {
   setProgress(statusEl, 5);
 
   try {
-    const level = document.getElementById('level').value;
-    const { scale, quality } = LEVELS[level];
+    const quality = parseFloat(document.getElementById('quality').value);
+    const scale = parseFloat(document.getElementById('scale').value);
 
     const buf = await file.arrayBuffer();
     const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
-    const totalPages = pdf.numPages;
+    const total = pdf.numPages;
 
-    const out = await PDFLib.PDFDocument.create();
+    const zip = new JSZip();
+    const baseName = file.name.replace(/\.pdf$/i, '');
 
-    for (let i = 1; i <= totalPages; i++) {
-      showStatus(statusEl, `Comprimindo página ${i}/${totalPages}…`);
-      setProgress(statusEl, 5 + (i / totalPages) * 85);
-
+    for (let i = 1; i <= total; i++) {
+      showStatus(statusEl, `Convertendo página ${i}/${total}…`);
+      setProgress(statusEl, 5 + (i / total) * 85);
       const page = await pdf.getPage(i);
       const viewport = page.getViewport({ scale });
       const canvas = document.createElement('canvas');
@@ -120,40 +121,29 @@ processBtn.addEventListener('click', async () => {
       const ctx = canvas.getContext('2d');
       ctx.fillStyle = 'white';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
-
       await page.render({ canvasContext: ctx, viewport }).promise;
-      const jpegDataUrl = canvas.toDataURL('image/jpeg', quality);
-      const jpegBytes = await fetch(jpegDataUrl).then(r => r.arrayBuffer());
-
-      const img = await out.embedJpg(jpegBytes);
-      const pdfPage = out.addPage([viewport.width, viewport.height]);
-      pdfPage.drawImage(img, { x: 0, y: 0, width: viewport.width, height: viewport.height });
-
+      const blob = await new Promise(r => canvas.toBlob(r, 'image/jpeg', quality));
+      const arrBuf = await blob.arrayBuffer();
+      const padded = String(i).padStart(String(total).length, '0');
+      zip.file(`${baseName}_pag-${padded}.jpg`, arrBuf);
       await new Promise(r => setTimeout(r, 0));
     }
 
-    showStatus(statusEl, 'Salvando…');
+    showStatus(statusEl, 'Compactando…');
     setProgress(statusEl, 95);
-    const pdfBytes = await out.save();
-    const blob = new Blob([pdfBytes], { type: 'application/pdf' });
-    const baseName = file.name.replace(/\.pdf$/i, '');
-    downloadBlob(blob, `${baseName}_comprimido.pdf`);
+    const zipBlob = await zip.generateAsync({ type: 'blob' });
+    downloadBlob(zipBlob, `${baseName}_jpg.zip`);
 
     setProgress(statusEl, 100);
-    const reduction = ((1 - blob.size / originalSize) * 100).toFixed(0);
-    if (blob.size < originalSize) {
-      showStatus(statusEl, `✓ Pronto! ${formatBytes(originalSize)} → ${formatBytes(blob.size)} (${reduction}% menor).`, 'success');
-      trackUsage('comprimir-pdf', { reduction });
-    } else {
-      showStatus(statusEl, `⚠ Arquivo gerado: ${formatBytes(blob.size)}. Esse PDF não tinha como ser comprimido mais — talvez já esteja otimizado.`, '');
-    }
+    showStatus(statusEl, `✓ Pronto! ${total} imagens em ${formatBytes(zipBlob.size)}.`, 'success');
+    trackUsage('pdf-para-jpg', { pages: total });
   } catch (err) {
     console.error(err);
     showStatus(statusEl, 'Erro: ' + err.message, 'error');
     setProgress(statusEl, 0);
   } finally {
     processBtn.disabled = false;
-    btnText.textContent = 'Comprimir PDF';
+    btnText.textContent = 'Converter para JPG';
   }
 });
 </script>

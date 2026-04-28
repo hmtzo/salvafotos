@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Desbloquear PDF — Sindicompany Hub</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="icon" href="/logo.svg">
+<link rel="stylesheet" href="/assets/shared.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+</head>
+<body>
+<div id="app-nav"></div>
+<div class="container">
+  <section class="tool-hero">
+    <span class="eyebrow">🔓 Segurança</span>
+    <h1>Desbloquear PDF</h1>
+    <p>Remove a senha de um PDF protegido. Você precisa saber a senha original — não é uma ferramenta para quebrar PDFs alheios.</p>
+  </section>
+
+  <div class="card">
+    <label for="fileInput" class="drop-zone" id="dropZone">
+      <div class="drop-icon">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"/></svg>
+      </div>
+      <div class="drop-title">Arraste o PDF protegido aqui</div>
+      <div class="drop-sub">Aceita 1 arquivo PDF</div>
+    </label>
+    <input type="file" id="fileInput" accept="application/pdf">
+
+    <div id="fileInfo" style="display:none;margin-top:12px;padding:12px 14px;background:var(--bg-elev);border-radius:10px;font-size:13px;color:var(--text-dim);"></div>
+
+    <div id="options" style="display:none;margin-top:18px;">
+      <div class="field">
+        <label for="userPass">Senha do PDF</label>
+        <input type="password" id="userPass" placeholder="senha atual do arquivo">
+      </div>
+    </div>
+
+    <button class="btn-primary" id="processBtn" disabled>
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"/></svg>
+      <span id="btnText">Selecione um PDF</span>
+    </button>
+
+    <div class="status" id="status">
+      <div class="status-text">Aguardando…</div>
+      <div class="progress"><div class="progress-bar"></div></div>
+    </div>
+
+    <p style="font-size:12px;color:var(--text-muted);margin-top:14px;">
+      ⚖️ Use somente em PDFs próprios ou autorizados. A Sindicompany não se responsabiliza por uso indevido.
+    </p>
+  </div>
+</div>
+<div id="app-footer"></div>
+
+<script src="/assets/shared.js"></script>
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+const fileInfo = document.getElementById('fileInfo');
+const opts = document.getElementById('options');
+const processBtn = document.getElementById('processBtn');
+const btnText = document.getElementById('btnText');
+const statusEl = document.getElementById('status');
+
+let file = null;
+
+setupDropZone(dropZone, fileInput, newFiles => {
+  file = newFiles[0];
+  if (!file) return;
+  fileInfo.style.display = 'block';
+  fileInfo.innerHTML = `<strong>${file.name}</strong> · ${formatBytes(file.size)}`;
+  opts.style.display = 'block';
+  processBtn.disabled = false;
+  btnText.textContent = 'Desbloquear PDF';
+});
+
+processBtn.addEventListener('click', async () => {
+  if (!file) return;
+  const pw = document.getElementById('userPass').value;
+  processBtn.disabled = true;
+  btnText.textContent = 'Processando…';
+  showStatus(statusEl, 'Lendo PDF…');
+  setProgress(statusEl, 10);
+
+  try {
+    const buf = await file.arrayBuffer();
+
+    // Estratégia: usa pdf.js pra renderizar (com senha) cada página em canvas,
+    // depois constrói novo PDF sem criptografia via pdf-lib.
+    const pdf = await pdfjsLib.getDocument({ data: buf, password: pw }).promise;
+    const total = pdf.numPages;
+
+    setProgress(statusEl, 20);
+    const out = await PDFLib.PDFDocument.create();
+
+    for (let i = 1; i <= total; i++) {
+      showStatus(statusEl, `Reescrevendo página ${i}/${total}…`);
+      setProgress(statusEl, 20 + (i / total) * 70);
+      const page = await pdf.getPage(i);
+      const viewport = page.getViewport({ scale: 2 });
+      const canvas = document.createElement('canvas');
+      canvas.width = viewport.width;
+      canvas.height = viewport.height;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = 'white';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      await page.render({ canvasContext: ctx, viewport }).promise;
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+      const jpgBytes = await fetch(dataUrl).then(r => r.arrayBuffer());
+      const img = await out.embedJpg(jpgBytes);
+      const newPage = out.addPage([viewport.width, viewport.height]);
+      newPage.drawImage(img, { x: 0, y: 0, width: viewport.width, height: viewport.height });
+      await new Promise(r => setTimeout(r, 0));
+    }
+
+    setProgress(statusEl, 95);
+    const bytes = await out.save();
+    const blob = new Blob([bytes], { type: 'application/pdf' });
+    const baseName = file.name.replace(/\.pdf$/i, '');
+    downloadBlob(blob, `${baseName}_desbloqueado.pdf`);
+
+    setProgress(statusEl, 100);
+    showStatus(statusEl, '✓ Pronto! PDF sem senha. (Texto pode ter virado imagem)', 'success');
+    trackUsage('desbloquear-pdf', { pages: total });
+  } catch (err) {
+    console.error(err);
+    let msg = err.message || 'falha ao processar';
+    if (/password/i.test(msg) || err.name === 'PasswordException') {
+      msg = 'Senha incorreta ou PDF com proteção avançada.';
+    }
+    showStatus(statusEl, 'Erro: ' + msg, 'error');
+    setProgress(statusEl, 0);
+  } finally {
+    processBtn.disabled = false;
+    btnText.textContent = 'Desbloquear PDF';
+  }
+});
+</script>
+</body>
+</html>

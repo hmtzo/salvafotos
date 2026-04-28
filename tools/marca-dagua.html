@@ -179,6 +179,7 @@ processBtn.addEventListener('click', async () => {
 
     setProgress(statusEl, 100);
     showStatus(statusEl, `✓ Pronto! Marca d'água "${text}" adicionada em ${pages.length} páginas.`, 'success');
+    trackUsage('marca-dagua', { pages: pages.length });
   } catch (err) {
     console.error(err);
     showStatus(statusEl, 'Erro: ' + err.message, 'error');

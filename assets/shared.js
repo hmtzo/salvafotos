@@ -14,6 +14,7 @@ function renderNav({ backToHub = true } = {}) {
         <a href="/" class="logo">${SINDI_LOGO_SVG}</a>
         <div class="nav-actions">
           ${back}
+          <a href="/dashboard.html" class="btn-icon" title="Meu uso">📊 Dashboard</a>
           <span class="badge">🔒 Interno</span>
           <a href="/api/logout" class="btn-icon" title="Sair">Sair</a>
         </div>
@@ -70,6 +71,41 @@ function showStatus(el, msg, type) {
 }
 function setProgress(el, pct) {
   el.querySelector('.progress-bar').style.width = pct + '%';
+}
+
+// =============================================================================
+// USAGE TRACKING (localStorage) — alimenta o Dashboard
+// =============================================================================
+const TIME_SAVED_MIN = {
+  'juntar-pdf': 5, 'dividir-pdf': 5, 'comprimir-pdf': 3, 'girar-pdf': 2,
+  'numerar-paginas': 4, 'marca-dagua': 5, 'proteger-pdf': 3, 'jpg-para-pdf': 4,
+  'whatsapp-fotos': 30, 'pdf-para-jpg': 4, 'organizar-pdf': 6, 'desbloquear-pdf': 2,
+  'ocr': 10, 'gerador-notificacao': 20, 'gerador-ata': 30, 'gerador-contrato': 20,
+  'sindi': 5,
+};
+
+function trackUsage(toolSlug, meta = {}) {
+  try {
+    const KEY = 'sf_usage_v1';
+    const now = Date.now();
+    const data = JSON.parse(localStorage.getItem(KEY) || '{"tools":{}, "history":[]}');
+    if (!data.tools[toolSlug]) {
+      data.tools[toolSlug] = { count: 0, firstUsed: now, lastUsed: now, savedMinutes: 0 };
+    }
+    const t = data.tools[toolSlug];
+    t.count += 1;
+    t.lastUsed = now;
+    t.savedMinutes += TIME_SAVED_MIN[toolSlug] || 5;
+    data.history.unshift({ slug: toolSlug, ts: now, ...meta });
+    if (data.history.length > 200) data.history = data.history.slice(0, 200);
+    localStorage.setItem(KEY, JSON.stringify(data));
+  } catch (e) { console.warn('tracking failed', e); }
+}
+
+function getUsage() {
+  try {
+    return JSON.parse(localStorage.getItem('sf_usage_v1') || '{"tools":{}, "history":[]}');
+  } catch (e) { return { tools: {}, history: [] }; }
 }
 
 // Auto-mount nav/footer se o documento tiver placeholders

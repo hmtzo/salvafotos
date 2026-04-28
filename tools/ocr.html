@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OCR — Sindicompany Hub</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="icon" href="/logo.svg">
+<link rel="stylesheet" href="/assets/shared.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<style>
+  .ocr-output{
+    margin-top:18px;background:var(--card);border:1px solid var(--border);
+    border-radius:10px;padding:18px;
+  }
+  .ocr-output h3{font-size:13px;margin-bottom:10px;color:var(--text-dim)}
+  .ocr-output textarea{
+    width:100%;min-height:280px;padding:14px;border:1.5px solid var(--border);
+    border-radius:10px;font-family:'JetBrains Mono',monospace;font-size:13px;
+    line-height:1.6;color:var(--text);background:var(--bg-elev);resize:vertical;
+  }
+  .ocr-actions{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+  .ocr-actions button{
+    padding:8px 14px;border:1px solid var(--border);background:var(--card);
+    border-radius:8px;font-size:13px;cursor:pointer;font-family:inherit;
+    transition:all 0.15s;color:var(--text-dim);
+  }
+  .ocr-actions button:hover{border-color:var(--accent);color:var(--accent-bright)}
+</style>
+</head>
+<body>
+<div id="app-nav"></div>
+<div class="container">
+  <section class="tool-hero">
+    <span class="eyebrow">🔍 Documentos</span>
+    <h1>OCR — Texto em Imagem</h1>
+    <p>Extrai texto de fotos, PDFs escaneados e imagens. Funciona em português e inglês. Pesado mas roda 100% no seu navegador.</p>
+  </section>
+
+  <div class="card">
+    <label for="fileInput" class="drop-zone" id="dropZone">
+      <div class="drop-icon">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+      </div>
+      <div class="drop-title">Arraste imagem ou PDF aqui</div>
+      <div class="drop-sub">JPG, PNG, PDF · processado no seu navegador</div>
+    </label>
+    <input type="file" id="fileInput" accept="image/jpeg,image/png,image/webp,application/pdf">
+
+    <div id="fileInfo" style="display:none;margin-top:12px;padding:12px 14px;background:var(--bg-elev);border-radius:10px;font-size:13px;color:var(--text-dim);"></div>
+
+    <div id="options" style="display:none;margin-top:18px;">
+      <div class="field-row">
+        <div class="field">
+          <label>Idioma</label>
+          <select id="lang">
+            <option value="por" selected>Português</option>
+            <option value="eng">Inglês</option>
+            <option value="por+eng">Português + Inglês</option>
+            <option value="spa">Espanhol</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Resolução de leitura</label>
+          <select id="scale">
+            <option value="1.5">Padrão (mais rápido)</option>
+            <option value="2" selected>Alta (recomendado)</option>
+            <option value="3">Máxima (lento)</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn-primary" id="processBtn" disabled>
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+      <span id="btnText">Selecione um arquivo</span>
+    </button>
+
+    <div class="status" id="status">
+      <div class="status-text">Aguardando…</div>
+      <div class="progress"><div class="progress-bar"></div></div>
+    </div>
+
+    <div id="output" class="ocr-output" style="display:none;">
+      <h3>Texto extraído</h3>
+      <textarea id="outputText" readonly></textarea>
+      <div class="ocr-actions">
+        <button id="copyBtn">📋 Copiar</button>
+        <button id="downloadBtn">💾 Baixar .txt</button>
+        <button id="downloadDocBtn">📄 Baixar .docx</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div id="app-footer"></div>
+
+<script src="/assets/shared.js"></script>
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+const fileInfo = document.getElementById('fileInfo');
+const opts = document.getElementById('options');
+const processBtn = document.getElementById('processBtn');
+const btnText = document.getElementById('btnText');
+const statusEl = document.getElementById('status');
+const output = document.getElementById('output');
+const outputText = document.getElementById('outputText');
+
+let file = null;
+
+setupDropZone(dropZone, fileInput, newFiles => {
+  file = newFiles[0];
+  if (!file) return;
+  fileInfo.style.display = 'block';
+  fileInfo.innerHTML = `<strong>${file.name}</strong> · ${formatBytes(file.size)}`;
+  opts.style.display = 'block';
+  processBtn.disabled = false;
+  btnText.textContent = 'Extrair texto';
+  output.style.display = 'none';
+});
+
+async function imagesFromFile(f, scale) {
+  if (f.type === 'application/pdf' || /\.pdf$/i.test(f.name)) {
+    const buf = await f.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+    const out = [];
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const viewport = page.getViewport({ scale });
+      const canvas = document.createElement('canvas');
+      canvas.width = viewport.width;
+      canvas.height = viewport.height;
+      const ctx = canvas.getContext('2d');
+      ctx.fillStyle = 'white';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      await page.render({ canvasContext: ctx, viewport }).promise;
+      out.push(canvas);
+    }
+    return out;
+  }
+  const url = URL.createObjectURL(f);
+  const img = await new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = rej; i.src = url; });
+  const canvas = document.createElement('canvas');
+  canvas.width = img.naturalWidth;
+  canvas.height = img.naturalHeight;
+  canvas.getContext('2d').drawImage(img, 0, 0);
+  URL.revokeObjectURL(url);
+  return [canvas];
+}
+
+processBtn.addEventListener('click', async () => {
+  if (!file) return;
+  processBtn.disabled = true;
+  btnText.textContent = 'Processando…';
+  showStatus(statusEl, 'Preparando OCR (1ª vez baixa modelo ~10MB)…');
+  setProgress(statusEl, 5);
+  output.style.display = 'none';
+
+  try {
+    const lang = document.getElementById('lang').value;
+    const scale = parseFloat(document.getElementById('scale').value);
+
+    showStatus(statusEl, 'Renderizando páginas…');
+    setProgress(statusEl, 10);
+    const canvases = await imagesFromFile(file, scale);
+
+    showStatus(statusEl, 'Carregando OCR engine…');
+    setProgress(statusEl, 15);
+    const worker = await Tesseract.createWorker(lang, 1, {
+      logger: m => {
+        if (m.status === 'recognizing text') {
+          setProgress(statusEl, 30 + m.progress * 60);
+          showStatus(statusEl, `Lendo… ${Math.round(m.progress * 100)}%`);
+        }
+      },
+    });
+
+    let fullText = '';
+    for (let i = 0; i < canvases.length; i++) {
+      showStatus(statusEl, `Lendo página ${i + 1}/${canvases.length}…`);
+      const { data: { text } } = await worker.recognize(canvases[i]);
+      if (canvases.length > 1) fullText += `\n\n--- Página ${i + 1} ---\n\n`;
+      fullText += text.trim();
+    }
+    await worker.terminate();
+
+    setProgress(statusEl, 100);
+    showStatus(statusEl, `✓ Pronto! ${fullText.split(/\s+/).filter(Boolean).length} palavras extraídas.`, 'success');
+
+    outputText.value = fullText.trim();
+    output.style.display = 'block';
+    trackUsage('ocr', { pages: canvases.length });
+  } catch (err) {
+    console.error(err);
+    showStatus(statusEl, 'Erro: ' + (err.message || err), 'error');
+    setProgress(statusEl, 0);
+  } finally {
+    processBtn.disabled = false;
+    btnText.textContent = 'Extrair texto';
+  }
+});
+
+document.getElementById('copyBtn').addEventListener('click', async () => {
+  await navigator.clipboard.writeText(outputText.value);
+  const btn = document.getElementById('copyBtn');
+  const orig = btn.textContent;
+  btn.textContent = '✓ Copiado!';
+  setTimeout(() => btn.textContent = orig, 1500);
+});
+
+document.getElementById('downloadBtn').addEventListener('click', () => {
+  const blob = new Blob([outputText.value], { type: 'text/plain;charset=utf-8' });
+  const baseName = file.name.replace(/\.[^.]+$/, '');
+  downloadBlob(blob, `${baseName}_ocr.txt`);
+});
+
+document.getElementById('downloadDocBtn').addEventListener('click', () => {
+  // Gera um .docx mínimo via DOC HTML wrapper (Word abre)
+  const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>OCR</title></head><body>${
+    outputText.value.split('\n').map(l => `<p>${l.replace(/&/g,'&amp;').replace(/</g,'&lt;')}</p>`).join('')
+  }</body></html>`;
+  const blob = new Blob(['﻿', html], { type: 'application/msword' });
+  const baseName = file.name.replace(/\.[^.]+$/, '');
+  downloadBlob(blob, `${baseName}_ocr.doc`);
+});
+</script>
+</body>
+</html>

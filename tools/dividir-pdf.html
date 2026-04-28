@@ -152,6 +152,7 @@ processBtn.addEventListener('click', async () => {
 
     setProgress(statusEl, 100);
     showStatus(statusEl, `✓ Pronto! ${segments.length} arquivos gerados.`, 'success');
+    trackUsage('dividir-pdf', { segments: segments.length });
   } catch (err) {
     console.error(err);
     showStatus(statusEl, 'Erro: ' + err.message, 'error');

@@ -13,6 +13,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="icon" href="logo.svg">
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<script src="/assets/shared.js"></script>
 <style>
   :root {
     --bg: #ffffff;
@@ -867,6 +868,7 @@ processBtn.addEventListener('click', async () => {
 
     setProgress(100);
     showStatus(`✓ Pronto! ${messageCount.toLocaleString('pt-BR')} mensagens · ${photos} fotos · ${withCaption} com legenda${unmatched?` · ${unmatched} sem match`:''}`, 'success');
+    if (window.trackUsage) trackUsage('whatsapp-fotos', { photos, videos, captions: withCaption });
 
     document.getElementById('statPhotos').textContent = photos.toLocaleString('pt-BR');
     document.getElementById('statVideos').textContent = videos.toLocaleString('pt-BR');

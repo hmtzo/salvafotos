@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard — Sindicompany Hub</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="icon" href="/logo.svg">
+<link rel="stylesheet" href="/assets/shared.css">
+<style>
+  .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:24px}
+  .stat-card{
+    background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
+    padding:20px;box-shadow:var(--shadow);
+  }
+  .stat-card .stat-label{font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px}
+  .stat-card .stat-value{font-size:32px;font-weight:800;letter-spacing:-0.02em;color:var(--text);line-height:1}
+  .stat-card .stat-sub{font-size:12px;color:var(--text-dim);margin-top:6px}
+  .stat-card.green .stat-value{color:var(--accent-bright)}
+  .stat-card.blue .stat-value{color:var(--info)}
+  .stat-card.orange .stat-value{color:var(--warn)}
+
+  .panel{
+    background:var(--card);border:1px solid var(--border);border-radius:var(--radius);
+    padding:20px;margin-bottom:18px;box-shadow:var(--shadow);
+  }
+  .panel-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+  .panel-header h2{font-size:16px;font-weight:600}
+  .panel-header .meta{font-size:12px;color:var(--text-muted)}
+
+  .ranking{display:flex;flex-direction:column;gap:8px}
+  .rank-item{
+    display:flex;align-items:center;gap:14px;padding:12px;
+    background:var(--bg-elev);border-radius:10px;border:1px solid var(--border);
+  }
+  .rank-pos{
+    width:28px;height:28px;border-radius:50%;background:var(--card);
+    display:flex;align-items:center;justify-content:center;
+    font-size:12px;font-weight:700;color:var(--text-dim);
+  }
+  .rank-item:nth-child(1) .rank-pos{background:#fef3c7;color:#92400e}
+  .rank-item:nth-child(2) .rank-pos{background:#e5e7eb;color:#374151}
+  .rank-item:nth-child(3) .rank-pos{background:#fde68a;color:#78350f}
+  .rank-info{flex:1;min-width:0}
+  .rank-name{font-size:14px;font-weight:600;color:var(--text)}
+  .rank-meta{font-size:12px;color:var(--text-dim);margin-top:2px}
+  .rank-bar-wrap{flex:1;max-width:240px;height:6px;background:var(--border);border-radius:100px;overflow:hidden;margin-left:14px}
+  .rank-bar{height:100%;background:linear-gradient(90deg,var(--accent),var(--info));border-radius:100px}
+  .rank-count{font-size:18px;font-weight:700;color:var(--text);min-width:40px;text-align:right}
+
+  .history{display:flex;flex-direction:column;gap:6px;max-height:400px;overflow-y:auto}
+  .hist-item{
+    display:flex;align-items:center;gap:10px;padding:10px 12px;
+    background:var(--bg-elev);border-radius:8px;font-size:13px;
+  }
+  .hist-icon{width:24px;height:24px;border-radius:6px;background:var(--accent-glow);display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0}
+  .hist-name{flex:1;color:var(--text);font-weight:500}
+  .hist-time{font-size:11px;color:var(--text-muted)}
+
+  .empty{
+    padding:48px 20px;text-align:center;color:var(--text-muted);
+    background:var(--bg-elev);border-radius:10px;
+  }
+  .empty .empty-icon{font-size:36px;margin-bottom:12px;opacity:0.5}
+
+  .btn-clear{
+    padding:8px 14px;background:transparent;border:1px solid var(--border);border-radius:8px;
+    font-size:12px;color:var(--text-muted);cursor:pointer;font-family:inherit;
+  }
+  .btn-clear:hover{color:var(--danger);border-color:var(--danger)}
+</style>
+</head>
+<body>
+<div id="app-nav"></div>
+<div class="container">
+  <section class="tool-hero">
+    <span class="eyebrow">📊 Dashboard</span>
+    <h1>Seu uso do Hub</h1>
+    <p>Veja quanto tempo você economizou usando as ferramentas. Os dados ficam armazenados só no seu navegador.</p>
+  </section>
+
+  <div class="stats-grid">
+    <div class="stat-card green">
+      <div class="stat-label">Total de usos</div>
+      <div class="stat-value" id="totalUses">0</div>
+      <div class="stat-sub">ferramentas executadas</div>
+    </div>
+    <div class="stat-card blue">
+      <div class="stat-label">Tempo economizado</div>
+      <div class="stat-value" id="totalSaved">0min</div>
+      <div class="stat-sub" id="totalSavedSub">vs fazer manual</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Ferramentas distintas</div>
+      <div class="stat-value" id="distinctTools">0</div>
+      <div class="stat-sub">utilizadas</div>
+    </div>
+    <div class="stat-card orange">
+      <div class="stat-label">Esta semana</div>
+      <div class="stat-value" id="thisWeek">0</div>
+      <div class="stat-sub">execuções nos últimos 7 dias</div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-header">
+      <h2>Top ferramentas</h2>
+      <button class="btn-clear" id="clearBtn">Limpar histórico</button>
+    </div>
+    <div id="ranking" class="ranking"></div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-header">
+      <h2>Atividade recente</h2>
+      <span class="meta">últimos 50 usos</span>
+    </div>
+    <div id="history" class="history"></div>
+  </div>
+</div>
+<div id="app-footer"></div>
+
+<script src="/assets/shared.js"></script>
+<script>
+const TOOL_META = {
+  'juntar-pdf':         { name: 'Juntar PDF', icon: '📑' },
+  'dividir-pdf':        { name: 'Dividir PDF', icon: '✂️' },
+  'comprimir-pdf':      { name: 'Comprimir PDF', icon: '🗜️' },
+  'girar-pdf':          { name: 'Girar PDF', icon: '🔄' },
+  'numerar-paginas':    { name: 'Numerar Páginas', icon: '🔢' },
+  'marca-dagua':        { name: 'Marca d\'água', icon: '💧' },
+  'proteger-pdf':       { name: 'Proteger PDF', icon: '🔒' },
+  'jpg-para-pdf':       { name: 'JPG/PNG → PDF', icon: '🖼️' },
+  'whatsapp-fotos':     { name: 'Fotos do WhatsApp', icon: '💬' },
+  'pdf-para-jpg':       { name: 'PDF → JPG', icon: '🖼️' },
+  'organizar-pdf':      { name: 'Organizar Páginas', icon: '🧩' },
+  'desbloquear-pdf':    { name: 'Desbloquear PDF', icon: '🔓' },
+  'ocr':                { name: 'OCR', icon: '🔍' },
+  'gerador-notificacao':{ name: 'Gerador de Notificação', icon: '📋' },
+  'gerador-ata':        { name: 'Gerador de Ata', icon: '📝' },
+  'gerador-contrato':   { name: 'Gerador de Contrato', icon: '📄' },
+  'sindi':              { name: 'Sindi (IA)', icon: '🤖' },
+};
+
+function fmtMin(min) {
+  if (min < 60) return min + ' min';
+  const h = Math.floor(min / 60);
+  const m = min % 60;
+  return h + 'h' + (m ? ' ' + m + 'min' : '');
+}
+
+function fmtRelative(ts) {
+  const diff = Date.now() - ts;
+  const sec = Math.floor(diff / 1000);
+  if (sec < 60) return 'agora';
+  if (sec < 3600) return Math.floor(sec / 60) + 'min atrás';
+  if (sec < 86400) return Math.floor(sec / 3600) + 'h atrás';
+  return Math.floor(sec / 86400) + ' dia' + (sec >= 172800 ? 's' : '') + ' atrás';
+}
+
+function render() {
+  const usage = getUsage();
+  const tools = usage.tools || {};
+  const history = usage.history || [];
+
+  const totalCount = Object.values(tools).reduce((a, t) => a + t.count, 0);
+  const totalSaved = Object.values(tools).reduce((a, t) => a + (t.savedMinutes || 0), 0);
+  const distinct = Object.keys(tools).length;
+  const weekAgo = Date.now() - 7 * 24 * 3600 * 1000;
+  const weekCount = history.filter(h => h.ts > weekAgo).length;
+
+  document.getElementById('totalUses').textContent = totalCount;
+  document.getElementById('totalSaved').textContent = fmtMin(totalSaved);
+  document.getElementById('totalSavedSub').textContent = totalSaved >= 60 ? `≈ ${(totalSaved / 60).toFixed(1)} horas` : 'vs fazer manual';
+  document.getElementById('distinctTools').textContent = distinct;
+  document.getElementById('thisWeek').textContent = weekCount;
+
+  // Ranking
+  const ranking = Object.entries(tools).sort((a, b) => b[1].count - a[1].count);
+  const maxCount = ranking[0]?.[1].count || 1;
+  const rankEl = document.getElementById('ranking');
+  if (!ranking.length) {
+    rankEl.innerHTML = `<div class="empty"><div class="empty-icon">📊</div><p>Use as ferramentas e elas aparecerão aqui.</p></div>`;
+  } else {
+    rankEl.innerHTML = ranking.map(([slug, t], i) => {
+      const meta = TOOL_META[slug] || { name: slug, icon: '🔧' };
+      const pct = (t.count / maxCount) * 100;
+      return `
+        <div class="rank-item">
+          <div class="rank-pos">${i + 1}</div>
+          <div style="font-size:20px">${meta.icon}</div>
+          <div class="rank-info">
+            <div class="rank-name">${meta.name}</div>
+            <div class="rank-meta">⏱ ${fmtMin(t.savedMinutes || 0)} economizados · último uso ${fmtRelative(t.lastUsed)}</div>
+          </div>
+          <div class="rank-bar-wrap"><div class="rank-bar" style="width:${pct}%"></div></div>
+          <div class="rank-count">${t.count}</div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  // History
+  const histEl = document.getElementById('history');
+  if (!history.length) {
+    histEl.innerHTML = `<div class="empty"><div class="empty-icon">⏰</div><p>Sem histórico ainda.</p></div>`;
+  } else {
+    histEl.innerHTML = history.slice(0, 50).map(h => {
+      const meta = TOOL_META[h.slug] || { name: h.slug, icon: '🔧' };
+      return `
+        <div class="hist-item">
+          <div class="hist-icon">${meta.icon}</div>
+          <div class="hist-name">${meta.name}</div>
+          <div class="hist-time">${fmtRelative(h.ts)}</div>
+        </div>
+      `;
+    }).join('');
+  }
+}
+
+document.getElementById('clearBtn').addEventListener('click', () => {
+  if (confirm('Limpar todo o histórico de uso? (Não desfaz)')) {
+    localStorage.removeItem('sf_usage_v1');
+    render();
+  }
+});
+
+render();
+</script>
+</body>
+</html>

@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gerador de Contrato — Sindicompany Hub</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="icon" href="/logo.svg">
+<link rel="stylesheet" href="/assets/shared.css">
+<script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+<style>
+  .types-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;margin-bottom:20px}
+  .type-card{padding:14px;border:1.5px solid var(--border);border-radius:10px;background:var(--card);cursor:pointer;transition:all 0.15s}
+  .type-card:hover{border-color:var(--accent)}
+  .type-card.active{border-color:var(--accent);background:var(--accent-glow)}
+  .type-card .icon{font-size:22px;margin-bottom:6px}
+  .type-card h4{font-size:13px;font-weight:600;margin-bottom:2px}
+  .type-card p{font-size:11px;color:var(--text-dim)}
+  .preview-pane{margin-top:18px;background:#fafbfc;border:1px solid var(--border);border-radius:10px;padding:24px 28px;font-family:'Times New Roman',serif;font-size:13px;line-height:1.7;color:var(--text);white-space:pre-wrap}
+  .preview-pane h2{font-family:inherit;font-size:15px;text-align:center;margin-bottom:14px;text-transform:uppercase}
+  .actions-row{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+  .actions-row button{padding:10px 16px;border:1px solid var(--border);background:var(--card);border-radius:8px;font-size:13px;cursor:pointer;font-family:inherit;transition:all 0.15s;color:var(--text-dim);font-weight:500}
+  .actions-row button:hover{border-color:var(--accent);color:var(--accent-bright)}
+  .actions-row button.primary{background:var(--accent);color:white;border-color:var(--accent)}
+  .actions-row button.primary:hover{background:var(--accent-bright);color:white}
+</style>
+</head>
+<body>
+<div id="app-nav"></div>
+<div class="container">
+  <section class="tool-hero">
+    <span class="eyebrow">📄 Geradores</span>
+    <h1>Gerador de Contrato</h1>
+    <p>Modelos de contrato pra serviços recorrentes do condomínio. Preencha os dados e exporte em PDF ou Word.</p>
+  </section>
+
+  <div class="card">
+    <h3 style="margin-bottom:12px">1. Tipo de contrato</h3>
+    <div class="types-grid" id="typesGrid"></div>
+
+    <h3 style="margin-bottom:12px">2. Dados</h3>
+    <div id="dataForm"></div>
+
+    <h3 style="margin-top:20px;margin-bottom:12px">3. Prévia</h3>
+    <div class="preview-pane" id="preview">Selecione um tipo de contrato.</div>
+
+    <div class="actions-row">
+      <button class="primary" id="btnPdf">📄 Baixar PDF</button>
+      <button id="btnDocx">📄 Baixar .docx</button>
+      <button id="btnCopy">📋 Copiar texto</button>
+      <button id="btnPrint">🖨️ Imprimir</button>
+    </div>
+
+    <p style="font-size:12px;color:var(--text-muted);margin-top:14px">
+      ⚖️ Modelos referenciais. Para situações específicas (LGPD, dados sensíveis, multas elevadas), recomenda-se revisão jurídica.
+    </p>
+  </div>
+</div>
+<div id="app-footer"></div>
+
+<script src="/assets/shared.js"></script>
+<script>
+const TYPES = [
+  { id:'prestacao',  icon:'🔧', name:'Prestação de Serviço', desc:'Manutenção, limpeza, jardinagem, etc.' },
+  { id:'locacao',    icon:'🔑', name:'Locação Salão Festas', desc:'Reserva de área comum por morador' },
+  { id:'manutencao', icon:'🛠️', name:'Manutenção mensal',    desc:'Elevador, gerador, CFTV (recorrente)' },
+];
+
+const FIELDS_BASE = [
+  { name:'condo',        label:'Condomínio (contratante)', placeholder:'Edifício Aurora' },
+  { name:'cnpj',         label:'CNPJ', placeholder:'00.000.000/0001-00' },
+  { name:'enderecoCondo',label:'Endereço do condomínio', placeholder:'Rua das Flores, 123, São Paulo/SP' },
+  { name:'sindico',      label:'Síndico(a) representante', placeholder:'Maria Souza' },
+  { name:'cpfSindico',   label:'CPF do síndico(a)', placeholder:'000.000.000-00' },
+];
+
+const FIELDS_BY_TYPE = {
+  prestacao: [
+    { name:'contratada',   label:'Empresa contratada (razão social)', placeholder:'Limpa Já Serviços Ltda.' },
+    { name:'cnpjContrat',  label:'CNPJ contratada', placeholder:'00.000.000/0001-00' },
+    { name:'enderecoContrat',label:'Endereço contratada', placeholder:'Av. Brasil, 100, São Paulo/SP' },
+    { name:'representante',label:'Representante legal', placeholder:'José Lima' },
+    { name:'objeto',       label:'Objeto do contrato', placeholder:'Limpeza diária das áreas comuns do condomínio' },
+    { name:'valor',        label:'Valor mensal (R$)', placeholder:'3.500,00' },
+    { name:'dataInicio',   label:'Data de início', type:'date', value:new Date().toISOString().slice(0,10) },
+    { name:'duracao',      label:'Duração (meses)', value:'12', type:'number' },
+    { name:'reajuste',     label:'Índice de reajuste anual', placeholder:'IPCA/IBGE' },
+    { name:'multa',        label:'Multa por rescisão antecipada (%)', value:'10', type:'number' },
+  ],
+  locacao: [
+    { name:'morador',      label:'Morador locatário (nome)', placeholder:'Carlos Mendes' },
+    { name:'cpfMorador',   label:'CPF do morador', placeholder:'000.000.000-00' },
+    { name:'unidade',      label:'Unidade do morador', placeholder:'Apto 502, Bloco A' },
+    { name:'area',         label:'Área comum locada', placeholder:'Salão de festas do condomínio' },
+    { name:'dataEvento',   label:'Data do evento', type:'date', value:new Date().toISOString().slice(0,10) },
+    { name:'horario',      label:'Horário do evento', placeholder:'das 18h às 23h' },
+    { name:'numConvidados',label:'Número aproximado de convidados', placeholder:'40' },
+    { name:'valorTaxa',    label:'Taxa de uso (R$)', placeholder:'200,00' },
+    { name:'caucao',       label:'Caução (R$)', placeholder:'500,00' },
+  ],
+  manutencao: [
+    { name:'contratada',   label:'Empresa contratada', placeholder:'Elevador Tech Ltda.' },
+    { name:'cnpjContrat',  label:'CNPJ contratada', placeholder:'00.000.000/0001-00' },
+    { name:'enderecoContrat',label:'Endereço contratada', placeholder:'Rua X, 99, São Paulo/SP' },
+    { name:'representante',label:'Representante legal', placeholder:'Pedro Santos' },
+    { name:'equipamento',  label:'Equipamento/sistema', placeholder:'2 elevadores marca XYZ modelo ABC' },
+    { name:'escopo',       label:'Escopo do serviço', placeholder:'Manutenção preventiva mensal e corretiva sob demanda; substituição de peças de uso comum (ART/RRT inclusos).' },
+    { name:'valorMensal',  label:'Valor mensal (R$)', placeholder:'1.800,00' },
+    { name:'dataInicio',   label:'Data de início', type:'date', value:new Date().toISOString().slice(0,10) },
+    { name:'duracao',      label:'Duração (meses)', value:'12', type:'number' },
+    { name:'sla',          label:'SLA chamados emergenciais', placeholder:'Atendimento em até 2 horas, 24/7' },
+    { name:'reajuste',     label:'Índice reajuste anual', placeholder:'IPCA/IBGE' },
+  ],
+};
+
+const TEMPLATES = {
+  prestacao: d => `CONTRATO DE PRESTAÇÃO DE SERVIÇOS
+
+CONTRATANTE: ${d.condo}, inscrito no CNPJ sob o nº ${d.cnpj}, com sede em ${d.enderecoCondo}, neste ato representado por seu(sua) síndico(a) ${d.sindico}, CPF ${d.cpfSindico}.
+
+CONTRATADA: ${d.contratada}, inscrita no CNPJ sob o nº ${d.cnpjContrat}, com sede em ${d.enderecoContrat}, neste ato representada por ${d.representante}.
+
+CLÁUSULA 1ª — OBJETO. A CONTRATADA prestará à CONTRATANTE os seguintes serviços: ${d.objeto}.
+
+CLÁUSULA 2ª — VIGÊNCIA. O presente contrato vigorará pelo prazo de ${d.duracao} (${d.duracao}) meses, a partir de ${formatDate(d.dataInicio)}, podendo ser prorrogado mediante novo termo.
+
+CLÁUSULA 3ª — VALOR E PAGAMENTO. A CONTRATANTE pagará à CONTRATADA o valor mensal de R$ ${d.valor}, com vencimento todo dia 5 de cada mês, mediante apresentação de nota fiscal.
+
+CLÁUSULA 4ª — REAJUSTE. O valor será reajustado anualmente pela variação do ${d.reajuste}, contado da data de assinatura.
+
+CLÁUSULA 5ª — RESCISÃO. O contrato poderá ser rescindido a qualquer tempo por qualquer das partes, mediante aviso prévio de 30 (trinta) dias. A rescisão imotivada antes do término implica multa de ${d.multa}% sobre o saldo restante.
+
+CLÁUSULA 6ª — OBRIGAÇÕES DA CONTRATADA. Executar os serviços com qualidade, pessoal qualificado, EPIs adequados, recolhimento de tributos e encargos trabalhistas.
+
+CLÁUSULA 7ª — OBRIGAÇÕES DA CONTRATANTE. Pagar pontualmente; fornecer condições mínimas para execução; comunicar irregularidades.
+
+CLÁUSULA 8ª — RESPONSABILIDADE CIVIL. A CONTRATADA responde por danos materiais ou pessoais decorrentes da execução, ressalvando casos fortuitos e força maior.
+
+CLÁUSULA 9ª — LGPD. As partes obrigam-se a tratar dados pessoais conforme a Lei 13.709/2018, limitando-se ao estritamente necessário à execução do objeto.
+
+CLÁUSULA 10ª — FORO. Fica eleito o foro da comarca da sede da CONTRATANTE para dirimir questões oriundas deste contrato.
+
+E por estarem assim ajustadas, as partes assinam o presente instrumento em 2 (duas) vias de igual teor.`,
+
+  locacao: d => `TERMO DE LOCAÇÃO DE ÁREA COMUM
+
+LOCADOR: ${d.condo}, CNPJ ${d.cnpj}, situado em ${d.enderecoCondo}, representado por seu(sua) síndico(a) ${d.sindico}, CPF ${d.cpfSindico}.
+
+LOCATÁRIO: ${d.morador}, CPF ${d.cpfMorador}, residente na unidade ${d.unidade} do referido condomínio.
+
+CLÁUSULA 1ª — OBJETO. Locação da área comum (${d.area}) para realização de evento particular do LOCATÁRIO em ${formatDate(d.dataEvento)}, ${d.horario}, com aproximadamente ${d.numConvidados} convidados.
+
+CLÁUSULA 2ª — TAXA. O LOCATÁRIO pagará taxa de uso de R$ ${d.valorTaxa}, com antecedência mínima de 48h da data do evento.
+
+CLÁUSULA 3ª — CAUÇÃO. O LOCATÁRIO depositará caução de R$ ${d.caucao}, devolvida em até 7 dias após o evento, descontados eventuais danos materiais constatados.
+
+CLÁUSULA 4ª — REGRAS. O LOCATÁRIO compromete-se a:
+a) respeitar o horário contratado;
+b) cumprir o limite de convidados informado;
+c) preservar a integridade da área e equipamentos;
+d) controlar volume sonoro conforme regimento interno;
+e) deixar a área limpa após uso ou arcar com taxa de limpeza extra;
+f) responder por danos causados por convidados.
+
+CLÁUSULA 5ª — RESPONSABILIDADE. O LOCATÁRIO assume integral responsabilidade civil e penal por atos seus e de seus convidados durante o evento.
+
+CLÁUSULA 6ª — CANCELAMENTO. Cancelamento com até 7 dias de antecedência: devolução integral da taxa. Entre 7 e 2 dias: 50%. Menos de 48h: não há devolução.
+
+CLÁUSULA 7ª — FORO. Eleito o foro da comarca do imóvel.
+
+E por estarem ajustadas, assinam em 2 (duas) vias.`,
+
+  manutencao: d => `CONTRATO DE MANUTENÇÃO MENSAL
+
+CONTRATANTE: ${d.condo}, CNPJ ${d.cnpj}, com sede em ${d.enderecoCondo}, neste ato representado por seu(sua) síndico(a) ${d.sindico}, CPF ${d.cpfSindico}.
+
+CONTRATADA: ${d.contratada}, CNPJ ${d.cnpjContrat}, com sede em ${d.enderecoContrat}, neste ato representada por ${d.representante}.
+
+CLÁUSULA 1ª — OBJETO. Manutenção do(s) seguinte(s) equipamento(s)/sistema(s): ${d.equipamento}.
+
+CLÁUSULA 2ª — ESCOPO. ${d.escopo}
+
+CLÁUSULA 3ª — VIGÊNCIA. Prazo de ${d.duracao} (${d.duracao}) meses iniciando-se em ${formatDate(d.dataInicio)}, com renovação automática por iguais períodos, salvo manifestação em contrário com 60 dias de antecedência.
+
+CLÁUSULA 4ª — VALOR. Valor mensal de R$ ${d.valorMensal}, com vencimento até o 5º dia útil do mês subsequente, mediante nota fiscal.
+
+CLÁUSULA 5ª — REAJUSTE. Reajuste anual pelo ${d.reajuste}, contado da assinatura.
+
+CLÁUSULA 6ª — SLA. ${d.sla}
+
+CLÁUSULA 7ª — RESPONSABILIDADES DA CONTRATADA. Equipe técnica habilitada; emissão de ART/RRT quando aplicável; relatórios mensais de visita; fornecimento de peças de uso comum; atendimento a chamados emergenciais conforme SLA.
+
+CLÁUSULA 8ª — EXCLUSÕES. Substituição de componentes de grande porte (motores, cabos de tração, painéis completos) e modernizações; eventos de força maior; danos por mau uso comprovado.
+
+CLÁUSULA 9ª — RESCISÃO. Por qualquer parte, com aviso prévio de 30 (trinta) dias.
+
+CLÁUSULA 10ª — LGPD. Tratamento de dados pessoais nos limites da Lei 13.709/2018.
+
+CLÁUSULA 11ª — FORO. Eleito o foro da sede da CONTRATANTE.
+
+E, por estarem ajustadas, as partes assinam em 2 (duas) vias.`,
+};
+
+const TITLES = {
+  prestacao: 'Contrato de Prestação de Serviços',
+  locacao: 'Termo de Locação de Área Comum',
+  manutencao: 'Contrato de Manutenção Mensal',
+};
+
+function formatDate(d) {
+  if (!d) return '[data]';
+  return new Date(d + 'T00:00:00').toLocaleDateString('pt-BR');
+}
+
+const typesGrid = document.getElementById('typesGrid');
+const dataForm = document.getElementById('dataForm');
+const previewEl = document.getElementById('preview');
+let currentType = null;
+
+typesGrid.innerHTML = TYPES.map(t => `
+  <div class="type-card" data-id="${t.id}">
+    <div class="icon">${t.icon}</div>
+    <h4>${t.name}</h4>
+    <p>${t.desc}</p>
+  </div>
+`).join('');
+
+typesGrid.addEventListener('click', e => {
+  const card = e.target.closest('.type-card');
+  if (!card) return;
+  typesGrid.querySelectorAll('.type-card').forEach(c => c.classList.remove('active'));
+  card.classList.add('active');
+  currentType = card.dataset.id;
+  renderForm();
+});
+
+function renderForm() {
+  const fields = [...FIELDS_BASE, ...(FIELDS_BY_TYPE[currentType] || [])];
+  dataForm.innerHTML = fields.map(f => `
+    <div class="field">
+      <label>${f.label}</label>
+      <input type="${f.type || 'text'}" name="${f.name}" placeholder="${f.placeholder || ''}" value="${f.value || ''}">
+    </div>
+  `).join('');
+  dataForm.querySelectorAll('input').forEach(i => i.addEventListener('input', renderPreview));
+  renderPreview();
+}
+
+function gatherData() {
+  const data = {};
+  dataForm.querySelectorAll('input').forEach(i => data[i.name] = i.value || `[${i.name}]`);
+  return data;
+}
+
+function renderPreview() {
+  if (!currentType) return;
+  const d = gatherData();
+  const corpo = TEMPLATES[currentType](d);
+  const local = `${d.condo ? d.condo : ''}, ${new Date().toLocaleDateString('pt-BR')}.`;
+  previewEl.innerHTML = corpo.replace(/\n/g, '<br>') + `<br><br><br>${local}<br><br>____________________________ &nbsp;&nbsp; ____________________________<br>CONTRATANTE &nbsp;&nbsp;&nbsp;&nbsp; CONTRATADA / LOCATÁRIO`;
+}
+
+document.getElementById('btnCopy').addEventListener('click', async () => {
+  await navigator.clipboard.writeText(previewEl.innerText);
+  const btn = document.getElementById('btnCopy');
+  btn.textContent = '✓ Copiado!';
+  setTimeout(() => btn.textContent = '📋 Copiar texto', 1500);
+});
+
+document.getElementById('btnDocx').addEventListener('click', () => {
+  if (!currentType) return alert('Selecione um tipo.');
+  const html = `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body style="font-family:Times New Roman,serif;font-size:12pt;line-height:1.7">${previewEl.innerHTML}</body></html>`;
+  const blob = new Blob(['﻿', html], { type: 'application/msword' });
+  downloadBlob(blob, `contrato_${currentType}_${new Date().toISOString().slice(0,10)}.doc`);
+  trackUsage('gerador-contrato', { type: currentType, format: 'doc' });
+});
+
+document.getElementById('btnPrint').addEventListener('click', () => {
+  const w = window.open('', '_blank');
+  w.document.write(`<html><head><title>Contrato</title><style>body{font-family:Times New Roman,serif;font-size:12pt;max-width:680px;margin:40px auto;padding:0 20px;line-height:1.7}</style></head><body>${previewEl.innerHTML}</body></html>`);
+  w.document.close();
+  w.focus();
+  setTimeout(() => w.print(), 500);
+});
+
+document.getElementById('btnPdf').addEventListener('click', async () => {
+  if (!currentType) { alert('Selecione um tipo.'); return; }
+  try {
+    const { PDFDocument, StandardFonts } = PDFLib;
+    const pdf = await PDFDocument.create();
+    const font = await pdf.embedFont(StandardFonts.TimesRoman);
+    const fontBold = await pdf.embedFont(StandardFonts.TimesRomanBold);
+    const M = 60, W = 595.28 - 2*M;
+    let page = pdf.addPage([595.28, 841.89]);
+    let y = 800;
+    const fs = 11, lh = 16;
+
+    const d = gatherData();
+    const corpo = TEMPLATES[currentType](d);
+    const lines = (function wrap(text) {
+      const out = [];
+      for (const par of text.split('\n')) {
+        if (!par.trim()) { out.push(''); continue; }
+        const isHeading = /^CLÁUSULA|^[A-ZÁÉÍÓÚÂÊÔÃÕÇ ]{8,}$/.test(par.trim()) && par.trim().length < 120;
+        const f = isHeading ? fontBold : font;
+        const words = par.split(' ');
+        let line = '';
+        for (const w of words) {
+          const test = line ? line + ' ' + w : w;
+          if (f.widthOfTextAtSize(test, fs) > W) { out.push({ t: line, b: isHeading }); line = w; }
+          else line = test;
+        }
+        if (line) out.push({ t: line, b: isHeading });
+      }
+      return out;
+    })(corpo);
+
+    for (const line of lines) {
+      if (y < 80) { page = pdf.addPage([595.28, 841.89]); y = 800; }
+      if (typeof line === 'string') { y -= lh; continue; }
+      page.drawText(line.t, { x: M, y, size: fs, font: line.b ? fontBold : font });
+      y -= lh;
+    }
+
+    y -= lh * 4;
+    if (y < 100) { page = pdf.addPage([595.28, 841.89]); y = 800; }
+    const local = `${d.condo}, ${new Date().toLocaleDateString('pt-BR')}.`;
+    page.drawText(local, { x: M, y, size: fs, font });
+    y -= lh * 3;
+    page.drawText('____________________________', { x: M, y, size: fs, font });
+    page.drawText('____________________________', { x: M + 270, y, size: fs, font });
+    y -= lh;
+    page.drawText('CONTRATANTE', { x: M, y, size: fs, font: fontBold });
+    page.drawText('CONTRATADA', { x: M + 270, y, size: fs, font: fontBold });
+
+    const bytes = await pdf.save();
+    downloadBlob(new Blob([bytes], { type: 'application/pdf' }), `contrato_${currentType}_${new Date().toISOString().slice(0,10)}.pdf`);
+    trackUsage('gerador-contrato', { type: currentType, format: 'pdf' });
+  } catch (err) {
+    alert('Erro: ' + err.message);
+    console.error(err);
+  }
+});
+</script>
+</body>
+</html>

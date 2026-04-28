@@ -221,6 +221,7 @@ processBtn.addEventListener('click', async () => {
 
     setProgress(statusEl, 100);
     showStatus(statusEl, `✓ Pronto! ${images.length} imagens em PDF (${formatBytes(blob.size)}).`, 'success');
+    trackUsage('jpg-para-pdf', { images: images.length });
   } catch (err) {
     console.error(err);
     showStatus(statusEl, 'Erro: ' + err.message, 'error');

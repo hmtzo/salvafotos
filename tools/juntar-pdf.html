@@ -142,6 +142,7 @@ processBtn.addEventListener('click', async () => {
 
     setProgress(statusEl, 100);
     showStatus(statusEl, `✓ Pronto! ${files.length} PDFs unidos em ${totalPages} páginas (${formatBytes(blob.size)}).`, 'success');
+    trackUsage('juntar-pdf', { files: files.length, pages: totalPages });
   } catch (err) {
     console.error(err);
     showStatus(statusEl, 'Erro: ' + err.message, 'error');

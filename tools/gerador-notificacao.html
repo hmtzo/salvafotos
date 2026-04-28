@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gerador de Notificação — Sindicompany Hub</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="icon" href="/logo.svg">
+<link rel="stylesheet" href="/assets/shared.css">
+<script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+<style>
+  .types-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px;margin-bottom:20px}
+  .type-card{
+    padding:14px;border:1.5px solid var(--border);border-radius:10px;
+    background:var(--card);cursor:pointer;transition:all 0.15s;
+  }
+  .type-card:hover{border-color:var(--accent)}
+  .type-card.active{border-color:var(--accent);background:var(--accent-glow)}
+  .type-card .icon{font-size:22px;margin-bottom:6px}
+  .type-card h4{font-size:13px;font-weight:600;margin-bottom:2px}
+  .type-card p{font-size:11px;color:var(--text-dim)}
+  .preview-pane{
+    margin-top:18px;background:#fafbfc;border:1px solid var(--border);
+    border-radius:10px;padding:24px 28px;font-family:'Times New Roman',serif;
+    font-size:13px;line-height:1.6;color:var(--text);min-height:300px;
+    white-space:pre-wrap;
+  }
+  .preview-pane h2{font-family:inherit;font-size:16px;text-align:center;margin-bottom:18px;text-transform:uppercase;letter-spacing:0.05em}
+  .actions-row{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+  .actions-row button{
+    padding:10px 16px;border:1px solid var(--border);background:var(--card);
+    border-radius:8px;font-size:13px;cursor:pointer;font-family:inherit;
+    transition:all 0.15s;color:var(--text-dim);font-weight:500;
+  }
+  .actions-row button:hover{border-color:var(--accent);color:var(--accent-bright)}
+  .actions-row button.primary{background:var(--accent);color:white;border-color:var(--accent)}
+  .actions-row button.primary:hover{background:var(--accent-bright);color:white}
+</style>
+</head>
+<body>
+<div id="app-nav"></div>
+<div class="container">
+  <section class="tool-hero">
+    <span class="eyebrow">📋 Geradores</span>
+    <h1>Gerador de Notificação Extrajudicial</h1>
+    <p>Wizard para criar notificações com base legal — inadimplência, perturbação do sossego, animal, obras sem autorização. Texto validado, pronto pra entregar.</p>
+  </section>
+
+  <div class="card">
+    <h3 style="margin-bottom:12px">1. Tipo da notificação</h3>
+    <div class="types-grid" id="typesGrid"></div>
+
+    <h3 style="margin-bottom:12px">2. Dados</h3>
+    <div id="dataForm"></div>
+
+    <h3 style="margin-top:20px;margin-bottom:12px">3. Prévia</h3>
+    <div class="preview-pane" id="preview">Selecione um tipo e preencha os dados.</div>
+
+    <div class="actions-row">
+      <button class="primary" id="btnPdf">📄 Baixar PDF</button>
+      <button id="btnCopy">📋 Copiar texto</button>
+      <button id="btnDocx">📄 Baixar .docx</button>
+      <button id="btnPrint">🖨️ Imprimir</button>
+    </div>
+  </div>
+</div>
+<div id="app-footer"></div>
+
+<script src="/assets/shared.js"></script>
+<script>
+const TYPES = [
+  { id:'inadimplencia', icon:'💰', name:'Inadimplência', desc:'Cobrança de cota condominial em atraso' },
+  { id:'barulho',       icon:'🔊', name:'Perturbação do sossego', desc:'Som, festas, barulho fora de horário' },
+  { id:'animal',        icon:'🐕', name:'Animal em desacordo', desc:'Pet sem coleira/focinheira ou em área proibida' },
+  { id:'obra',          icon:'🔨', name:'Obra sem autorização', desc:'Reforma sem comunicação prévia' },
+  { id:'lixo',          icon:'🗑️', name:'Lixo fora do horário', desc:'Descarte fora do permitido' },
+  { id:'area-comum',    icon:'🏊', name:'Uso indevido área comum', desc:'Conduta inadequada em piscina, salão, etc.' },
+];
+
+const FIELDS_BASE = [
+  { name:'condo',        label:'Condomínio', placeholder:'Edifício Aurora' },
+  { name:'cnpj',         label:'CNPJ do condomínio', placeholder:'00.000.000/0001-00' },
+  { name:'endereco',     label:'Endereço completo', placeholder:'Rua das Flores, 123 — Bairro — Cidade/UF' },
+  { name:'destinatario', label:'Nome do morador/proprietário', placeholder:'João da Silva' },
+  { name:'unidade',      label:'Unidade/Bloco', placeholder:'Apto 502, Bloco A' },
+  { name:'cidade',       label:'Cidade/UF', placeholder:'São Paulo/SP' },
+  { name:'data',         label:'Data', type:'date', value:new Date().toISOString().slice(0,10) },
+  { name:'sindico',      label:'Nome do síndico/responsável', placeholder:'Maria Souza' },
+];
+
+const FIELDS_BY_TYPE = {
+  inadimplencia: [
+    { name:'meses',  label:'Meses em atraso', placeholder:'janeiro, fevereiro e março/2026' },
+    { name:'valor',  label:'Valor total atualizado (R$)', placeholder:'2.450,00' },
+    { name:'prazo',  label:'Prazo para regularização (dias)', value:'10', type:'number' },
+  ],
+  barulho: [
+    { name:'datasFatos', label:'Datas e horários dos eventos', placeholder:'15/04/2026 das 23h às 02h; 20/04/2026 das 22h às 01h' },
+    { name:'descricao',  label:'Descrição (música alta, festa, obra noturna…)', placeholder:'Som alto vindo do apartamento, com música em volume excessivo' },
+    { name:'prazo',      label:'Prazo para cessação (dias)', value:'5', type:'number' },
+  ],
+  animal: [
+    { name:'animal',     label:'Tipo do animal', placeholder:'cachorro de grande porte' },
+    { name:'infracao',   label:'Infração', placeholder:'transitar pelas áreas comuns sem coleira/focinheira' },
+    { name:'prazo',      label:'Prazo para adequação (dias)', value:'5', type:'number' },
+  ],
+  obra: [
+    { name:'descricaoObra', label:'Descrição da obra', placeholder:'Reforma com ruído de furadeira em horário não permitido' },
+    { name:'datasFatos',    label:'Data(s) constatada(s)', placeholder:'18/04/2026 e 22/04/2026' },
+    { name:'prazo',         label:'Prazo para regularização (dias)', value:'5', type:'number' },
+  ],
+  lixo: [
+    { name:'descricaoLixo', label:'Descrição', placeholder:'Descarte de lixo na área comum fora do horário permitido (07h às 09h)' },
+    { name:'datasFatos',    label:'Data(s) constatada(s)', placeholder:'15/04/2026 e 16/04/2026' },
+    { name:'prazo',         label:'Prazo para correção (dias)', value:'3', type:'number' },
+  ],
+  'area-comum': [
+    { name:'area',          label:'Área comum', placeholder:'piscina' },
+    { name:'descricaoUso',  label:'Conduta', placeholder:'utilização fora do horário permitido (após 22h)' },
+    { name:'prazo',         label:'Prazo para adequação (dias)', value:'5', type:'number' },
+  ],
+};
+
+const TEXTS = {
+  inadimplencia: d => `Prezado(a) Sr.(a) ${d.destinatario},
+
+Na qualidade de síndico(a) do ${d.condo} (CNPJ ${d.cnpj}), sediado em ${d.endereco}, NOTIFICAMOS Vossa Senhoria, proprietário(a)/morador(a) da unidade ${d.unidade}, que consta em nossos registros débito relativo às cotas condominiais dos meses de ${d.meses}, no valor total atualizado de R$ ${d.valor} (incluindo multa, juros e correção monetária).
+
+Solicitamos a quitação do referido débito no prazo de ${d.prazo} (${num2ext(d.prazo)}) dias, contados do recebimento desta, sob pena de ajuizamento de ação de cobrança, com inclusão dos honorários advocatícios e demais custas processuais, conforme prevê o art. 1.336, § 1º, do Código Civil e a convenção condominial.
+
+Para regularização, entrar em contato com a administração do condomínio.
+
+Esta notificação é feita em caráter administrativo e amigável, sem prejuízo de outras medidas cabíveis.`,
+
+  barulho: d => `Prezado(a) Sr.(a) ${d.destinatario},
+
+Na qualidade de síndico(a) do ${d.condo} (CNPJ ${d.cnpj}), sediado em ${d.endereco}, NOTIFICAMOS Vossa Senhoria, ocupante da unidade ${d.unidade}, que foram constatadas perturbações ao sossego dos demais condôminos nos seguintes momentos:
+
+${d.datasFatos}
+
+Descrição: ${d.descricao}
+
+A conduta viola o disposto no art. 1.336, IV, do Código Civil, na convenção e no regimento interno deste condomínio, que asseguram a tranquilidade dos demais ocupantes.
+
+Solicitamos a imediata cessação das condutas perturbadoras no prazo de ${d.prazo} (${num2ext(d.prazo)}) dias, sob pena de aplicação de multa, sem prejuízo de medidas judiciais cabíveis, inclusive notificação à autoridade policial nos termos da Lei das Contravenções Penais (art. 42).`,
+
+  animal: d => `Prezado(a) Sr.(a) ${d.destinatario},
+
+Na qualidade de síndico(a) do ${d.condo} (CNPJ ${d.cnpj}), sediado em ${d.endereco}, NOTIFICAMOS Vossa Senhoria, ocupante da unidade ${d.unidade}, sobre a presença de ${d.animal} em desacordo com a convenção condominial, especificamente no que tange a ${d.infracao}.
+
+A conduta contraria o disposto na convenção e regimento interno do condomínio, bem como o art. 1.336, IV, do Código Civil.
+
+Solicitamos a imediata adequação no prazo de ${d.prazo} (${num2ext(d.prazo)}) dias, sob pena de aplicação de multa e demais medidas cabíveis.`,
+
+  obra: d => `Prezado(a) Sr.(a) ${d.destinatario},
+
+Na qualidade de síndico(a) do ${d.condo} (CNPJ ${d.cnpj}), sediado em ${d.endereco}, NOTIFICAMOS Vossa Senhoria, ocupante da unidade ${d.unidade}, sobre obra/reforma realizada sem comunicação prévia à administração:
+
+${d.descricaoObra}
+
+Constatada em: ${d.datasFatos}
+
+A conduta viola a convenção condominial e a Norma Técnica ABNT NBR 16.280/2014, que exige comunicação prévia, projeto e responsável técnico para reformas em condomínios.
+
+Solicitamos apresentação imediata da documentação (laudo técnico, ART/RRT e comunicado formal) no prazo de ${d.prazo} (${num2ext(d.prazo)}) dias, sob pena de embargo da obra e aplicação de multa.`,
+
+  lixo: d => `Prezado(a) Sr.(a) ${d.destinatario},
+
+Na qualidade de síndico(a) do ${d.condo} (CNPJ ${d.cnpj}), sediado em ${d.endereco}, NOTIFICAMOS Vossa Senhoria, ocupante da unidade ${d.unidade}, que foi constatada conduta inadequada quanto ao descarte de lixo:
+
+${d.descricaoLixo}
+
+Constatada em: ${d.datasFatos}
+
+A conduta viola a convenção condominial e o regimento interno. Solicitamos correção no prazo de ${d.prazo} (${num2ext(d.prazo)}) dias, sob pena de aplicação de multa.`,
+
+  'area-comum': d => `Prezado(a) Sr.(a) ${d.destinatario},
+
+Na qualidade de síndico(a) do ${d.condo} (CNPJ ${d.cnpj}), sediado em ${d.endereco}, NOTIFICAMOS Vossa Senhoria, ocupante da unidade ${d.unidade}, sobre o uso indevido da área comum (${d.area}):
+
+${d.descricaoUso}
+
+A conduta viola a convenção e o regimento interno deste condomínio. Solicitamos adequação no prazo de ${d.prazo} (${num2ext(d.prazo)}) dias, sob pena de aplicação de multa e suspensão do uso da área comum em questão.`,
+};
+
+const TITLES = {
+  inadimplencia:'Notificação Extrajudicial — Cobrança',
+  barulho:'Notificação Extrajudicial — Perturbação do Sossego',
+  animal:'Notificação Extrajudicial — Animal em Desacordo',
+  obra:'Notificação Extrajudicial — Obra sem Autorização',
+  lixo:'Notificação Extrajudicial — Descarte de Lixo',
+  'area-comum':'Notificação Extrajudicial — Uso de Área Comum',
+};
+
+function num2ext(n) {
+  const map = {1:'um',2:'dois',3:'três',4:'quatro',5:'cinco',7:'sete',10:'dez',15:'quinze',20:'vinte',30:'trinta'};
+  return map[parseInt(n)] || n;
+}
+
+const typesGrid = document.getElementById('typesGrid');
+const dataForm = document.getElementById('dataForm');
+const previewEl = document.getElementById('preview');
+let currentType = null;
+
+typesGrid.innerHTML = TYPES.map(t => `
+  <div class="type-card" data-id="${t.id}">
+    <div class="icon">${t.icon}</div>
+    <h4>${t.name}</h4>
+    <p>${t.desc}</p>
+  </div>
+`).join('');
+
+typesGrid.addEventListener('click', e => {
+  const card = e.target.closest('.type-card');
+  if (!card) return;
+  typesGrid.querySelectorAll('.type-card').forEach(c => c.classList.remove('active'));
+  card.classList.add('active');
+  currentType = card.dataset.id;
+  renderForm();
+});
+
+function renderForm() {
+  const fields = [...FIELDS_BASE, ...(FIELDS_BY_TYPE[currentType] || [])];
+  dataForm.innerHTML = fields.map(f => `
+    <div class="field">
+      <label>${f.label}</label>
+      <input type="${f.type || 'text'}" name="${f.name}" placeholder="${f.placeholder || ''}" value="${f.value || ''}">
+    </div>
+  `).join('');
+  dataForm.querySelectorAll('input').forEach(i => i.addEventListener('input', renderPreview));
+  renderPreview();
+}
+
+function gatherData() {
+  const data = {};
+  dataForm.querySelectorAll('input').forEach(i => data[i.name] = i.value || `[${i.name}]`);
+  return data;
+}
+
+function renderPreview() {
+  if (!currentType) { previewEl.textContent = 'Selecione um tipo.'; return; }
+  const d = gatherData();
+  const dateFmt = d.data ? new Date(d.data + 'T00:00:00').toLocaleDateString('pt-BR') : '[data]';
+  const titulo = TITLES[currentType];
+  const corpo = TEXTS[currentType](d);
+  previewEl.innerHTML = `<h2>${titulo}</h2>${
+    `${d.cidade}, ${dateFmt}.\n\n${corpo}\n\n\nAtenciosamente,\n\n____________________________\n${d.sindico}\nSíndico(a) — ${d.condo}`.replace(/\n/g, '<br>')
+  }`;
+}
+
+document.getElementById('btnCopy').addEventListener('click', async () => {
+  const text = previewEl.innerText;
+  await navigator.clipboard.writeText(text);
+  const btn = document.getElementById('btnCopy');
+  const orig = btn.textContent;
+  btn.textContent = '✓ Copiado!';
+  setTimeout(() => btn.textContent = orig, 1500);
+});
+
+document.getElementById('btnDocx').addEventListener('click', () => {
+  if (!currentType) return alert('Selecione um tipo.');
+  const html = `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body style="font-family:Times New Roman,serif;font-size:12pt">${
+    previewEl.innerHTML.replace(/<h2>/g, '<h2 style="text-align:center;text-transform:uppercase">')
+  }</body></html>`;
+  const blob = new Blob(['﻿', html], { type: 'application/msword' });
+  downloadBlob(blob, `notificacao_${currentType}_${new Date().toISOString().slice(0,10)}.doc`);
+  trackUsage('gerador-notificacao', { type: currentType, format: 'doc' });
+});
+
+document.getElementById('btnPrint').addEventListener('click', () => {
+  const w = window.open('', '_blank');
+  w.document.write(`<html><head><title>Notificação</title><style>body{font-family:Times New Roman,serif;font-size:12pt;max-width:680px;margin:40px auto;padding:0 20px;line-height:1.6} h2{text-align:center;font-size:14pt;text-transform:uppercase;margin-bottom:20px}</style></head><body>${previewEl.innerHTML}</body></html>`);
+  w.document.close();
+  w.focus();
+  setTimeout(() => w.print(), 500);
+});
+
+document.getElementById('btnPdf').addEventListener('click', async () => {
+  if (!currentType) { alert('Selecione um tipo.'); return; }
+  try {
+    const { PDFDocument, StandardFonts, rgb } = PDFLib;
+    const pdf = await PDFDocument.create();
+    const page = pdf.addPage([595.28, 841.89]); // A4
+    const font = await pdf.embedFont(StandardFonts.TimesRoman);
+    const fontBold = await pdf.embedFont(StandardFonts.TimesRomanBold);
+    const M = 60;
+    const W = 595.28 - 2 * M;
+    let y = 800;
+    const fs = 11;
+    const lh = 16;
+
+    const titulo = TITLES[currentType].toUpperCase();
+    const tw = fontBold.widthOfTextAtSize(titulo, 13);
+    page.drawText(titulo, { x: (595.28 - tw) / 2, y, size: 13, font: fontBold });
+    y -= 30;
+
+    const d = gatherData();
+    const dateFmt = d.data ? new Date(d.data + 'T00:00:00').toLocaleDateString('pt-BR') : '';
+    const local = `${d.cidade}, ${dateFmt}.`;
+    page.drawText(local, { x: M, y, size: fs, font });
+    y -= lh * 1.5;
+
+    function wrapText(text, maxWidth) {
+      const lines = [];
+      for (const par of text.split('\n')) {
+        if (!par.trim()) { lines.push(''); continue; }
+        const words = par.split(' ');
+        let line = '';
+        for (const w of words) {
+          const test = line ? line + ' ' + w : w;
+          if (font.widthOfTextAtSize(test, fs) > maxWidth) {
+            lines.push(line); line = w;
+          } else line = test;
+        }
+        if (line) lines.push(line);
+      }
+      return lines;
+    }
+
+    const corpo = TEXTS[currentType](d);
+    const lines = wrapText(corpo, W);
+    for (const l of lines) {
+      if (y < 100) { y = 800; pdf.addPage([595.28, 841.89]); }
+      page.drawText(l, { x: M, y, size: fs, font, color: rgb(0,0,0) });
+      y -= lh;
+    }
+    y -= lh * 2;
+    page.drawText('Atenciosamente,', { x: M, y, size: fs, font });
+    y -= lh * 4;
+    page.drawText('____________________________', { x: M, y, size: fs, font });
+    y -= lh;
+    page.drawText(d.sindico || '', { x: M, y, size: fs, font: fontBold });
+    y -= lh;
+    page.drawText(`Síndico(a) — ${d.condo || ''}`, { x: M, y, size: fs, font });
+
+    const bytes = await pdf.save();
+    const blob = new Blob([bytes], { type: 'application/pdf' });
+    downloadBlob(blob, `notificacao_${currentType}_${new Date().toISOString().slice(0,10)}.pdf`);
+    trackUsage('gerador-notificacao', { type: currentType, format: 'pdf' });
+  } catch (err) {
+    alert('Erro ao gerar PDF: ' + err.message);
+    console.error(err);
+  }
+});
+</script>
+</body>
+</html>

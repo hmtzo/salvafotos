@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Organizar páginas — Sindicompany Hub</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="icon" href="/logo.svg">
+<link rel="stylesheet" href="/assets/shared.css">
+<script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<style>
+  .pages-grid{
+    display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));
+    gap:14px;margin-top:18px;
+  }
+  .page-card{
+    background:var(--card);border:1.5px solid var(--border);
+    border-radius:10px;padding:8px;cursor:grab;position:relative;
+    transition:all 0.15s;user-select:none;
+  }
+  .page-card:hover{border-color:var(--accent);box-shadow:0 4px 12px rgba(16,185,129,0.15)}
+  .page-card.dragging{opacity:0.5;cursor:grabbing}
+  .page-card.removed{opacity:0.3;background:var(--bg-elev)}
+  .page-card canvas{width:100%;height:auto;display:block;border-radius:6px;background:white}
+  .page-card .page-num{
+    position:absolute;top:14px;left:14px;background:var(--text);color:white;
+    font-size:11px;font-weight:600;padding:3px 8px;border-radius:6px;
+  }
+  .page-card .actions{
+    position:absolute;top:14px;right:14px;display:flex;gap:4px;
+  }
+  .page-card .actions button{
+    width:24px;height:24px;border:none;background:rgba(255,255,255,0.95);
+    border-radius:5px;cursor:pointer;display:flex;align-items:center;justify-content:center;
+    color:var(--text-dim);box-shadow:0 1px 3px rgba(0,0,0,0.15);
+  }
+  .page-card .actions button:hover{color:var(--danger)}
+  .page-card .actions button svg{width:13px;height:13px}
+  .page-card .seq{
+    text-align:center;font-size:11px;color:var(--text-muted);margin-top:6px;
+  }
+</style>
+</head>
+<body>
+<div id="app-nav"></div>
+<div class="container">
+  <section class="tool-hero">
+    <span class="eyebrow">🧩 Organização</span>
+    <h1>Organizar páginas</h1>
+    <p>Reorganize, gire e remova páginas do PDF arrastando os miniaturas. Quando acabar, gera um novo PDF na ordem que você definiu.</p>
+  </section>
+
+  <div class="card">
+    <label for="fileInput" class="drop-zone" id="dropZone">
+      <div class="drop-icon">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
+      </div>
+      <div class="drop-title">Arraste o PDF aqui ou clique para selecionar</div>
+      <div class="drop-sub">Aceita 1 arquivo PDF</div>
+    </label>
+    <input type="file" id="fileInput" accept="application/pdf">
+
+    <div id="fileInfo" style="display:none;margin-top:12px;padding:12px 14px;background:var(--bg-elev);border-radius:10px;font-size:13px;color:var(--text-dim);"></div>
+
+    <div id="instructions" style="display:none;margin-top:14px;padding:12px 14px;background:var(--info-glow);border:1px solid rgba(37,99,235,0.2);border-radius:10px;font-size:13px;color:var(--info)">
+      💡 <strong>Como usar:</strong> arraste as miniaturas para reordenar. Clique no X pra remover uma página. Quando terminar, clique em "Gerar PDF".
+    </div>
+
+    <div class="pages-grid" id="pagesGrid"></div>
+
+    <button class="btn-primary" id="processBtn" disabled>
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+      <span id="btnText">Selecione um PDF</span>
+    </button>
+
+    <div class="status" id="status">
+      <div class="status-text">Aguardando…</div>
+      <div class="progress"><div class="progress-bar"></div></div>
+    </div>
+  </div>
+</div>
+<div id="app-footer"></div>
+
+<script src="/assets/shared.js"></script>
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+const fileInfo = document.getElementById('fileInfo');
+const instructions = document.getElementById('instructions');
+const pagesGrid = document.getElementById('pagesGrid');
+const processBtn = document.getElementById('processBtn');
+const btnText = document.getElementById('btnText');
+const statusEl = document.getElementById('status');
+
+let file = null;
+let pdfBuffer = null;
+let pages = []; // [{ originalIndex, removed }]
+
+setupDropZone(dropZone, fileInput, async newFiles => {
+  file = newFiles[0];
+  if (!file) return;
+  pdfBuffer = await file.arrayBuffer();
+  fileInfo.style.display = 'block';
+  fileInfo.textContent = 'Carregando miniaturas…';
+
+  const pdf = await pdfjsLib.getDocument({ data: pdfBuffer.slice(0) }).promise;
+  pages = Array.from({ length: pdf.numPages }, (_, i) => ({ originalIndex: i, removed: false }));
+
+  fileInfo.innerHTML = `<strong>${file.name}</strong> · ${formatBytes(file.size)} · <strong>${pdf.numPages}</strong> páginas`;
+  instructions.style.display = 'block';
+  await renderThumbnails(pdf);
+  updateBtn();
+});
+
+async function renderThumbnails(pdf) {
+  pagesGrid.innerHTML = '';
+  for (let i = 0; i < pages.length; i++) {
+    const card = document.createElement('div');
+    card.className = 'page-card';
+    card.draggable = true;
+    card.dataset.index = i;
+    card.innerHTML = `
+      <span class="page-num">${i + 1}</span>
+      <div class="actions">
+        <button data-act="remove" title="Remover"><svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path d="M6 18L18 6M6 6l12 12"/></svg></button>
+      </div>
+      <canvas></canvas>
+      <div class="seq">orig: pág ${pages[i].originalIndex + 1}</div>
+    `;
+    pagesGrid.appendChild(card);
+    const canvas = card.querySelector('canvas');
+    const page = await pdf.getPage(pages[i].originalIndex + 1);
+    const viewport = page.getViewport({ scale: 0.4 });
+    canvas.width = viewport.width;
+    canvas.height = viewport.height;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = 'white';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    await page.render({ canvasContext: ctx, viewport }).promise;
+  }
+  attachDragHandlers();
+}
+
+function attachDragHandlers() {
+  let dragSrc = null;
+  pagesGrid.querySelectorAll('.page-card').forEach(card => {
+    card.addEventListener('dragstart', e => {
+      dragSrc = card;
+      card.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+    });
+    card.addEventListener('dragend', () => card.classList.remove('dragging'));
+    card.addEventListener('dragover', e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; });
+    card.addEventListener('drop', e => {
+      e.preventDefault();
+      if (dragSrc && dragSrc !== card) {
+        const fromIdx = parseInt(dragSrc.dataset.index);
+        const toIdx = parseInt(card.dataset.index);
+        const moved = pages.splice(fromIdx, 1)[0];
+        pages.splice(toIdx, 0, moved);
+        rerenderOrder();
+      }
+    });
+  });
+  pagesGrid.querySelectorAll('button[data-act="remove"]').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const card = btn.closest('.page-card');
+      const idx = parseInt(card.dataset.index);
+      pages[idx].removed = !pages[idx].removed;
+      card.classList.toggle('removed', pages[idx].removed);
+      updateBtn();
+    });
+  });
+}
+
+function rerenderOrder() {
+  // Reordena os cards no DOM sem re-renderizar canvas (já cacheados)
+  const cards = Array.from(pagesGrid.querySelectorAll('.page-card'));
+  cards.sort((a, b) => parseInt(a.dataset.index) - parseInt(b.dataset.index));
+  // recompõe a partir do array `pages`
+  const map = new Map(cards.map(c => [c.querySelector('.seq').textContent, c]));
+  pagesGrid.innerHTML = '';
+  pages.forEach((p, newIdx) => {
+    const seqText = `orig: pág ${p.originalIndex + 1}`;
+    const card = map.get(seqText);
+    card.dataset.index = newIdx;
+    card.querySelector('.page-num').textContent = newIdx + 1;
+    pagesGrid.appendChild(card);
+  });
+  attachDragHandlers();
+}
+
+function updateBtn() {
+  const kept = pages.filter(p => !p.removed).length;
+  if (kept === 0) {
+    processBtn.disabled = true;
+    btnText.textContent = 'Mantenha pelo menos 1 página';
+  } else {
+    processBtn.disabled = false;
+    btnText.textContent = `Gerar PDF (${kept} páginas)`;
+  }
+}
+
+processBtn.addEventListener('click', async () => {
+  processBtn.disabled = true;
+  btnText.textContent = 'Processando…';
+  showStatus(statusEl, 'Gerando PDF…');
+  setProgress(statusEl, 20);
+
+  try {
+    const { PDFDocument } = PDFLib;
+    const src = await PDFDocument.load(pdfBuffer.slice(0), { ignoreEncryption: true });
+    const out = await PDFDocument.create();
+    const indices = pages.filter(p => !p.removed).map(p => p.originalIndex);
+    const copied = await out.copyPages(src, indices);
+    copied.forEach(p => out.addPage(p));
+
+    setProgress(statusEl, 90);
+    const bytes = await out.save();
+    const blob = new Blob([bytes], { type: 'application/pdf' });
+    const baseName = file.name.replace(/\.pdf$/i, '');
+    downloadBlob(blob, `${baseName}_organizado.pdf`);
+
+    setProgress(statusEl, 100);
+    showStatus(statusEl, `✓ Pronto! ${indices.length} páginas no PDF gerado.`, 'success');
+    trackUsage('organizar-pdf', { pages: indices.length });
+  } catch (err) {
+    console.error(err);
+    showStatus(statusEl, 'Erro: ' + err.message, 'error');
+    setProgress(statusEl, 0);
+  } finally {
+    updateBtn();
+  }
+});
+</script>
+</body>
+</html>

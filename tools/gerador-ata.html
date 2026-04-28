@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gerador de Ata — Sindicompany Hub</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="icon" href="/logo.svg">
+<link rel="stylesheet" href="/assets/shared.css">
+<script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+<style>
+  .item-list{display:flex;flex-direction:column;gap:8px;margin-bottom:14px}
+  .item-row{
+    display:flex;gap:8px;align-items:flex-start;
+    padding:10px;background:var(--bg-elev);border-radius:10px;border:1px solid var(--border);
+  }
+  .item-row textarea{
+    flex:1;padding:8px 10px;border:1px solid var(--border);border-radius:6px;
+    font-family:inherit;font-size:13px;color:var(--text);background:var(--card);
+    min-height:60px;resize:vertical;
+  }
+  .item-row .vote{display:flex;gap:4px;flex-direction:column;font-size:11px}
+  .item-row .vote input{width:50px;padding:4px 6px;text-align:center}
+  .item-row button{
+    background:transparent;border:none;color:var(--text-muted);cursor:pointer;
+    width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;
+  }
+  .item-row button:hover{color:var(--danger);background:var(--card)}
+  .add-btn{
+    padding:8px 14px;background:var(--accent-glow);color:var(--accent-bright);
+    border:1px dashed var(--accent);border-radius:8px;font-size:13px;font-weight:500;
+    cursor:pointer;font-family:inherit;
+  }
+  .preview-pane{
+    margin-top:18px;background:#fafbfc;border:1px solid var(--border);
+    border-radius:10px;padding:24px 28px;font-family:'Times New Roman',serif;
+    font-size:13px;line-height:1.7;color:var(--text);white-space:pre-wrap;
+  }
+  .preview-pane h2{font-family:inherit;font-size:15px;text-align:center;margin-bottom:14px;text-transform:uppercase}
+  .actions-row{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+  .actions-row button{
+    padding:10px 16px;border:1px solid var(--border);background:var(--card);
+    border-radius:8px;font-size:13px;cursor:pointer;font-family:inherit;
+    transition:all 0.15s;color:var(--text-dim);font-weight:500;
+  }
+  .actions-row button:hover{border-color:var(--accent);color:var(--accent-bright)}
+  .actions-row button.primary{background:var(--accent);color:white;border-color:var(--accent)}
+  .actions-row button.primary:hover{background:var(--accent-bright);color:white}
+</style>
+</head>
+<body>
+<div id="app-nav"></div>
+<div class="container">
+  <section class="tool-hero">
+    <span class="eyebrow">📝 Geradores</span>
+    <h1>Gerador de Ata de Assembleia</h1>
+    <p>Wizard pra ata de assembleia ordinária ou extraordinária. Insere abertura, presença, deliberações com votação, encerramento.</p>
+  </section>
+
+  <div class="card">
+    <h3 style="margin-bottom:12px">1. Cabeçalho</h3>
+    <div class="field-row">
+      <div class="field"><label>Condomínio</label><input type="text" id="condo" placeholder="Edifício Aurora"></div>
+      <div class="field"><label>CNPJ</label><input type="text" id="cnpj" placeholder="00.000.000/0001-00"></div>
+    </div>
+    <div class="field"><label>Endereço</label><input type="text" id="endereco" placeholder="Rua das Flores, 123, São Paulo/SP"></div>
+    <div class="field-row">
+      <div class="field"><label>Tipo</label>
+        <select id="tipo">
+          <option>Assembleia Geral Ordinária</option>
+          <option>Assembleia Geral Extraordinária</option>
+        </select>
+      </div>
+      <div class="field"><label>Data</label><input type="date" id="data" value=""></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Hora início</label><input type="time" id="horaIni" value="19:30"></div>
+      <div class="field"><label>Local</label><input type="text" id="local" placeholder="Salão de festas do condomínio"></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Síndico(a) presidindo</label><input type="text" id="sindico" placeholder="Maria Souza"></div>
+      <div class="field"><label>Secretário(a)</label><input type="text" id="secretario" placeholder="João Silva"></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Quórum (presentes / total)</label><input type="text" id="quorum" placeholder="32 / 60"></div>
+      <div class="field"><label>Hora encerramento</label><input type="time" id="horaFim" value="21:00"></div>
+    </div>
+
+    <h3 style="margin-top:22px;margin-bottom:12px">2. Pauta e deliberações</h3>
+    <div class="item-list" id="itemList"></div>
+    <button class="add-btn" id="addItemBtn">＋ Adicionar item da pauta</button>
+
+    <h3 style="margin-top:22px;margin-bottom:12px">3. Prévia</h3>
+    <div class="preview-pane" id="preview"></div>
+
+    <div class="actions-row">
+      <button class="primary" id="btnPdf">📄 Baixar PDF</button>
+      <button id="btnDocx">📄 Baixar .docx</button>
+      <button id="btnCopy">📋 Copiar texto</button>
+      <button id="btnPrint">🖨️ Imprimir</button>
+    </div>
+  </div>
+</div>
+<div id="app-footer"></div>
+
+<script src="/assets/shared.js"></script>
+<script>
+document.getElementById('data').valueAsDate = new Date();
+const itemList = document.getElementById('itemList');
+const previewEl = document.getElementById('preview');
+
+let items = [];
+
+function addItem(text = '', favor = '', contra = '', abst = '') {
+  items.push({ text, favor, contra, abst });
+  renderItems();
+}
+
+function renderItems() {
+  itemList.innerHTML = items.map((it, i) => `
+    <div class="item-row">
+      <div style="flex:1;display:flex;flex-direction:column;gap:6px">
+        <textarea data-i="${i}" data-k="text" placeholder="Item ${i+1}: descreva a pauta e a deliberação aprovada">${it.text}</textarea>
+        <div style="display:flex;gap:6px;font-size:11px;color:var(--text-dim);align-items:center">
+          Votos:
+          <input type="number" data-i="${i}" data-k="favor"  placeholder="A favor" value="${it.favor}" style="width:80px;padding:4px 6px;font-size:12px">
+          <input type="number" data-i="${i}" data-k="contra" placeholder="Contra"  value="${it.contra}" style="width:80px;padding:4px 6px;font-size:12px">
+          <input type="number" data-i="${i}" data-k="abst"   placeholder="Abst."   value="${it.abst}" style="width:80px;padding:4px 6px;font-size:12px">
+        </div>
+      </div>
+      <button data-act="del" data-i="${i}" title="Remover">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5" width="16" height="16"><path d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>
+  `).join('');
+  itemList.querySelectorAll('input,textarea').forEach(el => {
+    el.addEventListener('input', e => {
+      const i = parseInt(e.target.dataset.i);
+      const k = e.target.dataset.k;
+      items[i][k] = e.target.value;
+      renderPreview();
+    });
+  });
+  itemList.querySelectorAll('button[data-act="del"]').forEach(b => {
+    b.addEventListener('click', () => {
+      items.splice(parseInt(b.dataset.i), 1);
+      renderItems();
+      renderPreview();
+    });
+  });
+  renderPreview();
+}
+
+document.getElementById('addItemBtn').addEventListener('click', () => addItem());
+addItem();
+
+document.querySelectorAll('#condo,#cnpj,#endereco,#tipo,#data,#horaIni,#horaFim,#local,#sindico,#secretario,#quorum').forEach(el => {
+  el.addEventListener('input', renderPreview);
+  el.addEventListener('change', renderPreview);
+});
+
+function getData() {
+  return {
+    condo: document.getElementById('condo').value || '[Condomínio]',
+    cnpj: document.getElementById('cnpj').value || '[CNPJ]',
+    endereco: document.getElementById('endereco').value || '[endereço]',
+    tipo: document.getElementById('tipo').value,
+    data: document.getElementById('data').value,
+    horaIni: document.getElementById('horaIni').value,
+    horaFim: document.getElementById('horaFim').value,
+    local: document.getElementById('local').value || '[local]',
+    sindico: document.getElementById('sindico').value || '[síndico]',
+    secretario: document.getElementById('secretario').value || '[secretário]',
+    quorum: document.getElementById('quorum').value || '[quórum]',
+  };
+}
+
+function buildText() {
+  const d = getData();
+  const dataFmt = d.data ? new Date(d.data + 'T00:00:00').toLocaleDateString('pt-BR') : '[data]';
+  const dia = d.data ? new Date(d.data + 'T00:00:00').toLocaleDateString('pt-BR', {day:'numeric',month:'long',year:'numeric'}) : '';
+
+  let txt = `Aos ${dia}, às ${d.horaIni}, no ${d.local}, sito à ${d.endereco}, reuniram-se os condôminos do ${d.condo} (CNPJ ${d.cnpj}) em ${d.tipo}, conforme convocação prévia.\n\n`;
+  txt += `A reunião foi presidida pelo(a) Sr.(a) ${d.sindico}, síndico(a) do condomínio, que convidou o(a) Sr.(a) ${d.secretario} para secretariar a assembleia.\n\n`;
+  txt += `Verificou-se quórum de ${d.quorum} unidades presentes, suficiente para deliberação dos assuntos da pauta.\n\n`;
+  txt += `DELIBERAÇÕES:\n\n`;
+
+  items.forEach((it, i) => {
+    if (!it.text.trim()) return;
+    txt += `${i + 1}. ${it.text.trim()}\n`;
+    const f = parseInt(it.favor) || 0;
+    const c = parseInt(it.contra) || 0;
+    const a = parseInt(it.abst) || 0;
+    if (f || c || a) {
+      const total = f + c + a;
+      const result = f > c ? 'APROVADO' : (c > f ? 'REJEITADO' : 'EMPATE');
+      txt += `   Resultado da votação: ${result} (${f} favorável${f>1?'s':''}, ${c} contrário${c>1?'s':''}, ${a} abstenç${a===1?'ão':'ões'} — total ${total} voto${total>1?'s':''}).\n\n`;
+    } else {
+      txt += '\n';
+    }
+  });
+
+  txt += `Nada mais havendo a tratar, o(a) presidente declarou encerrada a assembleia às ${d.horaFim}, sendo lavrada a presente ata, que após lida e aprovada, vai assinada pelo(a) presidente e pelo(a) secretário(a).`;
+  return { d, dataFmt, txt };
+}
+
+function renderPreview() {
+  const { d, dataFmt, txt } = buildText();
+  const titulo = `ATA DA ${d.tipo.toUpperCase()}`;
+  previewEl.innerHTML = `<h2>${titulo}</h2><p style="text-align:center;margin-bottom:14px"><strong>${d.condo}</strong> — ${dataFmt}</p>${txt.replace(/\n/g, '<br>')}<br><br><br>____________________________ &nbsp;&nbsp; ____________________________<br>${d.sindico} (Síndico) &nbsp;&nbsp;&nbsp;&nbsp; ${d.secretario} (Secretário)`;
+}
+
+document.getElementById('btnCopy').addEventListener('click', async () => {
+  await navigator.clipboard.writeText(previewEl.innerText);
+  const btn = document.getElementById('btnCopy');
+  btn.textContent = '✓ Copiado!';
+  setTimeout(() => btn.textContent = '📋 Copiar texto', 1500);
+});
+
+document.getElementById('btnDocx').addEventListener('click', () => {
+  const html = `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body style="font-family:Times New Roman,serif;font-size:12pt;line-height:1.6">${previewEl.innerHTML.replace(/<h2>/g, '<h2 style="text-align:center;text-transform:uppercase">')}</body></html>`;
+  const blob = new Blob(['﻿', html], { type: 'application/msword' });
+  downloadBlob(blob, `ata_${getData().data || new Date().toISOString().slice(0,10)}.doc`);
+  trackUsage('gerador-ata', { format: 'doc' });
+});
+
+document.getElementById('btnPrint').addEventListener('click', () => {
+  const w = window.open('', '_blank');
+  w.document.write(`<html><head><title>Ata</title><style>body{font-family:Times New Roman,serif;font-size:12pt;max-width:680px;margin:40px auto;padding:0 20px;line-height:1.7}h2{text-align:center;font-size:14pt;text-transform:uppercase;margin-bottom:14px}</style></head><body>${previewEl.innerHTML}</body></html>`);
+  w.document.close();
+  w.focus();
+  setTimeout(() => w.print(), 500);
+});
+
+document.getElementById('btnPdf').addEventListener('click', async () => {
+  try {
+    const { PDFDocument, StandardFonts, rgb } = PDFLib;
+    const pdf = await PDFDocument.create();
+    const font = await pdf.embedFont(StandardFonts.TimesRoman);
+    const fontBold = await pdf.embedFont(StandardFonts.TimesRomanBold);
+    const M = 60, W = 595.28 - 2 * M;
+    let page = pdf.addPage([595.28, 841.89]);
+    let y = 800;
+    const fs = 11, lh = 16;
+
+    const { d, dataFmt, txt } = buildText();
+    const titulo = `ATA DA ${d.tipo.toUpperCase()}`;
+    const tw = fontBold.widthOfTextAtSize(titulo, 13);
+    page.drawText(titulo, { x: (595.28 - tw) / 2, y, size: 13, font: fontBold });
+    y -= 22;
+    const sub = `${d.condo} — ${dataFmt}`;
+    const sw = font.widthOfTextAtSize(sub, fs);
+    page.drawText(sub, { x: (595.28 - sw) / 2, y, size: fs, font });
+    y -= 28;
+
+    function wrap(text, max) {
+      const lines = [];
+      for (const par of text.split('\n')) {
+        if (!par.trim()) { lines.push(''); continue; }
+        const words = par.split(' ');
+        let line = '';
+        for (const w of words) {
+          const test = line ? line + ' ' + w : w;
+          if (font.widthOfTextAtSize(test, fs) > max) { lines.push(line); line = w; }
+          else line = test;
+        }
+        if (line) lines.push(line);
+      }
+      return lines;
+    }
+
+    for (const line of wrap(txt, W)) {
+      if (y < 100) { page = pdf.addPage([595.28, 841.89]); y = 800; }
+      page.drawText(line, { x: M, y, size: fs, font });
+      y -= lh;
+    }
+
+    y -= lh * 3;
+    if (y < 100) { page = pdf.addPage([595.28, 841.89]); y = 800; }
+    page.drawText('____________________________', { x: M, y, size: fs, font });
+    page.drawText('____________________________', { x: M + 270, y, size: fs, font });
+    y -= lh;
+    page.drawText(`${d.sindico} (Síndico)`, { x: M, y, size: fs, font });
+    page.drawText(`${d.secretario} (Secretário)`, { x: M + 270, y, size: fs, font });
+
+    const bytes = await pdf.save();
+    downloadBlob(new Blob([bytes], { type: 'application/pdf' }), `ata_${d.data || new Date().toISOString().slice(0,10)}.pdf`);
+    trackUsage('gerador-ata', { format: 'pdf' });
+  } catch (err) {
+    alert('Erro: ' + err.message);
+    console.error(err);
+  }
+});
+
+renderPreview();
+</script>
+</body>
+</html>

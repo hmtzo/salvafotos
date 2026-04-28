@@ -165,6 +165,7 @@ processBtn.addEventListener('click', async () => {
 
     setProgress(statusEl, 100);
     showStatus(statusEl, `✓ Pronto! ${N} páginas numeradas.`, 'success');
+    trackUsage('numerar-paginas', { pages: N });
   } catch (err) {
     console.error(err);
     showStatus(statusEl, 'Erro: ' + err.message, 'error');

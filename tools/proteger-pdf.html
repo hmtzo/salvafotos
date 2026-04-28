@@ -117,6 +117,7 @@ processBtn.addEventListener('click', async () => {
 
     setProgress(statusEl, 100);
     showStatus(statusEl, '✓ Pronto! PDF protegido com senha.', 'success');
+    trackUsage('proteger-pdf');
   } catch (err) {
     console.error(err);
     showStatus(statusEl, 'Erro: ' + (err.message || 'falha ao criptografar'), 'error');
