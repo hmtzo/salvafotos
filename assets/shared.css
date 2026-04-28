@@ -33,8 +33,17 @@ body{
 body::before{
   content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
   background:
-    radial-gradient(ellipse 800px 500px at 0% 0%, rgba(16,185,129,0.06), transparent),
-    radial-gradient(ellipse 800px 500px at 100% 100%, rgba(37,99,235,0.05), transparent);
+    radial-gradient(ellipse 800px 500px at 0% 0%, rgba(16,185,129,0.04), transparent),
+    radial-gradient(ellipse 800px 500px at 100% 100%, rgba(37,99,235,0.03), transparent);
+}
+/* Dotted surface 3D — fica atrás de tudo */
+#dotted-surface{
+  position:fixed;inset:0;z-index:-1;pointer-events:none;
+  opacity:0.45;
+}
+#dotted-surface canvas{display:block}
+@media (prefers-reduced-motion: reduce){
+  #dotted-surface{display:none}
 }
 .container{max-width:1100px;margin:0 auto;padding:0 24px;position:relative;z-index:1}
 

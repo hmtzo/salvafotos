@@ -123,10 +123,120 @@ function getUsage() {
   } catch (e) { return { tools: {}, history: [] }; }
 }
 
-// Auto-mount nav/footer se o documento tiver placeholders
+// =============================================================================
+// DOTTED SURFACE — 3D animated dot grid no fundo (Three.js)
+// =============================================================================
+function loadThreeJS() {
+  return new Promise((res, rej) => {
+    if (window.THREE) return res(window.THREE);
+    const s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js';
+    s.onload = () => res(window.THREE);
+    s.onerror = rej;
+    document.head.appendChild(s);
+  });
+}
+
+async function initDottedSurface() {
+  if (window.__dottedSurfaceMounted) return;
+  // Pula se reduce-motion
+  if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  // Pula em telas muito pequenas (mobile) por performance
+  if (window.innerWidth < 600) return;
+
+  try {
+    const THREE = await loadThreeJS();
+    window.__dottedSurfaceMounted = true;
+
+    const container = document.createElement('div');
+    container.id = 'dotted-surface';
+    document.body.appendChild(container);
+
+    const SEPARATION = 150;
+    const AMOUNTX = 40;
+    const AMOUNTY = 60;
+
+    const scene = new THREE.Scene();
+    scene.fog = new THREE.Fog(0xffffff, 2000, 10000);
+
+    const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 10000);
+    camera.position.set(0, 355, 1220);
+
+    const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setClearColor(0xffffff, 0);
+    container.appendChild(renderer.domElement);
+
+    const positions = [];
+    const colors = [];
+    for (let ix = 0; ix < AMOUNTX; ix++) {
+      for (let iy = 0; iy < AMOUNTY; iy++) {
+        const x = ix * SEPARATION - (AMOUNTX * SEPARATION) / 2;
+        const z = iy * SEPARATION - (AMOUNTY * SEPARATION) / 2;
+        positions.push(x, 0, z);
+        colors.push(0.06, 0.09, 0.15); // tom escuro azulado pra combinar com tema light
+      }
+    }
+
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+
+    const material = new THREE.PointsMaterial({
+      size: 8,
+      vertexColors: true,
+      transparent: true,
+      opacity: 0.85,
+      sizeAttenuation: true,
+    });
+
+    const points = new THREE.Points(geometry, material);
+    scene.add(points);
+
+    let count = 0;
+    let animId;
+    let isVisible = true;
+    document.addEventListener('visibilitychange', () => {
+      isVisible = !document.hidden;
+    });
+
+    function animate() {
+      animId = requestAnimationFrame(animate);
+      if (!isVisible) return;
+      const arr = geometry.attributes.position.array;
+      let i = 0;
+      for (let ix = 0; ix < AMOUNTX; ix++) {
+        for (let iy = 0; iy < AMOUNTY; iy++) {
+          arr[i * 3 + 1] = Math.sin((ix + count) * 0.3) * 50 + Math.sin((iy + count) * 0.5) * 50;
+          i++;
+        }
+      }
+      geometry.attributes.position.needsUpdate = true;
+      renderer.render(scene, camera);
+      count += 0.1;
+    }
+    animate();
+
+    function onResize() {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    }
+    window.addEventListener('resize', onResize);
+  } catch (e) {
+    console.warn('DottedSurface init failed', e);
+  }
+}
+
+// =============================================================================
+// Auto-mount nav/footer + DottedSurface
+// =============================================================================
 document.addEventListener('DOMContentLoaded', () => {
   const navSlot = document.getElementById('app-nav');
   if (navSlot) navSlot.innerHTML = renderNav({ backToHub: navSlot.dataset.hub !== 'self' });
   const footSlot = document.getElementById('app-footer');
   if (footSlot) footSlot.innerHTML = renderFooter();
+  // Inicia o background animado depois do paint inicial
+  setTimeout(initDottedSurface, 100);
 });

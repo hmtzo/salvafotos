@@ -35,8 +35,9 @@ DIRETRIZES:
 
 Responda diretamente. Sem preâmbulos como "ótima pergunta!".`;
 
-// Modelo grátis e rápido (mais recente, melhor qualidade)
-const MODEL = 'gemini-2.5-flash';
+// Modelos disponíveis
+const MODEL_FAST = 'gemini-2.5-flash';
+const MODEL_THINK = 'gemini-2.5-pro';
 
 export default async function handler(request) {
   if (request.method !== 'POST') {
@@ -66,6 +67,10 @@ export default async function handler(request) {
       status: 400, headers: { 'Content-Type': 'application/json' },
     });
   }
+  const mode = body.mode; // 'search' | 'think' | 'canvas' | null
+
+  // Escolhe modelo conforme modo
+  const model = mode === 'think' ? MODEL_THINK : MODEL_FAST;
 
   // Limita histórico a últimas 20 trocas para controle de tokens
   const trimmed = messages.slice(-20);
@@ -77,27 +82,47 @@ export default async function handler(request) {
     parts: [{ text: m.content }],
   }));
 
+  // Ajusta system prompt e generation config conforme modo
+  let systemText = SYSTEM_PROMPT;
+  let maxTokens = 2000;
+  let temperature = 0.7;
+  const tools = [];
+
+  if (mode === 'think') {
+    systemText += '\n\nEste é o MODO THINK: dedique-se a uma análise profunda. Considere múltiplas perspectivas, cite fontes/artigos quando aplicável, estruture o raciocínio passo a passo antes da conclusão.';
+    maxTokens = 4000;
+    temperature = 0.5;
+  } else if (mode === 'canvas') {
+    systemText += '\n\nEste é o MODO CANVAS: produza conteúdo longo e estruturado. Use markdown rico com títulos, subtítulos, listas, tabelas e seções claras. Não economize em detalhes.';
+    maxTokens = 8000;
+  } else if (mode === 'search') {
+    systemText += '\n\nEste é o MODO SEARCH: use a ferramenta de busca na web para encontrar informações atualizadas e cite as fontes.';
+    tools.push({ google_search: {} });
+  }
+
   try {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${apiKey}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+    const requestBody = {
+      systemInstruction: { parts: [{ text: systemText }] },
+      contents,
+      generationConfig: {
+        temperature,
+        maxOutputTokens: maxTokens,
+        topP: 0.95,
+      },
+      safetySettings: [
+        { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_ONLY_HIGH' },
+        { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_ONLY_HIGH' },
+        { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_ONLY_HIGH' },
+        { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_ONLY_HIGH' },
+      ],
+    };
+    if (tools.length) requestBody.tools = tools;
+
     const upstream = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
-        contents,
-        generationConfig: {
-          temperature: 0.7,
-          maxOutputTokens: 2000,
-          topP: 0.95,
-        },
-        safetySettings: [
-          // Permite discutir tópicos jurídicos (notificações, conflitos, multas) sem bloquear
-          { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_ONLY_HIGH' },
-          { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_ONLY_HIGH' },
-          { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_ONLY_HIGH' },
-          { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_ONLY_HIGH' },
-        ],
-      }),
+      body: JSON.stringify(requestBody),
     });
 
     if (!upstream.ok) {
@@ -131,7 +156,8 @@ export default async function handler(request) {
     return new Response(JSON.stringify({
       reply: text,
       usage: data.usageMetadata,
-      model: MODEL,
+      model,
+      mode: mode || null,
     }), { status: 200, headers: { 'Content-Type': 'application/json' } });
   } catch (err) {
     console.error('Sindi error:', err);

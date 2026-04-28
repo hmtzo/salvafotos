@@ -12,14 +12,52 @@
 <link rel="icon" href="/logo.svg">
 <link rel="stylesheet" href="/assets/shared.css">
 <style>
-  /* ===== Hub-specific ===== */
-  .hub-hero{padding:24px 0 32px;text-align:center}
-  .hub-hero h1{font-size:clamp(32px,5vw,48px);margin-bottom:10px}
-  .hub-hero h1 .highlight{
-    background:linear-gradient(135deg,var(--accent),var(--info));
-    -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+  /* ===== Cinematic background (subtle grid + film grain) ===== */
+  body::after{
+    content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+    background:
+      linear-gradient(to right, rgba(15,23,42,0.04) 1px, transparent 1px) 0 0/60px 60px,
+      linear-gradient(to bottom, rgba(15,23,42,0.04) 1px, transparent 1px) 0 0/60px 60px;
+    -webkit-mask-image:radial-gradient(ellipse at center, black 0%, transparent 70%);
+            mask-image:radial-gradient(ellipse at center, black 0%, transparent 70%);
   }
-  .hub-hero p{font-size:16px;color:var(--text-dim);max-width:540px;margin:0 auto}
+  .film-grain{
+    position:fixed;inset:0;z-index:1;pointer-events:none;opacity:0.025;mix-blend-mode:overlay;
+    background-image:url("data:image/svg+xml;utf8,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  /* ===== Hub Hero — silver matte typography ===== */
+  .hub-hero{padding:48px 0 36px;text-align:center;position:relative;z-index:2}
+  .hub-eyebrow{
+    display:inline-block;padding:6px 14px;border-radius:100px;
+    background:linear-gradient(135deg, rgba(255,255,255,0.6), rgba(255,255,255,0.3));
+    border:1px solid rgba(15,23,42,0.06);
+    font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.1em;
+    color:var(--text-dim);margin-bottom:20px;
+    backdrop-filter:blur(20px);
+  }
+  .hub-hero h1{
+    font-size:clamp(40px, 7vw, 78px);
+    font-weight:800;letter-spacing:-0.04em;line-height:1;margin-bottom:14px;
+  }
+  .hub-hero h1 .silver-matte{
+    background:linear-gradient(180deg, #0f172a 0%, rgba(15,23,42,0.5) 100%);
+    -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+    transform:translateZ(0);
+    filter:
+      drop-shadow(0 10px 20px rgba(15,23,42,0.15))
+      drop-shadow(0 2px 4px rgba(15,23,42,0.1));
+    display:inline-block;
+  }
+  .hub-hero h1 .highlight{
+    background:linear-gradient(135deg, var(--accent) 0%, var(--info) 100%);
+    -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+    display:inline-block;
+  }
+  .hub-hero p{
+    font-size:17px;color:var(--text-dim);max-width:600px;margin:0 auto;
+    line-height:1.5;font-weight:400;
+  }
 
   .search-wrap{max-width:520px;margin:24px auto 8px;position:relative}
   .search-wrap input{
@@ -35,34 +73,87 @@
     width:18px;height:18px;color:var(--text-muted);pointer-events:none;
   }
 
+  /* ===== LimelightNav style category tabs ===== */
   .category-tabs{
-    display:flex;gap:8px;justify-content:center;flex-wrap:wrap;
-    margin:16px 0 28px;padding:4px;
+    display:inline-flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:0;
+    margin:18px auto 32px;padding:6px 8px;position:relative;
+    background:rgba(255,255,255,0.6);border:1px solid rgba(15,23,42,0.06);
+    border-radius:14px;backdrop-filter:blur(20px);
+    box-shadow:0 4px 20px -4px rgba(15,23,42,0.08);
   }
+  .category-tabs-wrap{display:flex;justify-content:center;flex-wrap:wrap}
   .cat-tab{
-    padding:8px 14px;background:transparent;border:1px solid var(--border);
-    color:var(--text-dim);border-radius:100px;font-size:13px;font-weight:500;
-    cursor:pointer;transition:all 0.15s;font-family:inherit;
+    position:relative;z-index:2;padding:10px 16px;background:transparent;border:none;
+    color:var(--text-dim);font-size:13px;font-weight:500;cursor:pointer;
+    transition:all 0.15s;font-family:inherit;border-radius:10px;
   }
-  .cat-tab:hover{border-color:var(--border-bright);color:var(--text)}
-  .cat-tab.active{background:var(--text);color:white;border-color:var(--text)}
+  .cat-tab:hover{color:var(--text)}
+  .cat-tab.active{color:var(--text);font-weight:600}
+  .limelight{
+    position:absolute;top:0;z-index:1;
+    width:32px;height:4px;border-radius:999px;background:var(--accent);
+    box-shadow:0 0 24px var(--accent), 0 0 8px var(--accent);
+    transition:left 0.4s cubic-bezier(.4,1.4,.5,1);
+    pointer-events:none;
+  }
+  .limelight::after{
+    content:'';position:absolute;top:4px;left:-40%;width:180%;height:60px;
+    clip-path:polygon(5% 100%, 28% 0, 72% 0, 95% 100%);
+    background:linear-gradient(180deg, rgba(16,185,129,0.32) 0%, transparent 100%);
+    pointer-events:none;
+  }
 
   .tools-grid{
     display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));
-    gap:16px;margin-bottom:40px;
+    gap:16px;margin-bottom:40px;position:relative;z-index:2;
   }
+  /* ===== GlowCard tool cards (cursor-tracking spotlight) ===== */
   .tool-card{
-    background:var(--card);border:1px solid var(--border);
-    border-radius:var(--radius);padding:20px;
+    --base:220;--spread:200;
+    --hue:calc(var(--base) + (var(--xp, 0) * var(--spread)));
+    --card-x:-200px;--card-y:-200px;
+    background:var(--card);border:1px solid rgba(15,23,42,0.08);
+    border-radius:16px;padding:22px;
     text-decoration:none;color:inherit;display:block;
-    transition:all 0.15s;cursor:pointer;
-    position:relative;overflow:hidden;
+    transition:transform 0.2s cubic-bezier(.4,1.4,.5,1), box-shadow 0.25s;
+    cursor:pointer;position:relative;overflow:hidden;
+    background-image:radial-gradient(
+      260px 260px at var(--card-x) var(--card-y),
+      hsl(var(--hue) 95% 65% / 0.10),
+      transparent 70%
+    );
+    backdrop-filter:blur(2px);
   }
-  .tool-card.disabled{opacity:0.5;cursor:not-allowed;pointer-events:none}
+  .tool-card.disabled{opacity:0.45;cursor:not-allowed;pointer-events:none}
+  .tool-card::before{
+    content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+    border:1.5px solid transparent;
+    background:radial-gradient(
+      180px 180px at var(--card-x) var(--card-y),
+      hsl(var(--hue) 95% 60% / 0.85),
+      transparent 70%
+    );
+    -webkit-mask:linear-gradient(#000,#000) padding-box, linear-gradient(#000,#000);
+            mask:linear-gradient(#000,#000) padding-box, linear-gradient(#000,#000);
+    -webkit-mask-composite:xor;
+            mask-composite:exclude;
+    opacity:0;transition:opacity 0.25s;
+  }
+  .tool-card:hover:not(.disabled)::before{opacity:1}
   .tool-card:hover:not(.disabled){
-    border-color:var(--accent);transform:translateY(-2px);
-    box-shadow:0 8px 24px -4px rgba(16,185,129,0.15);
+    transform:translateY(-3px);
+    box-shadow:0 16px 40px -12px hsl(var(--hue) 80% 50% / 0.25),
+               0 4px 12px -4px hsl(var(--hue) 80% 50% / 0.15);
   }
+  /* hue por categoria */
+  .tool-card[data-cat="pdf"]    {--base:0}
+  .tool-card[data-cat="image"]  {--base:280}
+  .tool-card[data-cat="doc"]    {--base:220}
+  .tool-card[data-cat="org"]    {--base:30}
+  .tool-card[data-cat="secure"] {--base:140}
+  .tool-card[data-cat="ai"]     {--base:320}
+  .tool-card[data-cat="calc"]   {--base:170}
+  .tool-card[data-cat="convert"]{--base:250}
   .tool-card .tool-icon{
     width:42px;height:42px;border-radius:10px;
     display:flex;align-items:center;justify-content:center;
@@ -102,29 +193,37 @@
 </head>
 <body>
 
+<div class="film-grain"></div>
 <div id="app-nav" data-hub="self"></div>
 
 <div class="container">
 
   <section class="hub-hero">
-    <h1>Hub de <span class="highlight">ferramentas internas</span></h1>
-    <p>Tudo que sua equipe precisa pro dia a dia — sem instalar nada, processado direto no navegador.</p>
+    <span class="hub-eyebrow">✨ Sindicompany Hub · uso interno</span>
+    <h1>
+      <span class="silver-matte">Ferramentas para o</span><br>
+      <span class="highlight">dia a dia do escritório</span>
+    </h1>
+    <p>26 ferramentas, IA integrada, processado direto no navegador. Tudo num só lugar.</p>
 
     <div class="search-wrap">
       <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
       <input type="text" id="search" placeholder="Buscar ferramenta…" autocomplete="off">
     </div>
 
-    <div class="category-tabs" id="catTabs">
-      <button class="cat-tab active" data-cat="all">Todas</button>
-      <button class="cat-tab" data-cat="ai">🤖 IA</button>
-      <button class="cat-tab" data-cat="doc">Documentos</button>
-      <button class="cat-tab" data-cat="calc">Cálculos</button>
-      <button class="cat-tab" data-cat="convert">Conversões</button>
-      <button class="cat-tab" data-cat="pdf">PDF</button>
-      <button class="cat-tab" data-cat="image">Imagens</button>
-      <button class="cat-tab" data-cat="org">Organização</button>
-      <button class="cat-tab" data-cat="secure">Segurança</button>
+    <div class="category-tabs-wrap">
+      <div class="category-tabs" id="catTabs">
+        <button class="cat-tab active" data-cat="all">Todas</button>
+        <button class="cat-tab" data-cat="ai">🤖 IA</button>
+        <button class="cat-tab" data-cat="doc">Documentos</button>
+        <button class="cat-tab" data-cat="calc">Cálculos</button>
+        <button class="cat-tab" data-cat="convert">Conversões</button>
+        <button class="cat-tab" data-cat="pdf">PDF</button>
+        <button class="cat-tab" data-cat="image">Imagens</button>
+        <button class="cat-tab" data-cat="org">Organização</button>
+        <button class="cat-tab" data-cat="secure">Segurança</button>
+        <div class="limelight" id="limelight"></div>
+      </div>
     </div>
   </section>
 
@@ -217,7 +316,7 @@ function toolCard(t) {
   const href = t.disabled ? '#' : `/tools/${t.slug}.html`;
   const badge = t.badge ? `<span class="tool-badge ${t.badge}">${t.badge === 'new' ? 'novo' : 'em breve'}</span>` : '';
   return `
-    <a href="${href}" class="tool-card ${t.disabled ? 'disabled' : ''}">
+    <a href="${href}" class="tool-card ${t.disabled ? 'disabled' : ''}" data-cat="${t.cat}">
       ${badge}
       <div class="tool-icon ${t.iconClass}">${t.icon}</div>
       <h3>${t.name}</h3>
@@ -226,6 +325,28 @@ function toolCard(t) {
   `;
 }
 
+// ===== GlowCard: cursor-tracking spotlight nos tool cards =====
+document.addEventListener('pointermove', e => {
+  document.querySelectorAll('.tool-card').forEach(card => {
+    const r = card.getBoundingClientRect();
+    if (e.clientX < r.left - 100 || e.clientX > r.right + 100 ||
+        e.clientY < r.top - 100  || e.clientY > r.bottom + 100) return;
+    card.style.setProperty('--card-x', (e.clientX - r.left) + 'px');
+    card.style.setProperty('--card-y', (e.clientY - r.top) + 'px');
+    card.style.setProperty('--xp', ((e.clientX - r.left) / r.width).toFixed(2));
+  });
+});
+
+// ===== LimelightNav: posiciona o glow embaixo da tab ativa =====
+function moveLimelight() {
+  const limelight = document.getElementById('limelight');
+  const active = document.querySelector('.cat-tab.active');
+  if (!limelight || !active) return;
+  const left = active.offsetLeft + active.offsetWidth/2 - limelight.offsetWidth/2;
+  limelight.style.left = left + 'px';
+}
+window.addEventListener('resize', moveLimelight);
+
 search.addEventListener('input', renderTools);
 catTabs.addEventListener('click', e => {
   if (e.target.classList.contains('cat-tab')) {
@@ -233,10 +354,12 @@ catTabs.addEventListener('click', e => {
     e.target.classList.add('active');
     currentCat = e.target.dataset.cat;
     renderTools();
+    moveLimelight();
   }
 });
 
 renderTools();
+requestAnimationFrame(moveLimelight);
 </script>
 </body>
 </html>

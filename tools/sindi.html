@@ -86,32 +86,89 @@
   .typing span:nth-child(3){animation-delay:0.3s}
   @keyframes bounce{0%,80%,100%{transform:scale(0.6);opacity:0.4}40%{transform:scale(1);opacity:1}}
 
+  /* ===== PromptInputBox style (dark rounded, modern AI input) ===== */
   .chat-input{
-    border-top:1px solid var(--border);padding:14px 18px;
-    display:flex;gap:8px;align-items:flex-end;background:var(--card);
+    margin:14px;background:#1F2023;border:1px solid #444444;border-radius:24px;
+    padding:8px;box-shadow:0 8px 30px rgba(0,0,0,0.24);
+    transition:border-color 0.3s;
   }
+  .chat-input.has-focus{border-color:#666}
+  .chat-input.is-recording{border-color:rgba(239,68,68,0.7)}
+
+  .prompt-textarea-wrap{padding:6px 4px}
   .chat-input textarea{
-    flex:1;border:1px solid var(--border);border-radius:10px;padding:10px 14px;
-    font-family:inherit;font-size:14px;resize:none;max-height:140px;line-height:1.5;
-    color:var(--text);background:var(--bg-elev);
+    width:100%;border:none;background:transparent;resize:none;
+    color:#f5f5f7;font-family:inherit;font-size:15px;line-height:1.5;
+    padding:8px 12px;min-height:44px;max-height:200px;
   }
-  .chat-input textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-glow);background:var(--card)}
-  .chat-input button{
-    width:42px;height:42px;border:none;border-radius:10px;cursor:pointer;
-    background:var(--accent);color:white;display:flex;align-items:center;justify-content:center;
-    transition:all 0.15s;flex-shrink:0;
+  .chat-input textarea:focus{outline:none}
+  .chat-input textarea::placeholder{color:#9CA3AF}
+
+  .prompt-actions{display:flex;align-items:center;justify-content:space-between;gap:6px;padding:4px 6px 2px}
+  .prompt-left-actions{display:flex;align-items:center;gap:2px}
+
+  .prompt-btn{
+    display:inline-flex;align-items:center;justify-content:center;
+    border:none;background:transparent;cursor:pointer;
+    color:#9CA3AF;padding:0;border-radius:50%;
+    width:32px;height:32px;transition:all 0.15s;font-family:inherit;
   }
-  .chat-input button:hover:not(:disabled){background:var(--accent-bright)}
-  .chat-input button:disabled{opacity:0.5;cursor:not-allowed}
-  .chat-input button svg{width:18px;height:18px}
-  .chat-input label.attach{
-    width:42px;height:42px;border:1px solid var(--border);border-radius:10px;cursor:pointer;
-    color:var(--text-muted);display:flex;align-items:center;justify-content:center;
-    transition:all 0.15s;flex-shrink:0;background:var(--bg-elev);
+  .prompt-btn:hover{background:rgba(80,80,80,0.3);color:#D1D5DB}
+  .prompt-btn svg{width:18px;height:18px}
+
+  .toggle-pill{
+    display:inline-flex;align-items:center;gap:6px;
+    padding:5px 11px;border-radius:100px;border:1px solid transparent;
+    background:transparent;color:#9CA3AF;cursor:pointer;font-family:inherit;
+    font-size:12px;height:32px;transition:all 0.2s;
   }
-  .chat-input label.attach:hover{color:var(--accent);border-color:var(--accent)}
-  .chat-input label.attach svg{width:18px;height:18px}
+  .toggle-pill:hover{color:#D1D5DB}
+  .toggle-pill svg{width:14px;height:14px;transition:transform 0.3s}
+  .toggle-pill .label{
+    overflow:hidden;white-space:nowrap;max-width:0;opacity:0;
+    transition:max-width 0.25s, opacity 0.2s;
+  }
+  .toggle-pill.active.search{background:rgba(30,174,219,0.15);border-color:#1EAEDB;color:#1EAEDB}
+  .toggle-pill.active.think{background:rgba(139,92,246,0.15);border-color:#8B5CF6;color:#8B5CF6}
+  .toggle-pill.active.canvas{background:rgba(249,115,22,0.15);border-color:#F97316;color:#F97316}
+  .toggle-pill.active .label{max-width:80px;opacity:1}
+  .toggle-pill.active svg{transform:rotate(360deg) scale(1.1)}
+
+  .toggle-divider{
+    width:1.5px;height:18px;margin:0 2px;
+    background:linear-gradient(180deg, transparent, rgba(155,135,245,0.6), transparent);
+    border-radius:2px;
+  }
+
+  .send-btn{
+    width:34px;height:34px;border-radius:50%;border:none;cursor:pointer;
+    display:inline-flex;align-items:center;justify-content:center;
+    transition:all 0.2s;flex-shrink:0;
+  }
+  .send-btn.idle{background:transparent;color:#9CA3AF}
+  .send-btn.idle:hover{background:rgba(80,80,80,0.3);color:#D1D5DB}
+  .send-btn.has-content{background:white;color:#1F2023}
+  .send-btn.has-content:hover{background:rgba(255,255,255,0.85)}
+  .send-btn.is-recording{background:transparent;color:#ef4444}
+  .send-btn:disabled{opacity:0.5;cursor:not-allowed}
+  .send-btn svg{width:18px;height:18px}
+
   .chat-input input[type=file]{display:none}
+
+  /* file previews dentro do prompt */
+  .prompt-files{display:flex;flex-wrap:wrap;gap:8px;padding:4px 4px 0}
+  .prompt-files .file-chip{
+    position:relative;border-radius:14px;overflow:hidden;
+    width:56px;height:56px;cursor:pointer;background:#2E3033;
+    display:flex;align-items:center;justify-content:center;
+    color:#9CA3AF;font-size:11px;font-weight:600;
+  }
+  .prompt-files .file-chip img{width:100%;height:100%;object-fit:cover}
+  .prompt-files .file-chip .remove{
+    position:absolute;top:3px;right:3px;width:18px;height:18px;
+    background:rgba(0,0,0,0.7);color:white;border:none;border-radius:50%;
+    cursor:pointer;font-size:11px;display:flex;align-items:center;justify-content:center;
+  }
 
   .doc-banner{
     margin-top:8px;padding:8px 14px;background:var(--info-glow);border-radius:8px;
@@ -191,15 +248,36 @@
       </div>
     </div>
 
-    <div class="chat-input">
-      <label class="attach" for="docInput" title="Anexar PDF">
-        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/></svg>
-      </label>
+    <div class="chat-input" id="promptBox">
       <input type="file" id="docInput" accept="application/pdf,text/plain">
-      <textarea id="input" placeholder="Pergunte algo à Sindi…" rows="1"></textarea>
-      <button id="sendBtn" title="Enviar">
-        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M12 5l7 7-7 7"/></svg>
-      </button>
+      <div class="prompt-files" id="promptFiles" style="display:none"></div>
+      <div class="prompt-textarea-wrap">
+        <textarea id="input" placeholder="Pergunte algo à Sindi…" rows="1"></textarea>
+      </div>
+      <div class="prompt-actions">
+        <div class="prompt-left-actions">
+          <button class="prompt-btn" id="attachBtn" title="Anexar arquivo" type="button">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/></svg>
+          </button>
+          <button class="toggle-pill search" data-mode="search" type="button" title="Busca na web">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15 15 0 010 20"/><path d="M12 2a15 15 0 000 20"/></svg>
+            <span class="label">Search</span>
+          </button>
+          <div class="toggle-divider"></div>
+          <button class="toggle-pill think" data-mode="think" type="button" title="Modo think (resposta mais profunda)">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21h6M12 3v2M5 6.5l1.5 1.5M19 6.5l-1.5 1.5M3 13h2M19 13h2M9 17a5 5 0 116 0v2H9z"/></svg>
+            <span class="label">Think</span>
+          </button>
+          <div class="toggle-divider"></div>
+          <button class="toggle-pill canvas" data-mode="canvas" type="button" title="Modo canvas (output longo)">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="14" rx="2"/><path d="M3 17l4-4 4 4 6-6 4 4"/></svg>
+            <span class="label">Canvas</span>
+          </button>
+        </div>
+        <button class="send-btn idle" id="sendBtn" title="Enviar" type="button">
+          <svg id="sendIcon" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 19V5M5 12l7-7 7 7"/></svg>
+        </button>
+      </div>
     </div>
       <div class="doc-banner" id="docBanner">
         <span id="docBannerText"></span>
@@ -494,8 +572,42 @@ function formatRelative(ts) {
 
 input.addEventListener('input', () => {
   input.style.height = 'auto';
-  input.style.height = Math.min(input.scrollHeight, 140) + 'px';
+  input.style.height = Math.min(input.scrollHeight, 200) + 'px';
+  updateSendBtnState();
 });
+input.addEventListener('focus', () => document.getElementById('promptBox').classList.add('has-focus'));
+input.addEventListener('blur',  () => document.getElementById('promptBox').classList.remove('has-focus'));
+
+// Botão de anexar (substitui o label antigo)
+document.getElementById('attachBtn').addEventListener('click', () => docInput.click());
+
+// Toggles Search / Think / Canvas (mutuamente exclusivos: máx 1 ativo)
+let activeMode = null; // 'search' | 'think' | 'canvas' | null
+document.querySelectorAll('.toggle-pill').forEach(pill => {
+  pill.addEventListener('click', () => {
+    const mode = pill.dataset.mode;
+    if (activeMode === mode) {
+      activeMode = null;
+      pill.classList.remove('active');
+    } else {
+      document.querySelectorAll('.toggle-pill').forEach(p => p.classList.remove('active'));
+      pill.classList.add('active');
+      activeMode = mode;
+    }
+    // Atualiza placeholder
+    if (activeMode === 'search') input.placeholder = 'Buscar na web…';
+    else if (activeMode === 'think') input.placeholder = 'Pensar profundamente…';
+    else if (activeMode === 'canvas') input.placeholder = 'Criar conteúdo longo…';
+    else input.placeholder = 'Pergunte algo à Sindi…';
+  });
+});
+
+// Atualiza visual do send button conforme conteúdo
+function updateSendBtnState() {
+  const hasContent = input.value.trim().length > 0;
+  sendBtn.classList.toggle('has-content', hasContent);
+  sendBtn.classList.toggle('idle', !hasContent);
+}
 input.addEventListener('keydown', e => {
   if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
 });
@@ -585,6 +697,7 @@ async function send() {
   input.value = '';
   input.style.height = 'auto';
   sendBtn.disabled = true;
+  updateSendBtnState();
 
   let userContent = text;
   if (docContext) {
@@ -599,7 +712,7 @@ async function send() {
     const res = await fetch('/api/sindi', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messages }),
+      body: JSON.stringify({ messages, mode: activeMode }),
     });
     const data = await res.json();
 
