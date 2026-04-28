@@ -19,7 +19,8 @@ const USERS = new Set([
 
 export const config = {
   // Protege tudo, EXCETO endpoints públicos de auth e arquivos estáticos da página de login
-  matcher: '/((?!api/(login|logout)|_next/|_vercel/|favicon|logo|login\\.html).*)',
+  // (Vercel não aceita grupos de captura — use (?:...) ou regex separadas)
+  matcher: '/((?!api/(?:login|logout)|_next/|_vercel/|favicon|logo|login\\.html).*)',
 };
 
 export default function middleware(request) {
