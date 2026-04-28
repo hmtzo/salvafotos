@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WhatsApp Fotos + Legendas</title>
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: linear-gradient(135deg, #075E54 0%, #128C7E 100%);
+    min-height: 100vh; padding: 24px; color: #1a1a1a;
+  }
+  .container { max-width: 920px; margin: 0 auto; }
+  header { text-align: center; color: #fff; margin-bottom: 28px; }
+  header h1 { font-size: 28px; margin-bottom: 6px; }
+  header p { opacity: 0.9; font-size: 15px; }
+  .card { background: #fff; border-radius: 16px; padding: 28px; box-shadow: 0 8px 32px rgba(0,0,0,0.15); margin-bottom: 18px; }
+  .drop-zone {
+    border: 3px dashed #128C7E; border-radius: 12px; padding: 40px 24px;
+    text-align: center; cursor: pointer; transition: all 0.2s; background: #f0fdfa;
+  }
+  .drop-zone:hover, .drop-zone.dragover { background: #ccfbf1; border-color: #075E54; }
+  .drop-zone svg { width: 48px; height: 48px; color: #128C7E; margin-bottom: 10px; }
+  .drop-zone p { font-size: 15px; color: #075E54; font-weight: 500; }
+  .drop-zone p.small { font-size: 13px; color: #555; margin-top: 6px; font-weight: 400; }
+  input[type=file] { display: none; }
+
+  .options { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 20px; }
+  .option {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 12px; background: #f8fafc; border-radius: 10px;
+    cursor: pointer; border: 2px solid transparent; transition: all 0.15s;
+  }
+  .option:hover { border-color: #128C7E; }
+  .option input { margin-top: 3px; cursor: pointer; }
+  .option-text strong { display: block; font-size: 14px; }
+  .option-text span { font-size: 12px; color: #666; }
+
+  button.primary {
+    width: 100%; padding: 14px; background: #128C7E; color: #fff;
+    border: none; border-radius: 10px; font-size: 16px; font-weight: 600;
+    cursor: pointer; margin-top: 20px; transition: background 0.15s;
+  }
+  button.primary:hover:not(:disabled) { background: #075E54; }
+  button.primary:disabled { background: #94a3b8; cursor: not-allowed; }
+
+  .status { margin-top: 18px; padding: 12px 14px; border-radius: 10px; background: #f1f5f9; font-size: 14px; display: none; }
+  .status.show { display: block; }
+  .status.error { background: #fee2e2; color: #991b1b; }
+  .status.success { background: #d1fae5; color: #065f46; }
+  .progress { width: 100%; height: 6px; background: #e2e8f0; border-radius: 3px; overflow: hidden; margin-top: 8px; }
+  .progress-bar { height: 100%; background: #128C7E; width: 0%; transition: width 0.2s; }
+
+  .stats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-top: 18px; }
+  .stat { background: #f8fafc; padding: 12px; border-radius: 10px; text-align: center; }
+  .stat-value { font-size: 22px; font-weight: 700; color: #128C7E; }
+  .stat-value.warn { color: #d97706; }
+  .stat-label { font-size: 11px; color: #64748b; margin-top: 2px; }
+
+  details { margin-top: 16px; background: #fffbeb; border-radius: 10px; padding: 12px 14px; border-left: 4px solid #f59e0b; }
+  details summary { cursor: pointer; font-weight: 600; font-size: 14px; color: #92400e; }
+  details ul { margin: 8px 0 0 20px; font-size: 12px; color: #555; max-height: 180px; overflow-y: auto; }
+  details code { font-size: 11px; background: #fff; padding: 1px 6px; border-radius: 4px; }
+
+  .preview { margin-top: 18px; max-height: 360px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 10px; }
+  .preview table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .preview th { background: #f1f5f9; padding: 10px; text-align: left; position: sticky; top: 0; font-weight: 600; }
+  .preview td { padding: 9px 10px; border-top: 1px solid #e2e8f0; vertical-align: top; }
+  .preview td.caption { max-width: 360px; word-break: break-word; }
+  .preview tr.no-cap td { background: #fef2f2; }
+
+  .help { background: #f0fdfa; border-left: 4px solid #128C7E; padding: 12px 16px; border-radius: 8px; font-size: 13px; line-height: 1.6; }
+  .help strong { color: #075E54; }
+  .help ol { margin-left: 20px; margin-top: 4px; }
+  footer { text-align: center; color: #fff; opacity: 0.8; font-size: 12px; margin-top: 20px; }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>📸 WhatsApp Fotos + Legendas</h1>
+    <p>Extraia fotos da conversa exportada com legenda, data e remetente</p>
+  </header>
+
+  <div class="card">
+    <div class="help">
+      <strong>Como exportar (Android):</strong>
+      <ol>
+        <li>Abra a conversa → 3 pontinhos (canto superior direito)</li>
+        <li>Mais → <strong>Exportar conversa</strong> → <strong>Incluir mídia</strong></li>
+        <li>Arraste o <code>.zip</code> aqui embaixo</li>
+      </ol>
+    </div>
+
+    <label for="fileInput" class="drop-zone" id="dropZone" style="margin-top:18px;">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+      <p>Arraste o <strong>.zip</strong> da conversa aqui ou clique para selecionar</p>
+      <p class="small">100% offline · seus dados não saem do navegador</p>
+    </label>
+    <input type="file" id="fileInput" accept=".zip,.txt">
+
+    <div class="options">
+      <label class="option"><input type="checkbox" id="optRename" checked><span class="option-text"><strong>Renomear fotos</strong><span>data + legenda no nome</span></span></label>
+      <label class="option"><input type="checkbox" id="optCsv" checked><span class="option-text"><strong>Gerar planilha CSV</strong><span>arquivo, legenda, data, remetente</span></span></label>
+      <label class="option"><input type="checkbox" id="optVideos" checked><span class="option-text"><strong>Incluir vídeos</strong></span></label>
+      <label class="option"><input type="checkbox" id="optAudios"><span class="option-text"><strong>Incluir áudios</strong><span>.opus, .mp3, .m4a</span></span></label>
+    </div>
+
+    <button class="primary" id="processBtn" disabled>Processar arquivo</button>
+
+    <div class="status" id="status">
+      <div id="statusText">Aguardando…</div>
+      <div class="progress"><div class="progress-bar" id="progressBar"></div></div>
+    </div>
+
+    <div class="stats" id="stats" style="display:none;">
+      <div class="stat"><div class="stat-value" id="statPhotos">0</div><div class="stat-label">Fotos</div></div>
+      <div class="stat"><div class="stat-value" id="statVideos">0</div><div class="stat-label">Vídeos</div></div>
+      <div class="stat"><div class="stat-value" id="statAudios">0</div><div class="stat-label">Áudios</div></div>
+      <div class="stat"><div class="stat-value" id="statCaptions">0</div><div class="stat-label">Com legenda</div></div>
+      <div class="stat"><div class="stat-value warn" id="statUnmatched">0</div><div class="stat-label">Sem match</div></div>
+    </div>
+
+    <div id="diagnostics"></div>
+    <div class="preview" id="preview" style="display:none;"></div>
+  </div>
+
+  <footer>100% offline · seus dados não saem do seu computador</footer>
+</div>
+
+<script>
+const fileInput = document.getElementById('fileInput');
+const dropZone = document.getElementById('dropZone');
+const processBtn = document.getElementById('processBtn');
+const statusEl = document.getElementById('status');
+const statusText = document.getElementById('statusText');
+const progressBar = document.getElementById('progressBar');
+const statsEl = document.getElementById('stats');
+const previewEl = document.getElementById('preview');
+const diagEl = document.getElementById('diagnostics');
+
+let selectedFile = null;
+
+['dragenter','dragover'].forEach(ev => dropZone.addEventListener(ev, e => { e.preventDefault(); e.stopPropagation(); dropZone.classList.add('dragover'); }));
+['dragleave','drop'].forEach(ev => dropZone.addEventListener(ev, e => { e.preventDefault(); e.stopPropagation(); dropZone.classList.remove('dragover'); }));
+dropZone.addEventListener('drop', e => {
+  const f = e.dataTransfer.files[0];
+  if (f) { fileInput.files = e.dataTransfer.files; handleFile(f); }
+});
+fileInput.addEventListener('change', e => { if (e.target.files[0]) handleFile(e.target.files[0]); });
+
+function handleFile(f) {
+  selectedFile = f;
+  dropZone.querySelector('p').innerHTML = `<strong>${f.name}</strong> (${(f.size/1024/1024).toFixed(1)} MB)`;
+  processBtn.disabled = false;
+  showStatus('Pronto para processar', '');
+}
+function showStatus(msg, type) { statusEl.className = 'status show' + (type ? ' ' + type : ''); statusText.textContent = msg; }
+function setProgress(pct) { progressBar.style.width = pct + '%'; }
+
+// ==========================================================================
+// PARSER ROBUSTO — cobre todas as variações conhecidas do export do WhatsApp
+// ==========================================================================
+//
+// Formatos de linha de mensagem suportados:
+//   Android PT-BR:  "28/04/2026 14:32 - Fulano: texto"
+//   Android (vírgula): "28/04/2026, 14:32 - Fulano: texto"
+//   iOS:            "[28/04/2026, 14:32:45] Fulano: texto"
+//   12h:            "28/04/2026, 2:32 PM - Fulano: ..."
+//   Variações: -, –, — (dash), com/sem segundos, com/sem vírgula
+//
+// Marcadores de anexo suportados:
+//   "IMG-20260428-WA0001.jpg (arquivo anexado)"          [Android PT]
+//   "IMG-20260428-WA0001.jpg (file attached)"             [Android EN]
+//   "<anexado: IMG-20260428-WA0001.jpg>"                  [Android novo]
+//   "<attached: 00000001-PHOTO-2026-04-28-14-32-45.jpg>"  [iOS EN]
+//
+// Caracteres invisíveis (LRM ‎, RLM ‏, etc) são removidos antes de processar.
+
+// Limpa caracteres invisíveis Unicode comuns em exports
+function cleanInvisible(s) {
+  return s.replace(/[​-‏‪-‮⁦-⁩﻿]/g, '');
+}
+
+// Detecta início de mensagem. Captura: data, hora, remetente, corpo
+// Aceita formato com ou sem colchetes
+const RE_BRACKET = /^\[(\d{1,2}\/\d{1,2}\/\d{2,4}),?\s+(\d{1,2}:\d{2}(?::\d{2})?(?:\s*[AaPp][Mm])?)\]\s*([^:]+?):\s?(.*)$/;
+const RE_PLAIN   = /^(\d{1,2}\/\d{1,2}\/\d{2,4}),?\s+(\d{1,2}:\d{2}(?::\d{2})?(?:\s*[AaPp][Mm])?)\s*[-–—]\s*([^:]+?):\s?(.*)$/;
+
+// Detecta "linha de evento do sistema" (sem remetente, ex: "Mensagens são protegidas...")
+// Não nos importa, mas precisamos identificar pra não quebrar parsing
+const RE_BRACKET_SYS = /^\[(\d{1,2}\/\d{1,2}\/\d{2,4}),?\s+(\d{1,2}:\d{2}(?::\d{2})?(?:\s*[AaPp][Mm])?)\]\s*(.*)$/;
+const RE_PLAIN_SYS   = /^(\d{1,2}\/\d{1,2}\/\d{2,4}),?\s+(\d{1,2}:\d{2}(?::\d{2})?(?:\s*[AaPp][Mm])?)\s*[-–—]\s*(.*)$/;
+
+// Anexo: tenta múltiplos formatos
+const RE_ATTACH_ANGLE = /<(?:anexado|attached|adjunto|allegato|anexo)[:：]?\s*([^>]+?\.[A-Za-z0-9]{2,5})\s*>/i;
+const RE_ATTACH_PAREN = /([\w.\-+()\s]+?\.(?:jpg|jpeg|png|gif|webp|heic|mp4|3gp|mov|avi|mkv|opus|mp3|m4a|ogg|wav|aac|pdf|docx?|xlsx?|pptx?|txt|vcf))\s*[\(\（](?:arquivo anexado|file attached|archivo adjunto|file allegato|adjunto)[\)\）]/i;
+
+// Extensões reconhecidas
+const PHOTO_EXT = ['jpg','jpeg','png','gif','webp','heic'];
+const VIDEO_EXT = ['mp4','3gp','mov','avi','mkv'];
+const AUDIO_EXT = ['opus','mp3','m4a','ogg','wav','aac'];
+
+function parseChat(text) {
+  text = cleanInvisible(text);
+  const lines = text.split(/\r?\n/);
+  const messages = [];
+  let cur = null;
+
+  for (const raw of lines) {
+    const line = raw;
+    let m = line.match(RE_BRACKET) || line.match(RE_PLAIN);
+    if (m) {
+      if (cur) messages.push(cur);
+      cur = { date: m[1], time: m[2], sender: m[3].trim(), body: m[4] || '' };
+      continue;
+    }
+    // checa se é linha de sistema (sem remetente) — fecha mensagem anterior mas não vira nova
+    const sys = line.match(RE_BRACKET_SYS) || line.match(RE_PLAIN_SYS);
+    if (sys && !line.includes(': ')) {
+      if (cur) { messages.push(cur); cur = null; }
+      continue;
+    }
+    if (cur) cur.body += '\n' + line;
+  }
+  if (cur) messages.push(cur);
+
+  // mapeia filename -> metadados
+  const byFile = {};
+  for (const msg of messages) {
+    let attachMatch = msg.body.match(RE_ATTACH_ANGLE) || msg.body.match(RE_ATTACH_PAREN);
+    if (!attachMatch) continue;
+
+    const filename = attachMatch[1].trim();
+    const fullMatch = attachMatch[0];
+    const idx = msg.body.indexOf(fullMatch);
+    let caption = msg.body.slice(idx + fullMatch.length).replace(/^\s*[\n\r]+/, '').trim();
+    // se a legenda começou ANTES do anexo na mesma mensagem (raro, mas acontece)
+    const before = msg.body.slice(0, idx).trim();
+    if (!caption && before) caption = before;
+
+    byFile[filename] = {
+      filename, caption,
+      date: msg.date, time: msg.time, sender: msg.sender
+    };
+    // também indexa pelo basename (caso tenha path)
+    const base = filename.split(/[\\\/]/).pop();
+    if (base !== filename) byFile[base] = byFile[filename];
+  }
+
+  return { byFile, messageCount: messages.length };
+}
+
+function parseDateBR(dateStr, timeStr) {
+  // dd/mm/yyyy ou dd/mm/yy. Também aceita mm/dd/yyyy se primeiro número > 12
+  let parts = dateStr.split('/');
+  let [a, b, y] = parts;
+  let d, m;
+  if (parseInt(a) > 12) { d = a; m = b; }
+  else if (parseInt(b) > 12) { m = a; d = b; }
+  else { d = a; m = b; }
+  const yyyy = y.length === 2 ? '20' + y : y;
+  // normaliza hora 12h -> 24h
+  let t = timeStr.trim();
+  const ampm = t.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?\s*([AaPp])[Mm]$/);
+  if (ampm) {
+    let hh = parseInt(ampm[1]);
+    const mm = ampm[2];
+    const isPM = /p/i.test(ampm[4]);
+    if (isPM && hh < 12) hh += 12;
+    if (!isPM && hh === 12) hh = 0;
+    t = String(hh).padStart(2,'0') + ':' + mm;
+  } else {
+    // remove segundos se houver
+    const m24 = t.match(/^(\d{1,2}):(\d{2})/);
+    if (m24) t = m24[1].padStart(2,'0') + ':' + m24[2];
+  }
+  return { iso: `${yyyy}-${m.padStart(2,'0')}-${d.padStart(2,'0')}`, time: t.replace(':','h') };
+}
+
+function slugify(s, max=50) {
+  if (!s) return '';
+  return s.normalize('NFD').replace(/[̀-ͯ]/g,'')
+    .replace(/[^a-zA-Z0-9\s-]/g,' ').trim().replace(/\s+/g,'-').replace(/-+/g,'-').toLowerCase().slice(0, max).replace(/-+$/,'');
+}
+
+function csvEscape(v) {
+  v = (v == null ? '' : String(v));
+  if (/[",\n;\r]/.test(v)) return '"' + v.replace(/"/g,'""') + '"';
+  return v;
+}
+
+processBtn.addEventListener('click', async () => {
+  if (!selectedFile) return;
+  processBtn.disabled = true;
+  statsEl.style.display = 'none';
+  previewEl.style.display = 'none';
+  diagEl.innerHTML = '';
+  setProgress(5);
+
+  try {
+    let chatText = null;
+    let zipFiles = [];
+    const isTxt = /\.txt$/i.test(selectedFile.name);
+
+    if (isTxt) {
+      chatText = await selectedFile.text();
+      showStatus('Modo somente-texto: gerando apenas planilha CSV', '');
+    } else {
+      showStatus('Lendo arquivo .zip…', '');
+      const zip = await JSZip.loadAsync(selectedFile);
+      setProgress(15);
+      let chatFile = null;
+      const candidates = [];
+      zip.forEach((path, file) => {
+        if (file.dir) return;
+        if (/\.txt$/i.test(path)) candidates.push({path, file});
+        zipFiles.push({path, file});
+      });
+      // prioriza nomes mais comuns
+      chatFile = candidates.find(c => /(_chat|chat|whatsapp.*chat|conversa).*\.txt$/i.test(c.path))
+              || candidates.find(c => /\.txt$/i.test(c.path));
+      if (!chatFile) throw new Error('Nenhum arquivo .txt encontrado no zip. Esse não parece ser um export do WhatsApp.');
+      chatText = await chatFile.file.async('string');
+    }
+
+    setProgress(30);
+    showStatus('Lendo conversa…', '');
+    const { byFile, messageCount } = parseChat(chatText);
+    const captionedFiles = Object.keys(byFile).length;
+
+    if (messageCount === 0) {
+      throw new Error('Não consegui interpretar nenhuma mensagem no arquivo de texto. Formato desconhecido — me mande as 3 primeiras linhas do _chat.txt para eu ajustar.');
+    }
+    setProgress(45);
+
+    const optRename = document.getElementById('optRename').checked;
+    const optCsv    = document.getElementById('optCsv').checked;
+    const optVideos = document.getElementById('optVideos').checked;
+    const optAudios = document.getElementById('optAudios').checked;
+    const allowedExts = new Set([...PHOTO_EXT, ...(optVideos?VIDEO_EXT:[]), ...(optAudios?AUDIO_EXT:[])]);
+
+    const out = new JSZip();
+    const csvRows = [['arquivo_original','arquivo_novo','legenda','data','hora','data_iso','remetente','tipo']];
+    const previewRows = [];
+    let photos=0, videos=0, audios=0, withCaption=0, unmatched=0;
+    const unmatchedList = [];
+    const usedNames = new Set();
+
+    if (isTxt) {
+      // Modo só texto: lista todas as legendas encontradas
+      for (const fname of Object.keys(byFile)) {
+        const meta = byFile[fname];
+        const ext = (fname.split('.').pop()||'').toLowerCase();
+        let type = PHOTO_EXT.includes(ext) ? 'foto' : VIDEO_EXT.includes(ext) ? 'video' : AUDIO_EXT.includes(ext) ? 'audio' : 'outro';
+        if (type==='foto') photos++; else if (type==='video') videos++; else if (type==='audio') audios++;
+        if (meta.caption) withCaption++;
+        let isoDate = '';
+        try { isoDate = parseDateBR(meta.date, meta.time).iso; } catch(e){}
+        csvRows.push([fname, '', meta.caption, meta.date, meta.time, isoDate, meta.sender, type]);
+        if (previewRows.length < 100) previewRows.push({base:fname, newName:'(modo texto)', caption: meta.caption, date: meta.date, time: meta.time, sender: meta.sender, hasCap: !!meta.caption});
+      }
+    } else {
+      const fileEntries = zipFiles.filter(({path}) => {
+        const base = path.split('/').pop();
+        const ext = (base.split('.').pop()||'').toLowerCase();
+        return allowedExts.has(ext);
+      });
+
+      let i = 0;
+      for (const {path, file} of fileEntries) {
+        i++;
+        if (i % 5 === 0 || i === fileEntries.length) {
+          setProgress(45 + Math.round((i/fileEntries.length)*50));
+          showStatus(`Processando ${i}/${fileEntries.length}…`, '');
+          await new Promise(r => setTimeout(r, 0));
+        }
+        const base = path.split('/').pop();
+        const ext = (base.split('.').pop()||'').toLowerCase();
+        const meta = byFile[base] || byFile[path] || null;
+
+        let type = PHOTO_EXT.includes(ext) ? 'foto' : VIDEO_EXT.includes(ext) ? 'video' : AUDIO_EXT.includes(ext) ? 'audio' : 'outro';
+        if (type==='foto') photos++; else if (type==='video') videos++; else if (type==='audio') audios++;
+
+        const m = meta || { caption:'', date:'', time:'', sender:'' };
+        if (m.caption) withCaption++;
+        if (!meta) { unmatched++; unmatchedList.push(base); }
+
+        let newName = base;
+        let isoDate = '';
+        if (m.date && m.time) { try { isoDate = parseDateBR(m.date, m.time).iso; } catch(e){} }
+
+        if (optRename) {
+          let prefix = '';
+          if (m.date && m.time) {
+            try {
+              const d = parseDateBR(m.date, m.time);
+              prefix = `${d.iso}_${d.time}`;
+            } catch(e){}
+          }
+          const slug = slugify(m.caption);
+          const senderSlug = slug ? '' : slugify(m.sender, 20);
+          const parts = [prefix, slug || senderSlug].filter(Boolean);
+          newName = (parts.length ? parts.join('_') + '.' + ext : base);
+          let candidate = newName, n = 1;
+          while (usedNames.has(candidate)) {
+            const dot = newName.lastIndexOf('.');
+            candidate = newName.slice(0,dot) + '-' + (++n) + newName.slice(dot);
+          }
+          newName = candidate;
+          usedNames.add(newName);
+        }
+
+        const folder = type === 'foto' ? 'fotos' : (type==='video' ? 'videos' : (type==='audio'?'audios':'outros'));
+        const data = await file.async('uint8array');
+        out.file(`${folder}/${newName}`, data);
+
+        csvRows.push([base, newName, m.caption, m.date, m.time, isoDate, m.sender, type]);
+        if (previewRows.length < 100 && (type==='foto' || type==='video')) {
+          previewRows.push({base, newName, caption: m.caption, date: m.date, time: m.time, sender: m.sender, hasCap: !!m.caption});
+        }
+      }
+    }
+
+    if (optCsv || isTxt) {
+      const csv = '﻿' + csvRows.map(r => r.map(csvEscape).join(',')).join('\n');
+      out.file('legendas.csv', csv);
+    }
+
+    showStatus('Gerando arquivo .zip de saída…', '');
+    setProgress(96);
+    const blob = await out.generateAsync({type:'blob', compression: isTxt ? 'DEFLATE' : 'STORE'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    const baseName = selectedFile.name.replace(/\.(zip|txt)$/i,'');
+    a.download = baseName + '_processado.zip';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url), 1000);
+
+    setProgress(100);
+    showStatus(`✓ Pronto! ${messageCount} mensagens lidas, ${photos} fotos, ${videos} vídeos, ${withCaption} com legenda${unmatched?`, ${unmatched} sem match`:''}.`, 'success');
+
+    document.getElementById('statPhotos').textContent = photos;
+    document.getElementById('statVideos').textContent = videos;
+    document.getElementById('statAudios').textContent = audios;
+    document.getElementById('statCaptions').textContent = withCaption;
+    document.getElementById('statUnmatched').textContent = unmatched;
+    statsEl.style.display = 'grid';
+
+    // Diagnóstico
+    let diagHTML = '';
+    if (unmatched > 0) {
+      diagHTML += `<details open><summary>⚠️ ${unmatched} arquivo(s) não casaram com nenhuma mensagem do chat</summary>
+        <p style="font-size:12px;margin-top:6px;color:#555;">Esses arquivos foram incluídos sem legenda. Pode ser stickers, mídias deletadas no chat mas que sobraram no zip, ou um formato de linha que o parser não reconheceu.</p>
+        <ul>${unmatchedList.slice(0,30).map(n=>`<li><code>${n}</code></li>`).join('')}${unmatchedList.length>30?`<li>… e mais ${unmatchedList.length-30}</li>`:''}</ul></details>`;
+    }
+    diagEl.innerHTML = diagHTML;
+
+    if (previewRows.length) {
+      previewEl.innerHTML = '<table><thead><tr><th>Data</th><th>Remetente</th><th>Legenda</th><th>Novo nome</th></tr></thead><tbody>' +
+        previewRows.map(r => `<tr class="${r.hasCap?'':'no-cap'}"><td style="white-space:nowrap">${r.date} ${r.time}</td><td>${r.sender}</td><td class="caption">${r.caption ? escapeHtml(r.caption) : '<em style="color:#94a3b8">sem legenda</em>'}</td><td><code style="font-size:11px">${escapeHtml(r.newName)}</code></td></tr>`).join('') +
+        '</tbody></table>';
+      previewEl.style.display = 'block';
+    }
+  } catch (err) {
+    console.error(err);
+    showStatus('Erro: ' + err.message, 'error');
+    setProgress(0);
+  } finally {
+    processBtn.disabled = false;
+  }
+});
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
+}
+
+// =====================
+// Auto-teste embutido — roda sample de cada formato no carregamento e loga no console
+// =====================
+(function selfTest(){
+  const samples = {
+    'Android PT (sem vírgula)': `28/04/2026 14:32 - Heitor: IMG-20260428-WA0001.jpg (arquivo anexado)
+Pedido do cliente João
+28/04/2026 14:33 - Heitor: VID-20260428-WA0002.mp4 (arquivo anexado)`,
+    'Android PT (com vírgula)': `28/04/2026, 14:32 - Heitor: IMG-001.jpg (arquivo anexado)
+legenda aqui`,
+    'iOS PT (colchetes)': `[28/04/2026, 14:32:45] Heitor: <anexado: 00000001-PHOTO-2026-04-28-14-32-45.jpg>
+legenda no iOS`,
+    'Android novo (angle)': `28/04/2026 14:32 - Heitor: <anexado: IMG-X.jpg>
+legenda angle`,
+    'Inglês 12h': `4/28/26, 2:32 PM - Heitor: IMG-002.jpg (file attached)
+english caption`,
+  };
+  const results = {};
+  for (const [name, txt] of Object.entries(samples)) {
+    const r = parseChat(txt);
+    results[name] = { messages: r.messageCount, files: Object.keys(r.byFile) };
+  }
+  console.log('Self-test parser WhatsApp:', results);
+})();
+</script>
+</body>
+</html>
