@@ -519,70 +519,23 @@
 
 <div class="container">
 
-  <section class="hub-hero" style="padding:36px 0 18px">
+  <section class="hub-hero">
     <span class="hub-eyebrow">Sindicompany Hub · Uso interno</span>
-    <h1 style="font-size:clamp(32px,5.5vw,56px);margin-bottom:8px">
-      <span class="silver-matte">Olá. Como posso</span><br>
-      <span class="highlight">ajudar hoje?</span>
+    <h1>
+      <span class="silver-matte">Ferramentas para o</span><br>
+      <span class="highlight">dia a dia do escritório</span>
     </h1>
-    <p>Pergunte pra Sindi, ou abra o menu de ferramentas.</p>
-  </section>
+    <p>Tudo num só lugar — processado direto no navegador.</p>
 
-  <!-- ===== SINDI HERO CARD ===== -->
-  <section class="sindi-hero">
-    <div class="sindi-hero-row">
-      <div class="sindi-avatar">
-        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect x="4" y="8" width="16" height="12" rx="2"/><path d="M2 14h2M20 14h2M15 13v2M9 13v2"/></svg>
-      </div>
-      <div class="sindi-info">
-        <span class="sindi-tag"><span class="dot"></span> Sindi · IA Interna</span>
-        <h2>Copiloto jurídico-condominial</h2>
-        <p>Lê documentos, redige notificações, responde dúvidas de direito condominial e ainda salva o histórico das suas conversas.</p>
-      </div>
-    </div>
-    <div class="sindi-cta">
-      <a href="/tools/sindi.html" class="sindi-btn primary">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-        Conversar com a Sindi
-      </a>
-      <a href="/tools/corretor-texto.html" class="sindi-btn ghost">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
-        Corrigir texto PT-BR
-      </a>
-    </div>
-    <div class="sindi-quick">
-      <button class="sindi-quick-chip" data-prompt="Redija uma notificação de inadimplência para um morador com 2 meses em atraso.">📋 Notificar inadimplência</button>
-      <button class="sindi-quick-chip" data-prompt="Quais são os passos para realizar uma assembleia extraordinária?">🏛️ Assembleia extraordinária</button>
-      <button class="sindi-quick-chip" data-prompt="O que diz o Código Civil sobre obras em áreas comuns?">⚖️ Obras em áreas comuns</button>
-      <button class="sindi-quick-chip" data-prompt="Como aplicar multa de barulho de forma legal?">🔊 Multa de barulho</button>
-    </div>
-  </section>
-
-  <!-- ===== TRIGGER + DROPDOWN PANEL ===== -->
-  <div class="tools-trigger-wrap">
-    <button class="tools-trigger" id="toolsTrigger" aria-expanded="false" aria-controls="toolsPanel">
-      <div class="trigger-left">
-        <div class="trigger-icon">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>
-        </div>
-        <div>
-          <div class="trigger-label">Ferramentas</div>
-          <div class="trigger-meta" id="triggerMeta">26 ferramentas · PDF, conversões, geradores, cálculos</div>
-        </div>
-      </div>
-      <svg class="chev" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
-    </button>
-  </div>
-
-  <div class="tools-panel" id="toolsPanel" role="region" aria-label="Lista de ferramentas">
-    <div class="search-wrap" style="margin-top:0">
+    <div class="search-wrap">
       <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
       <input type="text" id="search" placeholder="Buscar ferramenta…" autocomplete="off">
     </div>
 
-    <div class="category-tabs-wrap" style="margin-top:14px">
+    <div class="category-tabs-wrap">
       <div class="category-tabs" id="catTabs">
         <button class="cat-tab active" data-cat="all">Todas</button>
+        <button class="cat-tab" data-cat="ai">IA</button>
         <button class="cat-tab" data-cat="doc">Documentos</button>
         <button class="cat-tab" data-cat="calc">Cálculos</button>
         <button class="cat-tab" data-cat="convert">Conversões</button>
@@ -593,9 +546,9 @@
         <div class="limelight" id="limelight"></div>
       </div>
     </div>
+  </section>
 
-    <div class="tools-grid" id="toolsGrid" style="margin-top:18px"></div>
-  </div>
+  <div class="tools-grid" id="toolsGrid"></div>
 
   <div class="mindock-spacer"></div>
 </div>
@@ -765,44 +718,12 @@ catTabs.addEventListener('click', e => {
 renderTools();
 requestAnimationFrame(moveLimelight);
 
-// ===== Ferramentas dropdown =====
-const toolsTrigger = document.getElementById('toolsTrigger');
-const toolsPanel = document.getElementById('toolsPanel');
-const triggerMeta = document.getElementById('triggerMeta');
-
-function setPanelOpen(open) {
-  toolsTrigger.setAttribute('aria-expanded', open ? 'true' : 'false');
-  toolsPanel.classList.toggle('open', open);
-  if (open) {
-    requestAnimationFrame(() => { moveLimelight(); document.getElementById('search').focus(); });
-  }
-}
-toolsTrigger.addEventListener('click', () => {
-  setPanelOpen(toolsTrigger.getAttribute('aria-expanded') !== 'true');
-});
-
-// Atualiza contador no trigger (excluindo IA que já está em destaque)
-const nonAiCount = TOOLS.filter(t => t.cat !== 'ai').length;
-triggerMeta.textContent = `${nonAiCount} ferramentas · PDF, conversões, geradores, cálculos`;
-
-// Abre painel se usuário começar a digitar a busca via teclado (atalho /)
+// Atalho "/" foca a busca
 document.addEventListener('keydown', e => {
   if (e.key === '/' && !['INPUT','TEXTAREA'].includes(document.activeElement.tagName)) {
     e.preventDefault();
-    setPanelOpen(true);
+    document.getElementById('search').focus();
   }
-  if (e.key === 'Escape' && toolsTrigger.getAttribute('aria-expanded') === 'true') {
-    setPanelOpen(false);
-  }
-});
-
-// ===== Quick prompts (Sindi chips) =====
-document.querySelectorAll('.sindi-quick-chip').forEach(chip => {
-  chip.addEventListener('click', () => {
-    const prompt = chip.dataset.prompt;
-    try { sessionStorage.setItem('sindi_initial_prompt', prompt); } catch(e){}
-    window.location.href = '/tools/sindi.html';
-  });
 });
 
 // ===== MinimalistDock — glass escuro com hover lift, tooltip e reflexo =====
