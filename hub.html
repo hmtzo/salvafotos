@@ -354,126 +354,125 @@
   }
 
   /* ========================================================================
-     MESSAGE DOCK — pill que expande pra input com gradiente do item
+     MINIMALIST DOCK — glass escuro com hover lift + tooltip + reflexo
      ======================================================================== */
-  .mdock-spacer{height:96px}
-  .mdock-wrap{
-    position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
+  .mindock-spacer{height:130px}
+  .mindock-wrap{
+    position:fixed;bottom:28px;left:50%;transform:translateX(-50%);
     z-index:100;
-    animation:mdock-rise 0.7s cubic-bezier(0.2,0.8,0.2,1) 0.2s both;
+    animation:mindock-rise 0.7s cubic-bezier(0.2,0.8,0.2,1) 0.2s both;
   }
-  @keyframes mdock-rise{
-    from{opacity:0;transform:translate(-50%, 80px) scale(0.85)}
-    to{opacity:1;transform:translate(-50%, 0) scale(1)}
-  }
-
-  .mdock{
-    display:flex;align-items:center;gap:8px;position:relative;
-    padding:8px 14px;
-    background:#ffffff;
-    border:1px solid rgba(0,0,0,0.08);
-    border-radius:9999px;
-    box-shadow:
-      0 24px 60px -12px rgba(0,0,0,0.5),
-      0 8px 20px -6px rgba(0,0,0,0.3),
-      0 1px 0 rgba(255,255,255,0.6) inset;
-    transition:
-      width 0.45s cubic-bezier(0.34, 1.4, 0.5, 1),
-      background 0.25s ease;
-    width:266px;will-change:width, background;
-  }
-  .mdock.expanded{width:min(440px, calc(100vw - 32px))}
-
-  .mdock .sep{
-    width:1px;height:22px;background:rgba(0,0,0,0.18);
-    flex-shrink:0;transition:opacity 0.25s, transform 0.3s;
-    transform-origin:center;
-  }
-  .mdock.expanded .sep{opacity:0;transform:scaleY(0)}
-
-  .mdock-spark{
-    width:42px;height:42px;border-radius:50%;flex-shrink:0;
-    display:flex;align-items:center;justify-content:center;
-    font-size:22px;background:transparent;border:none;cursor:pointer;
-    transition:opacity 0.3s, transform 0.4s cubic-bezier(0.4,1.4,0.5,1);
-  }
-  .mdock-spark:hover{transform:translateY(-2px) scale(1.05)}
-  .mdock.expanded .mdock-spark{
-    opacity:0;transform:translateX(-20px) scale(0.8);pointer-events:none;
+  @keyframes mindock-rise{
+    from{opacity:0;transform:translate(-50%, 60px)}
+    to{opacity:1;transform:translate(-50%, 0)}
   }
 
-  .mdock-items{display:flex;align-items:center;gap:8px;flex-shrink:0;position:relative}
-  .mdock-item{
-    width:38px;height:38px;border-radius:50%;
-    display:flex;align-items:center;justify-content:center;
-    font-size:18px;border:none;cursor:pointer;position:relative;flex-shrink:0;
-    transition:
-      transform 0.35s cubic-bezier(0.34, 1.4, 0.5, 1),
-      opacity 0.25s ease,
-      background 0.2s ease;
+  .mindock-stack{position:relative}
+  .mindock{
+    display:flex;align-items:flex-end;gap:12px;
+    padding:14px 22px;border-radius:20px;
+    background:rgba(0,0,0,0.4);
+    border:1px solid rgba(255,255,255,0.1);
+    box-shadow:0 24px 60px -12px rgba(0,0,0,0.7);
+    backdrop-filter:blur(20px) saturate(140%);
+    -webkit-backdrop-filter:blur(20px) saturate(140%);
+    transition:transform 0.5s cubic-bezier(0.2,0.8,0.2,1);
   }
-  .mdock-item:hover{transform:translateY(-3px) scale(1.05)}
-  .mdock-item:active{transform:scale(0.95)}
-  .mdock-item .online-dot{
-    position:absolute;bottom:0;right:0;width:10px;height:10px;
-    background:#22c55e;border:2px solid #fff;border-radius:50%;
-    transform:scale(0);transition:transform 0.35s cubic-bezier(0.34,1.4,0.5,1);
-  }
-  .mdock-item.online .online-dot{transform:scale(1)}
+  .mindock-stack.has-hover .mindock{transform:scale(1.04)}
 
-  /* Itens não selecionados some pra baixo quando expandido */
-  .mdock.expanded .mdock-item:not(.selected){
-    opacity:0;transform:translateY(40px) scale(0.7);pointer-events:none;
+  .mindock-item{
+    position:relative;display:flex;align-items:center;justify-content:center;
+    width:44px;height:44px;border-radius:12px;
+    background:rgba(255,255,255,0.05);
+    border:1px solid rgba(255,255,255,0.1);
+    color:#fff;text-decoration:none;cursor:pointer;
+    transition:transform 0.3s ease-out, background 0.3s ease-out,
+               border-color 0.3s ease-out, box-shadow 0.3s ease-out;
+    flex-shrink:0;
   }
-  .mdock.expanded .mdock-item.selected{
-    background:rgba(255,255,255,0.92) !important;
-    box-shadow:0 4px 12px rgba(0,0,0,0.1);
+  .mindock-item svg{
+    width:20px;height:20px;
+    transition:transform 0.3s ease-out, filter 0.3s ease-out;
   }
-  .mdock.expanded .mdock-item .online-dot{transform:scale(0)}
+  .mindock-item:hover{
+    background:rgba(255,255,255,0.07);
+    transform:translateY(-2px) scale(1.05);
+  }
+  .mindock-item.is-hover{
+    background:rgba(255,255,255,0.1);
+    border-color:rgba(255,255,255,0.2);
+    transform:translateY(-4px) scale(1.1);
+    box-shadow:0 4px 24px rgba(255,255,255,0.08);
+  }
+  .mindock-item.is-hover svg{
+    transform:scale(1.05);
+    filter:drop-shadow(0 1px 4px rgba(255,255,255,0.1));
+  }
 
-  .mdock-input{
-    position:absolute;left:62px;right:62px;top:50%;transform:translateY(-50%);
-    background:transparent;border:none;outline:none;
-    font-family:inherit;font-size:14px;font-weight:500;
-    color:rgba(0,0,0,0.78);
+  /* Tooltip */
+  .mindock-tip{
+    position:absolute;bottom:calc(100% + 10px);left:50%;
+    transform:translateX(-50%) translateY(4px);
+    padding:5px 10px;border-radius:6px;
+    background:rgba(0,0,0,0.7);color:#fff;
+    font-size:11px;font-weight:400;white-space:nowrap;
+    border:1px solid rgba(255,255,255,0.06);
+    backdrop-filter:blur(8px);
     opacity:0;pointer-events:none;
-    transition:opacity 0.25s ease 0.15s;
+    transition:opacity 0.2s, transform 0.2s;
   }
-  .mdock-input::placeholder{color:rgba(0,0,0,0.4)}
-  .mdock.expanded .mdock-input{opacity:1;pointer-events:auto}
+  .mindock-tip::after{
+    content:'';position:absolute;top:100%;left:50%;
+    width:8px;height:8px;background:rgba(0,0,0,0.7);
+    transform:translateX(-50%) rotate(45deg);
+    margin-top:-4px;
+    border-right:1px solid rgba(255,255,255,0.06);
+    border-bottom:1px solid rgba(255,255,255,0.06);
+  }
+  .mindock-item.is-hover .mindock-tip{
+    opacity:1;transform:translateX(-50%) translateY(0);
+  }
 
-  .mdock-menu, .mdock-send{
-    width:42px;height:42px;border-radius:50%;flex-shrink:0;
+  /* Reflexo embaixo */
+  .mindock-reflection{
+    position:absolute;top:100%;left:0;right:0;height:64px;
+    overflow:hidden;pointer-events:none;
+  }
+  .mindock-reflection .mindock-mirror{
+    display:flex;align-items:flex-start;gap:12px;
+    padding:14px 22px;border-radius:20px;
+    background:rgba(0,0,0,0.2);
+    border:1px solid rgba(255,255,255,0.05);
+    backdrop-filter:blur(20px);
+    opacity:0.3;transform:scaleY(-1);
+    transition:transform 0.5s cubic-bezier(0.2,0.8,0.2,1);
+  }
+  .mindock-stack.has-hover .mindock-mirror{transform:scaleY(-1.05) scale(1.04)}
+  .mindock-mirror-item{
+    width:48px;height:48px;border-radius:14px;
+    background:rgba(255,255,255,0.05);
     display:flex;align-items:center;justify-content:center;
-    background:transparent;border:none;cursor:pointer;color:#374151;
-    transition:transform 0.4s cubic-bezier(0.4,1.4,0.5,1), opacity 0.25s, background 0.2s;
+    color:rgba(255,255,255,0.5);flex-shrink:0;
+    transition:transform 0.3s ease-out;
   }
-  .mdock-menu:hover{transform:translateY(-2px)}
-
-  .mdock-send{
-    width:38px;height:38px;background:rgba(255,255,255,0.95);
-    box-shadow:0 4px 12px rgba(0,0,0,0.12);
-    opacity:0;transform:scale(0) rotate(-90deg);pointer-events:none;
-  }
-  .mdock.expanded .mdock-menu{
-    opacity:0;transform:scale(0) rotate(90deg);pointer-events:none;
-  }
-  .mdock.expanded .mdock-send{
-    opacity:1;transform:scale(1) rotate(0);pointer-events:auto;
-  }
-  .mdock-send:hover:not(:disabled){background:#fff;transform:scale(1.08)}
-  .mdock-send:disabled{opacity:0.45;cursor:not-allowed}
+  .mindock-mirror-item svg{width:20px;height:20px}
+  .mindock-mirror-item.is-hover{transform:scale(1.25) translateY(-8px)}
 
   /* Mobile */
   @media (max-width: 640px){
-    .mdock-spacer{height:80px}
-    .mdock-wrap{bottom:14px;left:50%;width:auto}
-    .mdock{padding:6px 10px;gap:6px;width:auto}
-    .mdock.expanded{width:calc(100vw - 28px)}
-    .mdock-spark{width:36px;height:36px;font-size:18px}
-    .mdock-item{width:34px;height:34px;font-size:16px}
-    .mdock-menu, .mdock-send{width:36px;height:36px}
-    .mdock-input{left:54px;right:54px;font-size:13px}
+    .mindock-spacer{height:96px}
+    .mindock-wrap{bottom:14px;left:8px;right:8px;transform:none}
+    .mindock{
+      padding:10px 12px;gap:8px;border-radius:16px;
+      overflow-x:auto;-webkit-overflow-scrolling:touch;
+      scroll-snap-type:x mandatory;
+      justify-content:flex-start;
+    }
+    .mindock::-webkit-scrollbar{display:none}
+    .mindock-item{width:40px;height:40px;scroll-snap-align:start}
+    .mindock-item svg{width:18px;height:18px}
+    .mindock-reflection{display:none}
+    .mindock-tip{display:none}
   }
 </style>
 </head>
@@ -562,25 +561,13 @@
     <div class="tools-grid" id="toolsGrid" style="margin-top:18px"></div>
   </div>
 
-  <div class="mdock-spacer"></div>
+  <div class="mindock-spacer"></div>
 </div>
 
-<div class="mdock-wrap" aria-label="Atalhos rápidos">
-  <div class="mdock" id="hubDock">
-    <button class="mdock-spark" id="mdockSpark" type="button" aria-label="Sindi" title="Conversar com a Sindi">✨</button>
-    <div class="sep"></div>
-
-    <div class="mdock-items" id="mdockItems"></div>
-
-    <input type="text" class="mdock-input" id="mdockInput" placeholder="Pergunte algo…" />
-
-    <div class="sep"></div>
-    <button class="mdock-menu" id="mdockMenu" type="button" aria-label="Abrir ferramentas">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
-    </button>
-    <button class="mdock-send" id="mdockSend" type="button" aria-label="Enviar" disabled>
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4z"/><path d="M22 2 11 13"/></svg>
-    </button>
+<div class="mindock-wrap" aria-label="Atalhos rápidos">
+  <div class="mindock-stack" id="mindockStack">
+    <div class="mindock" id="mindock"></div>
+    <div class="mindock-reflection"><div class="mindock-mirror" id="mindockMirror"></div></div>
   </div>
 </div>
 
@@ -790,103 +777,46 @@ document.querySelectorAll('.sindi-quick-chip').forEach(chip => {
   });
 });
 
-// ===== MessageDock — pill que expande em input com gradiente do item =====
-const MDOCK_CHARACTERS = [
-  { emoji: '📋', name: 'Notificação',  slug: 'gerador-notificacao', online: true,
-    bg: '#fde68a', gradient: '#fde68a, #fef3c7', placeholder: 'Pedir uma notificação à Sindi…' },
-  { emoji: '📝', name: 'Ata',          slug: 'gerador-ata', online: true,
-    bg: '#bfdbfe', gradient: '#bfdbfe, #dbeafe', placeholder: 'Pedir uma ata à Sindi…' },
-  { emoji: '📄', name: 'Contrato',     slug: 'gerador-contrato', online: true,
-    bg: '#c7d2fe', gradient: '#c7d2fe, #e0e7ff', placeholder: 'Pedir um contrato à Sindi…' },
-  { emoji: '🔢', name: 'Cálculos',     slug: 'calculadoras', online: false,
-    bg: '#a7f3d0', gradient: '#a7f3d0, #d1fae5', placeholder: 'Calcular reajuste, multa, rateio…' },
-  { emoji: '🛡️', name: 'LGPD',         slug: 'redigir-lgpd', online: true,
-    bg: '#fbcfe8', gradient: '#fbcfe8, #fce7f3', placeholder: 'Tarjar dados pessoais num PDF…' },
+// ===== MinimalistDock — glass escuro com hover lift, tooltip e reflexo =====
+const MINDOCK_ITEMS = [
+  { id: 'sindi',         label: 'Sindi (IA)',  href: '/tools/sindi.html',               icon: 'bot' },
+  { id: 'notificacao',   label: 'Notificação', href: '/tools/gerador-notificacao.html', icon: 'fileText' },
+  { id: 'ata',           label: 'Ata',         href: '/tools/gerador-ata.html',         icon: 'filePen' },
+  { id: 'contrato',      label: 'Contrato',    href: '/tools/gerador-contrato.html',    icon: 'fileSign' },
+  { id: 'calc',          label: 'Cálculos',    href: '/tools/calculadoras.html',        icon: 'calculator' },
+  { id: 'editor',        label: 'Editor PDF',  href: '/tools/editor-pdf.html',          icon: 'pdfEdit' },
+  { id: 'lgpd',          label: 'LGPD',        href: '/tools/redigir-lgpd.html',        icon: 'shield' },
+  { id: 'dashboard',     label: 'Dashboard',   href: '/dashboard.html',                 icon: 'sparkles' },
 ];
 
-const mdockEl     = document.getElementById('hubDock');
-const mdockSpark  = document.getElementById('mdockSpark');
-const mdockItems  = document.getElementById('mdockItems');
-const mdockInput  = document.getElementById('mdockInput');
-const mdockMenu   = document.getElementById('mdockMenu');
-const mdockSend   = document.getElementById('mdockSend');
+const mindockEl     = document.getElementById('mindock');
+const mindockMirror = document.getElementById('mindockMirror');
+const mindockStack  = document.getElementById('mindockStack');
 
-// Render dos botões dos personagens/atalhos
-mdockItems.innerHTML = MDOCK_CHARACTERS.map((c, i) => `
-  <button type="button" class="mdock-item ${c.online ? 'online' : ''}" data-idx="${i}"
-          style="background:${c.bg}" aria-label="${c.name}" title="${c.name}">
-    <span>${c.emoji}</span>
-    <span class="online-dot"></span>
-  </button>
+mindockEl.innerHTML = MINDOCK_ITEMS.map(it => `
+  <a href="${it.href}" class="mindock-item" data-id="${it.id}" aria-label="${it.label}">
+    ${svg(it.icon, 20)}
+    <span class="mindock-tip">${it.label}</span>
+  </a>
 `).join('');
 
-let selectedIdx = null;
+mindockMirror.innerHTML = MINDOCK_ITEMS.map(it => `
+  <div class="mindock-mirror-item" data-id="${it.id}">${svg(it.icon, 20)}</div>
+`).join('');
 
-function setExpanded(idx) {
-  selectedIdx = idx;
-  const isExpanded = idx !== null;
-  mdockEl.classList.toggle('expanded', isExpanded);
-
-  // Marca selecionado
-  mdockItems.querySelectorAll('.mdock-item').forEach(el => {
-    el.classList.toggle('selected', Number(el.dataset.idx) === idx);
+function setHover(id) {
+  mindockEl.querySelectorAll('.mindock-item').forEach(el => {
+    el.classList.toggle('is-hover', el.dataset.id === id);
   });
-
-  if (isExpanded) {
-    const c = MDOCK_CHARACTERS[idx];
-    mdockEl.style.background = `linear-gradient(to right, ${c.gradient})`;
-    mdockInput.placeholder = c.placeholder;
-    mdockInput.value = '';
-    setTimeout(() => mdockInput.focus(), 250);
-    mdockSend.disabled = true;
-  } else {
-    mdockEl.style.background = '';
-    mdockInput.value = '';
-  }
+  mindockMirror.querySelectorAll('.mindock-mirror-item').forEach(el => {
+    el.classList.toggle('is-hover', el.dataset.id === id);
+  });
+  mindockStack.classList.toggle('has-hover', !!id);
 }
 
-mdockItems.addEventListener('click', e => {
-  const btn = e.target.closest('.mdock-item');
-  if (!btn) return;
-  const idx = Number(btn.dataset.idx);
-  setExpanded(selectedIdx === idx ? null : idx);
-});
-
-mdockSpark.addEventListener('click', () => {
-  window.location.href = '/tools/sindi.html';
-});
-
-mdockMenu.addEventListener('click', () => {
-  setPanelOpen(true);
-  // rolar pra ver o painel
-  toolsPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
-});
-
-mdockInput.addEventListener('input', () => {
-  mdockSend.disabled = !mdockInput.value.trim();
-});
-
-function sendMessage() {
-  const text = mdockInput.value.trim();
-  if (!text || selectedIdx === null) return;
-  const c = MDOCK_CHARACTERS[selectedIdx];
-  // Encaminha pra Sindi com prompt contextualizado
-  const prompt = `[${c.name}] ${text}`;
-  try { sessionStorage.setItem('sindi_initial_prompt', prompt); } catch(e){}
-  window.location.href = '/tools/sindi.html';
-}
-
-mdockSend.addEventListener('click', sendMessage);
-mdockInput.addEventListener('keydown', e => {
-  if (e.key === 'Enter') { e.preventDefault(); sendMessage(); }
-  if (e.key === 'Escape') { setExpanded(null); }
-});
-
-// Click outside fecha
-document.addEventListener('mousedown', e => {
-  if (selectedIdx !== null && !mdockEl.contains(e.target)) {
-    setExpanded(null);
-  }
+mindockEl.querySelectorAll('.mindock-item').forEach(el => {
+  el.addEventListener('mouseenter', () => setHover(el.dataset.id));
+  el.addEventListener('mouseleave', () => setHover(null));
 });
 </script>
 </body>
