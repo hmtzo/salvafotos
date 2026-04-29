@@ -356,7 +356,8 @@
   /* ========================================================================
      DOCK (macOS-style) — fixo no rodapé com magnificação no hover
      ======================================================================== */
-  .dock-spacer{height:120px}
+  /* ===== AppleDock — spring magnification ===== */
+  .dock-spacer{height:110px}
   .dock-wrap{
     position:fixed;bottom:18px;left:50%;transform:translateX(-50%);
     z-index:100;pointer-events:none;
@@ -365,69 +366,49 @@
   @keyframes dock-rise{from{opacity:0;transform:translate(-50%, 80px)}to{opacity:1;transform:translate(-50%, 0)}}
   .dock{
     pointer-events:auto;
-    display:flex;align-items:flex-end;gap:8px;
-    height:74px;padding:10px 14px 12px;
-    background:rgba(31,32,35,0.6);
-    border:1px solid rgba(255,255,255,0.12);
-    border-radius:24px;
-    backdrop-filter:blur(24px) saturate(180%);
-    -webkit-backdrop-filter:blur(24px) saturate(180%);
+    display:flex;align-items:center;justify-content:center;gap:8px;
+    height:58px;padding:8px;width:max-content;
+    background:rgba(0,0,0,0.45);
+    border:1px solid rgba(255,255,255,0.08);
+    border-radius:18px;
+    backdrop-filter:blur(20px) saturate(180%);
+    -webkit-backdrop-filter:blur(20px) saturate(180%);
     box-shadow:
-      0 1px 0 rgba(255,255,255,0.08) inset,
-      0 12px 40px -8px rgba(0,0,0,0.6),
-      0 4px 16px -4px rgba(0,0,0,0.4);
+      0 1px 0 rgba(255,255,255,0.06) inset,
+      0 16px 48px -12px rgba(0,0,0,0.7);
   }
 
   .dock-item{
-    --w:50px;
+    --w:40px;
     width:var(--w);height:var(--w);
-    aspect-ratio:1;
+    aspect-ratio:1;flex-shrink:0;
     display:flex;align-items:center;justify-content:center;
-    border-radius:14px;cursor:pointer;
-    background:linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01));
-    border:1px solid rgba(255,255,255,0.08);
-    color:#fafafa;text-decoration:none;
-    transition:width 0.15s cubic-bezier(0.2,0.8,0.2,1), height 0.15s cubic-bezier(0.2,0.8,0.2,1), transform 0.2s cubic-bezier(0.2,0.8,0.2,1);
-    position:relative;flex-shrink:0;
-    will-change:width, height, transform;
+    border-radius:50%;cursor:pointer;text-decoration:none;
+    position:relative;
+    will-change:width, height;
   }
-  .dock-item:hover{transform:translateY(-10px)}
-  .dock-item:active{transform:translateY(-2px) scale(0.95)}
-  .dock-item svg{width:48%;height:48%;flex-shrink:0;transition:transform 0.2s}
-  .dock-item:hover svg{transform:scale(1.1)}
-
-  /* Tints por categoria */
-  .dock-item.ai     {background:linear-gradient(135deg, #ec4899, #db2777)}
-  .dock-item.doc    {background:linear-gradient(135deg, #3b82f6, #2563eb)}
-  .dock-item.pdf    {background:linear-gradient(135deg, #ef4444, #dc2626)}
-  .dock-item.org    {background:linear-gradient(135deg, #f59e0b, #d97706)}
-  .dock-item.calc   {background:linear-gradient(135deg, #14b8a6, #0d9488)}
-  .dock-item.convert{background:linear-gradient(135deg, #6366f1, #4f46e5)}
-  .dock-item.image  {background:linear-gradient(135deg, #a855f7, #9333ea)}
-  .dock-item.secure {background:linear-gradient(135deg, #10b981, #059669)}
-  .dock-item.dash   {background:linear-gradient(135deg, #64748b, #475569)}
-
-  /* Shine */
-  .dock-item::before{
-    content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;
-    background:linear-gradient(135deg, rgba(255,255,255,0.18), transparent 50%);
-    opacity:0.3;transition:opacity 0.2s;
+  .dock-item svg{
+    width:60%;height:60%;flex-shrink:0;
+    transition:transform 0.2s cubic-bezier(.4,1.4,.5,1);
   }
-  .dock-item:hover::before{opacity:0.5}
+  .dock-item:active svg{transform:scale(0.88)}
 
-  /* Active dot */
-  .dock-item::after{
-    content:'';position:absolute;bottom:-9px;left:50%;transform:translateX(-50%);
-    width:4px;height:4px;border-radius:50%;
-    background:rgba(255,255,255,0.6);
-    opacity:0;transition:opacity 0.2s;
-  }
-  .dock-item:active::after{opacity:1}
+  /* Tints + colored icon (Apple-style: bg-X/10 + text-X) */
+  .dock-item.ai     {background:rgba(236,72,153,0.12);color:#f472b6}
+  .dock-item.doc    {background:rgba(59,130,246,0.12);color:#60a5fa}
+  .dock-item.pdf    {background:rgba(239,68,68,0.12);color:#f87171}
+  .dock-item.org    {background:rgba(245,158,11,0.12);color:#fbbf24}
+  .dock-item.calc   {background:rgba(20,184,166,0.12);color:#5eead4}
+  .dock-item.convert{background:rgba(99,102,241,0.12);color:#818cf8}
+  .dock-item.image  {background:rgba(168,85,247,0.12);color:#c084fc}
+  .dock-item.secure {background:rgba(16,185,129,0.12);color:#34d399}
+  .dock-item.dash   {background:rgba(148,163,184,0.12);color:#cbd5e1}
 
   /* Tooltip */
   .dock-item .dock-tip{
-    position:absolute;bottom:calc(100% + 14px);left:50%;transform:translateX(-50%) translateY(6px);
-    background:rgba(0,0,0,0.85);color:#fafafa;
+    position:absolute;bottom:calc(100% + 12px);left:50%;
+    transform:translateX(-50%) translateY(6px);
+    background:rgba(0,0,0,0.9);color:#fafafa;
     padding:5px 10px;border-radius:8px;font-size:11px;font-weight:600;
     white-space:nowrap;pointer-events:none;
     opacity:0;transition:opacity 0.2s, transform 0.2s;
@@ -438,17 +419,16 @@
 
   /* Mobile: dock estática (sem magnificação) e scroll horizontal */
   @media (max-width: 768px){
-    .dock-spacer{height:84px}
+    .dock-spacer{height:80px}
     .dock-wrap{bottom:10px;left:8px;right:8px;transform:none}
     .dock{
-      height:60px;padding:8px 10px;border-radius:18px;
+      height:56px;padding:8px;border-radius:16px;
       overflow-x:auto;-webkit-overflow-scrolling:touch;
       scroll-snap-type:x mandatory;
-      max-width:100%;
+      max-width:100%;width:auto;justify-content:flex-start;
     }
     .dock::-webkit-scrollbar{display:none}
-    .dock-item{--w:44px;border-radius:12px;scroll-snap-align:start}
-    .dock-item:hover{transform:none}
+    .dock-item{--w:38px !important;scroll-snap-align:start}
     .dock-item .dock-tip{display:none}
   }
 </style>
@@ -775,28 +755,71 @@ hubDock.innerHTML = DOCK_ITEMS.map(it => {
   </a>`;
 }).join('');
 
-// Magnificação por proximidade do cursor (só desktop)
+// ===== AppleDock magnification: spring physics (mass 0.1, stiffness 150, damping 12)
+// Replica useSpring do Framer Motion. Cada item tem um simulador rodando em rAF.
 const isDesktop = () => window.matchMedia('(min-width: 769px) and (hover: hover)').matches;
-const dockItems = () => hubDock.querySelectorAll('.dock-item');
-const BASE = 50, MAX = 78, RADIUS = 140;
+const SIZE = 40, MAGNIFICATION = 60, DISTANCE = 140;
+const SPRING = { mass: 0.1, stiffness: 150, damping: 12 };
+const dt = 1 / 60; // step fixo
 
-function magnify(e) {
-  if (!isDesktop()) return;
-  dockItems().forEach(item => {
-    const r = item.getBoundingClientRect();
-    const cx = r.left + r.width / 2;
-    const dist = Math.abs(e.clientX - cx);
-    const t = Math.max(0, 1 - dist / RADIUS);
-    const w = BASE + (MAX - BASE) * t;
-    item.style.setProperty('--w', w + 'px');
+const springStates = []; // { el, value, velocity, target }
+hubDock.querySelectorAll('.dock-item').forEach(el => {
+  springStates.push({ el, value: SIZE, velocity: 0, target: SIZE });
+});
+
+let mouseX = Infinity;
+
+function computeTargets() {
+  springStates.forEach(s => {
+    const r = s.el.getBoundingClientRect();
+    const center = r.x + r.width / 2;
+    const offset = mouseX - center;
+    // Mapeia offset ∈ [-DISTANCE, 0, DISTANCE] → [SIZE, MAGNIFICATION, SIZE]
+    let scale;
+    if (Math.abs(offset) >= DISTANCE) scale = SIZE;
+    else {
+      const t = 1 - Math.abs(offset) / DISTANCE;
+      scale = SIZE + (MAGNIFICATION - SIZE) * t;
+    }
+    s.target = scale;
   });
 }
-function resetDock() {
-  dockItems().forEach(item => item.style.setProperty('--w', BASE + 'px'));
+
+function tick() {
+  let needs = false;
+  springStates.forEach(s => {
+    // F = -k(x - target) - c*v ; a = F/m
+    const force = -SPRING.stiffness * (s.value - s.target) - SPRING.damping * s.velocity;
+    const accel = force / SPRING.mass;
+    s.velocity += accel * dt;
+    s.value += s.velocity * dt;
+    if (Math.abs(s.velocity) > 0.05 || Math.abs(s.value - s.target) > 0.05) {
+      needs = true;
+    } else {
+      s.value = s.target;
+      s.velocity = 0;
+    }
+    s.el.style.setProperty('--w', s.value.toFixed(2) + 'px');
+  });
+  if (needs) requestAnimationFrame(tick);
+  else animating = false;
 }
-hubDock.addEventListener('mousemove', magnify);
-hubDock.addEventListener('mouseleave', resetDock);
-resetDock();
+
+let animating = false;
+function kick() { if (!animating) { animating = true; requestAnimationFrame(tick); } }
+
+if (isDesktop()) {
+  hubDock.addEventListener('mousemove', e => {
+    mouseX = e.pageX;
+    computeTargets();
+    kick();
+  });
+  hubDock.addEventListener('mouseleave', () => {
+    mouseX = Infinity;
+    computeTargets();
+    kick();
+  });
+}
 </script>
 </body>
 </html>
