@@ -215,6 +215,7 @@ body::before{
 .nav-btn-outline.has-value{border-color:rgba(99,102,241,0.5);background:rgba(99,102,241,0.1);color:#a5b4fc}
 
 .nav-popover{
+  display:none !important;
   position:absolute;top:60px;right:24px;z-index:200;
   width:min(360px, 92vw);max-height:500px;overflow:hidden;
   background:rgba(15,16,19,0.98);
@@ -223,8 +224,7 @@ body::before{
   backdrop-filter:blur(20px);
   flex-direction:column;
 }
-.nav-popover[hidden]{display:none !important}
-.nav-popover:not([hidden]){display:flex}
+.nav-popover.is-open{display:flex !important}
 .nav-popover header{
   display:flex;justify-content:space-between;align-items:center;
   padding:14px 16px;border-bottom:1px solid rgba(255,255,255,0.06);

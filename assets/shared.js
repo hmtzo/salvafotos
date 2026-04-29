@@ -166,13 +166,13 @@ function renderNav() {
     </aside>
 
     <!-- Popover de notificações -->
-    <div class="nav-popover" id="notifPopover" hidden>
+    <div class="nav-popover" id="notifPopover" hidden style="display:none">
       <header><strong>Notificações</strong> <button id="notifMarkAll">Marcar todas como lidas</button></header>
       <div class="nav-popover-list" id="notifList"></div>
     </div>
 
     <!-- Popover de condomínio ativo -->
-    <div class="nav-popover" id="condoPopover" hidden>
+    <div class="nav-popover" id="condoPopover" hidden style="display:none">
       <header><strong>Condomínio ativo</strong></header>
       <div class="nav-popover-list" id="condoList"></div>
       <footer>
@@ -536,14 +536,36 @@ async function setActiveCondo(condo) {
   });
 }
 
+// Helpers globais — única forma de abrir popover (class-based, à prova de cache CSS)
+function _hidePopover(el) {
+  if (!el) return;
+  el.classList.remove('is-open');
+  el.hidden = true;
+  el.style.display = '';
+}
+function _showPopover(el) {
+  if (!el) return;
+  // Fecha todos os outros primeiro
+  document.querySelectorAll('.nav-popover').forEach(p => p !== el && _hidePopover(p));
+  el.hidden = false;
+  el.classList.add('is-open');
+}
+function _isPopoverOpen(el) {
+  return el && el.classList.contains('is-open');
+}
+
 function setupCondoPopover() {
   const btn = document.getElementById('condoSelector');
   const pop = document.getElementById('condoPopover');
   if (!btn || !pop) return;
+  // FORÇA hidden inicial
+  _hidePopover(pop);
+
   btn.addEventListener('click', e => {
     e.stopPropagation();
-    pop.hidden = !pop.hidden;
-    document.getElementById('notifPopover').hidden = true;
+    const isOpen = _isPopoverOpen(pop);
+    if (isOpen) _hidePopover(pop);
+    else _showPopover(pop);
   });
   document.getElementById('condoCustomSet')?.addEventListener('click', () => {
     const v = document.getElementById('condoCustom').value.trim();
@@ -555,16 +577,11 @@ function setupCondoPopover() {
     const label = document.getElementById('condoLabel');
     if (label) label.textContent = 'Condomínio';
     btn.classList.remove('has-value');
-    pop.hidden = true;
+    _hidePopover(pop);
     await fetch('/api/sindi-os', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'set-active-condo', condo: '' })
     });
-  });
-  document.addEventListener('click', e => {
-    if (!pop.contains(e.target) && e.target !== btn && !btn.contains(e.target)) {
-      pop.hidden = true;
-    }
   });
 }
 
@@ -574,6 +591,8 @@ function setupNotifBell() {
   const list = document.getElementById('notifList');
   const count = document.getElementById('bellCount');
   if (!bell || !pop || !list) return;
+  // FORÇA hidden inicial
+  _hidePopover(pop);
 
   async function load() {
     try {
@@ -595,11 +614,12 @@ function setupNotifBell() {
       `).join('');
     } catch (e) {}
   }
+
   bell.addEventListener('click', e => {
     e.stopPropagation();
-    pop.hidden = !pop.hidden;
-    document.getElementById('condoPopover').hidden = true;
-    if (!pop.hidden) load();
+    const isOpen = _isPopoverOpen(pop);
+    if (isOpen) _hidePopover(pop);
+    else { _showPopover(pop); load(); }
   });
   document.getElementById('notifMarkAll')?.addEventListener('click', async () => {
     await fetch('/api/sindi-os', {
@@ -608,13 +628,25 @@ function setupNotifBell() {
     });
     load();
   });
-  document.addEventListener('click', e => {
-    if (!pop.contains(e.target) && !bell.contains(e.target)) pop.hidden = true;
-  });
-  // Poll a cada 60s
+  // Carrega contador (sem mostrar popover)
   load();
   setInterval(load, 60000);
 }
+
+// Global: clique em qualquer lugar fora dos popovers fecha todos
+document.addEventListener('click', e => {
+  const insidePop = e.target.closest('.nav-popover');
+  const insideTrigger = e.target.closest('#condoSelector, #notifBell');
+  if (!insidePop && !insideTrigger) {
+    document.querySelectorAll('.nav-popover').forEach(p => _hidePopover(p));
+  }
+});
+// Esc fecha
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    document.querySelectorAll('.nav-popover').forEach(p => _hidePopover(p));
+  }
+});
 
 function fmtRelTime(ts) {
   if (!ts) return '';
