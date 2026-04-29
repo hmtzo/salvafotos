@@ -13,7 +13,14 @@ export const config = { runtime: 'edge' };
 
 const KV_URL = () => process.env.KV_REST_API_URL;
 const KV_TOKEN = () => process.env.KV_REST_API_TOKEN;
-const ADMIN_USERS = ['hmtzo@icloud.com']; // emails que veem trilha auditoria
+// Admins: veem painel /admin.html, trilha de auditoria global e gerenciam KB
+const ADMIN_USERS = [
+  'hmtzo@icloud.com',
+  'juliana@sindicompany.com.br',   // CEO
+  'raquel@sindicompany.com.br',    // Head de Cultura e Pessoas
+  'luciane@sindicompany.com.br',   // Agilista
+  'mkt@sindicompany.com.br',
+];
 const ALL_USERS = [
   'luciane@sindicompany.com.br',
   'juliana@sindicompany.com.br',
