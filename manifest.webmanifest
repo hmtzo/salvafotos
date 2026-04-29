@@ -1,0 +1,15 @@
+{
+  "name": "Sindicompany Hub",
+  "short_name": "Sindi Hub",
+  "description": "Hub interno de ferramentas Sindicompany — IA, geradores, PDFs, calculadoras",
+  "start_url": "/hub.html",
+  "scope": "/",
+  "display": "standalone",
+  "theme_color": "#0a0a0c",
+  "background_color": "#0a0a0c",
+  "orientation": "any",
+  "icons": [
+    { "src": "/assets/brand/icon-color.png", "sizes": "256x287", "type": "image/png", "purpose": "any" },
+    { "src": "/assets/brand/icon-white.png", "sizes": "256x284", "type": "image/png", "purpose": "any" }
+  ]
+}

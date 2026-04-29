@@ -113,6 +113,14 @@ function renderNav() {
             <ul class="nav-menu">${desktopMenu}</ul>
           </div>
           <div class="nav-right">
+            <button id="condoSelector" class="nav-btn-outline" title="Condomínio ativo" hidden>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+              <span id="condoLabel">Condomínio</span>
+            </button>
+            <button id="notifBell" class="nav-btn-outline nav-bell" title="Notificações" type="button">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 00-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+              <span class="bell-count" id="bellCount" hidden>0</span>
+            </button>
             <a href="/perfil.html" class="nav-btn-outline" title="Meu perfil">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21v-2a4 4 0 014-4h10a4 4 0 014 4v2"/><circle cx="12" cy="7" r="4"/></svg>
               Perfil
@@ -156,16 +164,38 @@ function renderNav() {
         </div>
       </div>
     </aside>
+
+    <!-- Popover de notificações -->
+    <div class="nav-popover" id="notifPopover" hidden>
+      <header><strong>Notificações</strong> <button id="notifMarkAll">Marcar todas como lidas</button></header>
+      <div class="nav-popover-list" id="notifList"></div>
+    </div>
+
+    <!-- Popover de condomínio ativo -->
+    <div class="nav-popover" id="condoPopover" hidden>
+      <header><strong>Condomínio ativo</strong></header>
+      <div class="nav-popover-list" id="condoList"></div>
+      <footer>
+        <input type="text" id="condoCustom" placeholder="Outro condomínio…" />
+        <button id="condoCustomSet">Definir</button>
+      </footer>
+      <footer>
+        <button id="condoClear" class="nav-popover-clear">Limpar contexto</button>
+      </footer>
+    </div>
   `;
 }
 
 function setupNavInteractions() {
-  // Detecta se é admin → mostra link Admin
+  // Detecta se é admin + carrega perfil pra preencher condos + mostra notificações
   fetch('/api/sindi-os?action=me-stats').then(r => r.ok ? r.json() : null).then(d => {
-    if (d?.isAdmin) {
-      document.querySelectorAll('.nav-admin-link').forEach(el => el.hidden = false);
-    }
+    if (!d) return;
+    if (d.isAdmin) document.querySelectorAll('.nav-admin-link').forEach(el => el.hidden = false);
+    setupCondoSelector(d.profile);
   }).catch(() => {});
+
+  setupNotifBell();
+  setupCondoPopover();
 
   // Desktop dropdowns: hover + click
   document.querySelectorAll('.nav-menu-item.has-submenu').forEach(item => {
@@ -452,9 +482,164 @@ async function initDottedSurface() {
 }
 
 // =============================================================================
+// =============================================================================
+// CONDO SELECTOR + NOTIFICATIONS BELL — globais
+// =============================================================================
+let _activeCondo = null;
+
+function setupCondoSelector(profile) {
+  const btn = document.getElementById('condoSelector');
+  const label = document.getElementById('condoLabel');
+  if (!btn) return;
+  // Carrega condomínios do perfil
+  const condos = (profile?.condos || '').split(/[,;]/).map(s => s.trim()).filter(Boolean);
+  if (!condos.length) {
+    btn.hidden = true;
+    return;
+  }
+  btn.hidden = false;
+  // Popula popover
+  const list = document.getElementById('condoList');
+  if (list) {
+    list.innerHTML = condos.map(c =>
+      `<button class="nav-popover-item" data-condo="${c.replace(/"/g, '&quot;')}">${c}</button>`
+    ).join('');
+    list.querySelectorAll('[data-condo]').forEach(el => {
+      el.addEventListener('click', () => setActiveCondo(el.dataset.condo));
+    });
+  }
+  // Carrega selecionado atual via API
+  fetch('/api/sindi-os', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'profile' /* placeholder noop */ })
+  }).catch(() => {});
+  // Pega valor salvo do localStorage como cache visual rápido
+  const cached = localStorage.getItem('sf_active_condo');
+  if (cached) {
+    _activeCondo = cached;
+    label.textContent = cached.length > 22 ? cached.slice(0, 20) + '…' : cached;
+    btn.classList.add('has-value');
+  }
+}
+
+async function setActiveCondo(condo) {
+  _activeCondo = condo;
+  localStorage.setItem('sf_active_condo', condo);
+  const label = document.getElementById('condoLabel');
+  const btn = document.getElementById('condoSelector');
+  if (label) label.textContent = condo.length > 22 ? condo.slice(0, 20) + '…' : condo;
+  if (btn) btn.classList.add('has-value');
+  document.getElementById('condoPopover').hidden = true;
+  await fetch('/api/sindi-os', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'set-active-condo', condo })
+  });
+}
+
+function setupCondoPopover() {
+  const btn = document.getElementById('condoSelector');
+  const pop = document.getElementById('condoPopover');
+  if (!btn || !pop) return;
+  btn.addEventListener('click', e => {
+    e.stopPropagation();
+    pop.hidden = !pop.hidden;
+    document.getElementById('notifPopover').hidden = true;
+  });
+  document.getElementById('condoCustomSet')?.addEventListener('click', () => {
+    const v = document.getElementById('condoCustom').value.trim();
+    if (v) setActiveCondo(v);
+  });
+  document.getElementById('condoClear')?.addEventListener('click', async () => {
+    _activeCondo = null;
+    localStorage.removeItem('sf_active_condo');
+    const label = document.getElementById('condoLabel');
+    if (label) label.textContent = 'Condomínio';
+    btn.classList.remove('has-value');
+    pop.hidden = true;
+    await fetch('/api/sindi-os', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'set-active-condo', condo: '' })
+    });
+  });
+  document.addEventListener('click', e => {
+    if (!pop.contains(e.target) && e.target !== btn && !btn.contains(e.target)) {
+      pop.hidden = true;
+    }
+  });
+}
+
+function setupNotifBell() {
+  const bell = document.getElementById('notifBell');
+  const pop = document.getElementById('notifPopover');
+  const list = document.getElementById('notifList');
+  const count = document.getElementById('bellCount');
+  if (!bell || !pop || !list) return;
+
+  async function load() {
+    try {
+      const r = await fetch('/api/sindi-os?action=notifications');
+      if (!r.ok) return;
+      const { notifications, unread } = await r.json();
+      if (unread > 0) { count.hidden = false; count.textContent = unread > 9 ? '9+' : String(unread); }
+      else { count.hidden = true; }
+      if (!notifications.length) {
+        list.innerHTML = '<div class="nav-popover-empty">Nenhuma notificação ainda.</div>';
+        return;
+      }
+      list.innerHTML = notifications.map(n => `
+        <div class="nav-popover-notif ${n.read ? '' : 'unread'}">
+          <div class="notif-title">${(n.title || '').replace(/[<>]/g, '')}</div>
+          <div class="notif-body">${(n.body || '').replace(/[<>]/g, '')}</div>
+          <div class="notif-meta">${fmtRelTime(n.ts)} ${n.link ? `· <a href="${n.link}">abrir</a>` : ''}</div>
+        </div>
+      `).join('');
+    } catch (e) {}
+  }
+  bell.addEventListener('click', e => {
+    e.stopPropagation();
+    pop.hidden = !pop.hidden;
+    document.getElementById('condoPopover').hidden = true;
+    if (!pop.hidden) load();
+  });
+  document.getElementById('notifMarkAll')?.addEventListener('click', async () => {
+    await fetch('/api/sindi-os', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'notif-read', id: '*' })
+    });
+    load();
+  });
+  document.addEventListener('click', e => {
+    if (!pop.contains(e.target) && !bell.contains(e.target)) pop.hidden = true;
+  });
+  // Poll a cada 60s
+  load();
+  setInterval(load, 60000);
+}
+
+function fmtRelTime(ts) {
+  if (!ts) return '';
+  const sec = Math.floor((Date.now() - ts) / 1000);
+  if (sec < 60) return 'agora';
+  if (sec < 3600) return `${Math.floor(sec/60)}min`;
+  if (sec < 86400) return `${Math.floor(sec/3600)}h`;
+  return `${Math.floor(sec/86400)}d`;
+}
+
+// =============================================================================
 // Auto-mount nav/footer + DottedSurface
 // =============================================================================
 document.addEventListener('DOMContentLoaded', () => {
+  // PWA: registra service worker + manifest dinâmico
+  if (!document.querySelector('link[rel="manifest"]')) {
+    const link = document.createElement('link');
+    link.rel = 'manifest';
+    link.href = '/manifest.webmanifest';
+    document.head.appendChild(link);
+  }
+  if ('serviceWorker' in navigator && location.protocol === 'https:') {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  }
+
   const navSlot = document.getElementById('app-nav');
   if (navSlot) {
     navSlot.innerHTML = renderNav();

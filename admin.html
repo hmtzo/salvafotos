@@ -201,6 +201,22 @@
       </div>
     </div>
 
+    <!-- Analytics -->
+    <section class="panel">
+      <h2>📊 Analytics da Sindi <span class="meta" id="analyticsMeta">—</span></h2>
+      <div class="stats-grid" id="analyticsCards" style="margin-bottom:18px"></div>
+      <div id="analyticsCharts"></div>
+    </section>
+
+    <!-- Insights pendentes (críticas: jurídico/governança/RH) -->
+    <section class="panel" id="pendingPanel" hidden>
+      <h2>⚠️ Insights aguardando aprovação <span class="meta" id="pendingCount">0</span></h2>
+      <p style="font-size:12px;color:var(--text-muted);margin-bottom:14px;line-height:1.5">
+        Insights de categoria <strong>jurídico, governança ou RH</strong> não vão direto pro pool — precisam de aprovação humana antes de serem reutilizadas.
+      </p>
+      <div class="kb-list" id="pendingList"></div>
+    </section>
+
     <!-- Usuários -->
     <section class="panel">
       <h2>Usuários <span class="meta" id="usersCount">—</span></h2>
@@ -294,18 +310,94 @@ async function loadAll() {
 
   $('adminContent').hidden = false;
 
-  const [overviewRes, auditRes, kbRes, insRes] = await Promise.all([
+  const [overviewRes, auditRes, kbRes, insRes, anaRes, penRes] = await Promise.all([
     fetch('/api/sindi-os?action=admin-overview'),
     fetch('/api/sindi-os?action=admin-audit&limit=200'),
     fetch('/api/sindi-os?action=kb-list'),
     fetch('/api/sindi-os?action=insights-list&limit=100'),
+    fetch('/api/sindi-os?action=analytics'),
+    fetch('/api/sindi-os?action=insights-pending'),
   ]);
 
   if (overviewRes.ok) renderOverview(await overviewRes.json());
   if (auditRes.ok) renderAudit((await auditRes.json()).entries || []);
   if (kbRes.ok) renderKb((await kbRes.json()).custom || []);
   if (insRes.ok) renderInsights((await insRes.json()).insights || []);
+  if (anaRes.ok) renderAnalytics(await anaRes.json());
+  if (penRes.ok) renderPending((await penRes.json()).insights || []);
   renderHardcodedKbHints();
+}
+
+function renderAnalytics(d) {
+  $('analyticsMeta').textContent = `${d.totalAuditEntries} interações registradas`;
+  const cards = $('analyticsCards');
+  const fbRate = d.feedback.total > 0 ? Math.round((d.feedback.up / d.feedback.total) * 100) : null;
+  cards.innerHTML = `
+    <div class="stat-card"><div class="stat-label">Insights aprendidas</div><div class="stat-value">${d.totalInsights}</div><div class="stat-sub">no pool global</div></div>
+    <div class="stat-card"><div class="stat-label">Confiança média</div><div class="stat-value">${d.avgConfidence != null ? d.avgConfidence + '%' : '—'}</div><div class="stat-sub">média geral</div></div>
+    <div class="stat-card"><div class="stat-label">Feedback positivo</div><div class="stat-value">${fbRate != null ? fbRate + '%' : '—'}</div><div class="stat-sub">${d.feedback.up} 👍 · ${d.feedback.down} 👎</div></div>
+  `;
+  const charts = $('analyticsCharts');
+  charts.innerHTML = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:14px">
+      <div>
+        <h3 style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px">Top usuários</h3>
+        ${d.topUsers.slice(0,5).map(u => `<div style="display:flex;justify-content:space-between;padding:6px 10px;background:var(--bg-elev);border-radius:6px;margin-bottom:4px;font-size:12px"><span>${escapeHtml(u.user.split('@')[0])}</span><strong>${u.count}</strong></div>`).join('')}
+      </div>
+      <div>
+        <h3 style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px">Distribuição por categoria</h3>
+        ${d.categoryDist.slice(0,7).map(c => `<div style="display:flex;justify-content:space-between;padding:6px 10px;background:var(--bg-elev);border-radius:6px;margin-bottom:4px;font-size:12px"><span>${escapeHtml(c.category)}</span><strong>${c.count}</strong></div>`).join('')}
+      </div>
+    </div>
+    ${d.topInsights.length ? `
+    <h3 style="font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.06em;margin:18px 0 8px">Top insights por votos</h3>
+    ${d.topInsights.slice(0,5).map(i => `
+      <div style="padding:10px 12px;background:var(--bg-elev);border-radius:6px;margin-bottom:6px;font-size:12px;display:flex;justify-content:space-between;gap:12px">
+        <div>${escapeHtml(i.title || i.question || '—')}</div>
+        <strong style="color:#6ee7b7">👍 ${i.votes || 0}</strong>
+      </div>
+    `).join('')}` : ''}
+  `;
+}
+
+function renderPending(list) {
+  const panel = $('pendingPanel');
+  if (!list.length) { panel.hidden = true; return; }
+  panel.hidden = false;
+  $('pendingCount').textContent = `${list.length} pendentes`;
+  $('pendingList').innerHTML = list.map(i => `
+    <div class="kb-item custom" data-id="${escapeHtml(i.id)}" style="border-left-color:#fcd34d">
+      <div class="kb-id">${escapeHtml(i.id)} · ${escapeHtml(i.category)} · ${fmtRel(i.ts)} · ${escapeHtml((i.contributedBy || 'anônimo').split('@')[0])}</div>
+      <div class="kb-title">${escapeHtml(i.title || '—')}</div>
+      <div style="font-size:12px;color:var(--text-dim);margin-top:6px;line-height:1.5;white-space:pre-wrap">${escapeHtml((i.content || i.summary || '').slice(0, 400))}${(i.content||'').length > 400 ? '…' : ''}</div>
+      <div class="kb-tags">${(i.tags || []).map(t => `<span class="kb-tag">${escapeHtml(t)}</span>`).join('')}</div>
+      <div class="kb-actions">
+        <button class="kb-action" data-action="approve">✓ Aprovar (vai pro pool)</button>
+        <button class="kb-action danger" data-action="reject">✕ Rejeitar</button>
+      </div>
+    </div>
+  `).join('');
+  $('pendingList').querySelectorAll('[data-action="approve"]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const id = btn.closest('.kb-item').dataset.id;
+      await fetch('/api/sindi-os', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'pending-approve', id }),
+      });
+      loadAll();
+    });
+  });
+  $('pendingList').querySelectorAll('[data-action="reject"]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('Rejeitar esta insight? Ela não vai pro pool.')) return;
+      const id = btn.closest('.kb-item').dataset.id;
+      await fetch('/api/sindi-os', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'pending-reject', id }),
+      });
+      loadAll();
+    });
+  });
 }
 
 function showForbidden() {

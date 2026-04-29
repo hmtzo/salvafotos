@@ -145,6 +145,9 @@
     width:32px;height:32px;transition:all 0.15s;font-family:inherit;
   }
   .prompt-btn:hover{background:rgba(80,80,80,0.3);color:#D1D5DB}
+  .prompt-btn.recording{background:rgba(239,68,68,0.2);color:#fca5a5;animation:pulse 1.2s ease-in-out infinite}
+  .prompt-btn.active{background:rgba(99,102,241,0.2);color:#a5b4fc}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}
   .prompt-btn svg{width:18px;height:18px}
 
   .toggle-pill{
@@ -853,6 +856,15 @@
         <div class="prompt-left-actions">
           <button class="prompt-btn" id="attachBtn" title="Anexar arquivo" type="button">
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/></svg>
+          </button>
+          <button class="prompt-btn" id="libraryBtn" title="Biblioteca de docs salvos" type="button">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 016.5 2H20v20H6.5a2.5 2.5 0 010-5H20"/></svg>
+          </button>
+          <button class="prompt-btn" id="micBtn" title="Falar (clique pra começar/parar)" type="button">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M19 10v2a7 7 0 01-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+          </button>
+          <button class="prompt-btn" id="ttsBtn" title="Ler resposta em voz" type="button">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 010 14.14M15.54 8.46a5 5 0 010 7.07"/></svg>
           </button>
           <button class="toggle-pill search" data-mode="search" type="button" title="Busca na web">
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15 15 0 010 20"/><path d="M12 2a15 15 0 000 20"/></svg>
@@ -1943,6 +1955,140 @@ loadProfile();
 refreshQuotaIndicator();
 
 sendBtn.addEventListener('click', send);
+
+// =========================================================
+// VOICE INPUT (Web Speech API)
+// =========================================================
+(function setupVoice() {
+  const micBtn = document.getElementById('micBtn');
+  if (!micBtn) return;
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SR) {
+    micBtn.style.display = 'none';
+    return;
+  }
+  let recognition = null;
+  let listening = false;
+  micBtn.addEventListener('click', () => {
+    if (listening) {
+      recognition?.stop();
+      return;
+    }
+    recognition = new SR();
+    recognition.lang = 'pt-BR';
+    recognition.interimResults = true;
+    recognition.continuous = false;
+    let finalText = '';
+    recognition.onresult = e => {
+      let interim = '';
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        const t = e.results[i][0].transcript;
+        if (e.results[i].isFinal) finalText += t;
+        else interim += t;
+      }
+      input.value = (finalText + interim).trim();
+      input.dispatchEvent(new Event('input'));
+    };
+    recognition.onerror = () => { listening = false; micBtn.classList.remove('recording'); };
+    recognition.onend = () => {
+      listening = false;
+      micBtn.classList.remove('recording');
+      if (finalText.trim()) input.dispatchEvent(new Event('input'));
+    };
+    recognition.start();
+    listening = true;
+    micBtn.classList.add('recording');
+  });
+})();
+
+// =========================================================
+// VOICE OUTPUT (TTS) — toggle, lê última resposta do bot
+// =========================================================
+let ttsEnabled = localStorage.getItem('sf_tts') === '1';
+function updateTtsBtn() {
+  const btn = document.getElementById('ttsBtn');
+  if (btn) btn.classList.toggle('active', ttsEnabled);
+}
+updateTtsBtn();
+document.getElementById('ttsBtn')?.addEventListener('click', () => {
+  ttsEnabled = !ttsEnabled;
+  localStorage.setItem('sf_tts', ttsEnabled ? '1' : '0');
+  updateTtsBtn();
+  if (!ttsEnabled) speechSynthesis.cancel();
+});
+
+// Após cada resposta nova, se TTS ligado, lê
+const _origRender = renderAssistantMessage;
+renderAssistantMessage = function(wrap, reply, meta) {
+  _origRender(wrap, reply, meta);
+  if (ttsEnabled && 'speechSynthesis' in window) {
+    speechSynthesis.cancel();
+    // Limpa markdown e [CONFIANÇA: ...] pra leitura mais natural
+    const clean = String(reply || '')
+      .replace(/\[CONFIANÇA:[^\]]+\]/gi, '')
+      .replace(/\*\*(.+?)\*\*/g, '$1')
+      .replace(/`([^`]+)`/g, '$1')
+      .replace(/^[-*]\s+/gm, '')
+      .replace(/^\d+\.\s+/gm, '')
+      .replace(/#+\s*/g, '')
+      .replace(/\n{2,}/g, '. ')
+      .replace(/\n/g, ' ')
+      .slice(0, 800); // cap pra não ler 5min de texto
+    const utter = new SpeechSynthesisUtterance(clean);
+    utter.lang = 'pt-BR';
+    utter.rate = 1.05;
+    utter.pitch = 1.0;
+    speechSynthesis.speak(utter);
+  }
+};
+
+// =========================================================
+// ATTACHMENT LIBRARY — biblioteca de docs reutilizáveis
+// =========================================================
+(function setupLibrary() {
+  const btn = document.getElementById('libraryBtn');
+  if (!btn) return;
+  btn.addEventListener('click', async () => {
+    const r = await fetch('/api/sindi-os?action=attachments');
+    if (!r.ok) return;
+    const { attachments } = await r.json();
+    if (!attachments.length) {
+      alert('Sua biblioteca tá vazia. Anexe um PDF na conversa que ele vai ficar disponível aqui.');
+      return;
+    }
+    const choice = prompt(
+      'Escolha um documento da biblioteca (digite o número):\n\n' +
+      attachments.map((a, i) => `${i + 1}. ${a.name} (${(a.size/1024).toFixed(1)}KB)`).join('\n')
+    );
+    const idx = parseInt(choice) - 1;
+    if (idx >= 0 && idx < attachments.length) {
+      const id = attachments[idx].id;
+      const r2 = await fetch(`/api/sindi-os?action=attachment-get&id=${encodeURIComponent(id)}`);
+      if (r2.ok) {
+        const { attachment } = await r2.json();
+        docContext = { name: attachment.name, text: attachment.text };
+        docBannerText.textContent = `📎 Da biblioteca: ${attachment.name}`;
+        docBanner.classList.add('show');
+      }
+    }
+  });
+})();
+
+// Auto-salva docs anexados na biblioteca (depois do parsing)
+const _origDocChange = docInput.onchange;
+docInput.addEventListener('change', async e => {
+  // Esperando o parser principal terminar; espera 1s pra garantir docContext
+  setTimeout(async () => {
+    if (docContext?.name && docContext?.text) {
+      try {
+        await fetch('/api/sindi-os', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'attachment-save', attachment: docContext }),
+        });
+      } catch (e) {}
+    }
+  }, 2000);
+});
 
 // ===================================================================
 // RUIXEN WELCOME — input + chips + send → encaminha pra send() do chat

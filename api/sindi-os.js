@@ -96,16 +96,22 @@ function todayKey() {
 
 // ===== Helpers exportados pra outros endpoints =====
 export async function loadOSContext(user) {
-  if (!user) return { profile: null, memory: [], insights: [] };
-  const [profile, memoryList, insights] = await Promise.all([
+  if (!user) return { profile: null, memory: [], insights: [], activeCondo: null };
+  const [profile, memoryList, insights, activeCondoObj] = await Promise.all([
     kvGet(`sindi-profile:${user}`),
     kvLRange(`sindi-memory:${user}`, 0, 4),
     loadSharedInsights(80),
+    kvGet(`sindi-active-condo:${user}`),
   ]);
   const memory = (memoryList || []).map(s => {
     try { return JSON.parse(s); } catch { return null; }
   }).filter(Boolean);
-  return { profile: profile || null, memory, insights: insights || [] };
+  return {
+    profile: profile || null,
+    memory,
+    insights: insights || [],
+    activeCondo: activeCondoObj?.condo || null,
+  };
 }
 
 export async function logAudit(user, payload) {
@@ -161,6 +167,46 @@ function sanitizeForSharing(text) {
     .replace(/\(?(\d{2})\)?\s?9?\d{4}[-.\s]?\d{4}/g, '[telefone]')
     // Nomes de moradores referenciados (heurística simples: "Sr./Sra. NOME")
     .replace(/\b(Sr\.?|Sra\.?|Dr\.?|Dra\.?)\s+[A-ZÀ-Ý][a-zà-ý]+(\s+[A-ZÀ-Ý][a-zà-ý]+)?/g, '[pessoa]');
+}
+
+// =====================================================================
+// NOTIFICAÇÕES — sistema in-app
+// =====================================================================
+export async function pushNotification(user, notif) {
+  if (!user || !notif) return;
+  const entry = JSON.stringify({
+    id: 'n-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 5),
+    ts: Date.now(),
+    read: false,
+    ...notif,
+  });
+  await kvLPush(`sindi-notif:${user}`, entry);
+  await kvLTrim(`sindi-notif:${user}`, 0, 49); // últimas 50
+}
+export async function broadcastNotification(notif, exceptUser = null) {
+  for (const u of ALL_USERS) {
+    if (exceptUser && u === exceptUser) continue;
+    await pushNotification(u, notif);
+  }
+}
+
+// =====================================================================
+// ATTACHMENT LIBRARY — biblioteca de docs do usuário
+// =====================================================================
+export async function saveAttachment(user, attachment) {
+  if (!user || !attachment) return null;
+  const id = 'att-' + Date.now().toString(36);
+  const list = (await kvGet(`sindi-attachments:${user}`)) || [];
+  const safe = {
+    id,
+    name: String(attachment.name || 'documento').slice(0, 200),
+    text: String(attachment.text || '').slice(0, 30000),
+    size: Number(attachment.size) || 0,
+    ts: Date.now(),
+  };
+  list.unshift(safe);
+  await kvSet(`sindi-attachments:${user}`, list.slice(0, 30)); // até 30 docs
+  return safe;
 }
 
 export async function saveInsight(insight) {
@@ -246,7 +292,7 @@ ${answer.slice(0, 3000)}
     const parsed = JSON.parse(text);
     if (!parsed.shouldStore) return null;
 
-    return await saveInsight({
+    const insight = {
       title: parsed.title,
       question: parsed.question,
       summary: parsed.summary,
@@ -254,11 +300,77 @@ ${answer.slice(0, 3000)}
       category: parsed.category,
       contributedBy: user || null,
       confidence,
-    });
+    };
+
+    // Categorias críticas (juridico, governanca) vão pra fila de aprovação
+    const criticalCategories = ['juridico', 'governanca', 'rh'];
+    if (criticalCategories.includes(parsed.category)) {
+      const pending = await savePendingInsight(insight);
+      // Notifica admins
+      if (pending) {
+        const adminNotif = {
+          type: 'pending-insight',
+          title: 'Nova insight aguardando aprovação',
+          body: `Categoria ${parsed.category}: "${pending.title}"`,
+          link: '/admin.html#insights',
+        };
+        for (const a of ADMIN_USERS) await pushNotification(a, adminNotif);
+      }
+      return pending;
+    }
+    // Não-críticas vão direto pro pool global
+    return await saveInsight(insight);
   } catch (e) {
     console.warn('insight extraction failed', e);
     return null;
   }
+}
+
+// Fila de aprovação pra insights críticas
+export async function savePendingInsight(insight) {
+  if (!insight || !insight.summary) return null;
+  const id = 'pin-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 6);
+  const safe = {
+    id,
+    title: sanitizeForSharing(insight.title || insight.question || '').slice(0, 200),
+    question: sanitizeForSharing(insight.question || '').slice(0, 300),
+    content: sanitizeForSharing(insight.summary).slice(0, 1500),
+    summary: sanitizeForSharing(insight.summary).slice(0, 1500),
+    tags: Array.isArray(insight.tags) ? insight.tags.slice(0, 8).map(t => String(t).toLowerCase().slice(0, 40)) : [],
+    category: insight.category || 'outros',
+    contributedBy: insight.contributedBy || null,
+    confidence: typeof insight.confidence === 'number' ? insight.confidence : null,
+    ts: Date.now(),
+    status: 'pending',
+  };
+  await kvLPush('sindi-insights:pending', JSON.stringify(safe));
+  await kvLTrim('sindi-insights:pending', 0, 99);
+  return safe;
+}
+export async function loadPendingInsights() {
+  const list = await kvLRange('sindi-insights:pending', 0, 99);
+  return (list || []).map(s => { try { return JSON.parse(s); } catch { return null; } }).filter(Boolean);
+}
+export async function approvePendingInsight(id) {
+  const list = await loadPendingInsights();
+  const insight = list.find(i => i.id === id);
+  if (!insight) return null;
+  // Remove de pending, salva no pool global
+  const filtered = list.filter(i => i.id !== id);
+  await kv('POST', `/del/${encodeURIComponent('sindi-insights:pending')}`);
+  for (let i = filtered.length - 1; i >= 0; i--) {
+    await kvLPush('sindi-insights:pending', JSON.stringify(filtered[i]));
+  }
+  return await saveInsight(insight);
+}
+export async function rejectPendingInsight(id) {
+  const list = await loadPendingInsights();
+  const filtered = list.filter(i => i.id !== id);
+  await kv('POST', `/del/${encodeURIComponent('sindi-insights:pending')}`);
+  for (let i = filtered.length - 1; i >= 0; i--) {
+    await kvLPush('sindi-insights:pending', JSON.stringify(filtered[i]));
+  }
+  return true;
 }
 
 export async function saveMemorySummary(user, convId, summary) {
@@ -406,16 +518,109 @@ export default async function handler(request) {
         return ok({ custom });
       }
       if (action === 'insights-list') {
-        // qualquer usuário autenticado vê (cérebro coletivo)
         const limit = Math.min(parseInt(url.searchParams.get('limit') || '50'), 200);
         const cat = url.searchParams.get('category') || null;
         let list = await loadSharedInsights(limit);
         if (cat) list = list.filter(i => i.category === cat);
         return ok({ insights: list, count: list.length });
       }
+      if (action === 'insights-pending') {
+        if (!ADMIN_USERS.includes(user)) return forbidden();
+        const list = await loadPendingInsights();
+        return ok({ insights: list, count: list.length });
+      }
+      if (action === 'notifications') {
+        const list = await kvLRange(`sindi-notif:${user}`, 0, 49);
+        const items = (list || []).map(s => { try { return JSON.parse(s); } catch { return null; } }).filter(Boolean);
+        return ok({ notifications: items, unread: items.filter(n => !n.read).length });
+      }
+      if (action === 'attachments') {
+        const list = (await kvGet(`sindi-attachments:${user}`)) || [];
+        // Não retorna o texto completo na lista (só metadados)
+        const meta = list.map(a => ({ id: a.id, name: a.name, size: a.size, ts: a.ts }));
+        return ok({ attachments: meta });
+      }
+      if (action === 'attachment-get') {
+        const id = url.searchParams.get('id');
+        const list = (await kvGet(`sindi-attachments:${user}`)) || [];
+        const att = list.find(a => a.id === id);
+        if (!att) return new Response(JSON.stringify({ error: 'não encontrado' }), { status: 404, headers: { 'Content-Type': 'application/json' } });
+        return ok({ attachment: att });
+      }
+      if (action === 'analytics') {
+        if (!ADMIN_USERS.includes(user)) return forbidden();
+        const [insights, audit, fbUp, fbDown] = await Promise.all([
+          loadSharedInsights(500),
+          kvLRange('sindi-audit:global', 0, 999),
+          kvGet('sindi-feedback:up'),
+          kvGet('sindi-feedback:down'),
+        ]);
+        const auditEntries = (audit || []).map(s => { try { return JSON.parse(s); } catch { return null; } }).filter(Boolean);
+
+        // Top insights por votos
+        const topInsights = [...insights].sort((a, b) => (b.votes || 0) - (a.votes || 0)).slice(0, 10);
+
+        // Categorias mais frequentes nas insights
+        const catCount = {};
+        for (const i of insights) {
+          catCount[i.category || 'outros'] = (catCount[i.category || 'outros'] || 0) + 1;
+        }
+        const categoryDist = Object.entries(catCount).map(([k, v]) => ({ category: k, count: v })).sort((a, b) => b.count - a.count);
+
+        // Confiança média
+        const confs = auditEntries.filter(e => e.confidence != null).map(e => e.confidence);
+        const avgConf = confs.length ? Math.round(confs.reduce((a, b) => a + b) / confs.length) : null;
+
+        // Distribuição de modos
+        const modeCount = {};
+        for (const e of auditEntries) {
+          const m = e.mode || 'normal';
+          modeCount[m] = (modeCount[m] || 0) + 1;
+        }
+        const modeDist = Object.entries(modeCount).map(([k, v]) => ({ mode: k, count: v }));
+
+        // Top usuários por atividade
+        const userCount = {};
+        for (const e of auditEntries) {
+          if (e.user) userCount[e.user] = (userCount[e.user] || 0) + 1;
+        }
+        const topUsers = Object.entries(userCount).map(([k, v]) => ({ user: k, count: v })).sort((a, b) => b.count - a.count).slice(0, 10);
+
+        return ok({
+          totalInsights: insights.length,
+          topInsights,
+          categoryDist,
+          modeDist,
+          avgConfidence: avgConf,
+          topUsers,
+          feedback: {
+            up: Number(fbUp) || 0,
+            down: Number(fbDown) || 0,
+            total: (Number(fbUp) || 0) + (Number(fbDown) || 0),
+          },
+          totalAuditEntries: auditEntries.length,
+        });
+      }
+      if (action === 'export-mine') {
+        // Exporta tudo do usuário (chats, profile, memories, attachments)
+        const [chats, profile, mem, atts] = await Promise.all([
+          kvGet(`sindi-chats:${user}`),
+          kvGet(`sindi-profile:${user}`),
+          kvLRange(`sindi-memory:${user}`, 0, 49),
+          kvGet(`sindi-attachments:${user}`),
+        ]);
+        return ok({
+          user,
+          exportedAt: Date.now(),
+          chats: chats || { conversations: [] },
+          profile: profile || null,
+          memories: (mem || []).map(s => { try { return JSON.parse(s); } catch { return null; } }).filter(Boolean),
+          attachments: atts || [],
+        });
+      }
       return ok({
         ok: true,
-        actions: ['profile', 'memory', 'audit', 'audit-mine', 'quota', 'me-stats', 'admin-overview', 'admin-audit', 'kb-list', 'insights-list'],
+        actions: ['profile', 'memory', 'audit', 'audit-mine', 'quota', 'me-stats', 'admin-overview', 'admin-audit', 'kb-list', 'insights-list', 'insights-pending', 'notifications', 'attachments', 'analytics', 'export-mine'],
       });
     }
 
@@ -525,6 +730,49 @@ export default async function handler(request) {
         kbList.unshift(newPiece);
         await kvSet('sindi-kb:custom', kbList.slice(0, 100));
         return ok({ promoted: newPiece });
+      }
+      if (a === 'notif-read') {
+        const id = body.id;
+        const list = await kvLRange(`sindi-notif:${user}`, 0, 49);
+        const updated = (list || []).map(s => {
+          try {
+            const n = JSON.parse(s);
+            if (id === '*' || n.id === id) n.read = true;
+            return JSON.stringify(n);
+          } catch { return s; }
+        });
+        await kv('POST', `/del/${encodeURIComponent('sindi-notif:' + user)}`);
+        for (let i = updated.length - 1; i >= 0; i--) {
+          await kvLPush(`sindi-notif:${user}`, updated[i]);
+        }
+        return ok({ marked: true });
+      }
+      if (a === 'attachment-save') {
+        const att = await saveAttachment(user, body.attachment || {});
+        return ok({ attachment: att });
+      }
+      if (a === 'attachment-delete') {
+        const id = body.id;
+        const list = (await kvGet(`sindi-attachments:${user}`)) || [];
+        const filtered = list.filter(att => att.id !== id);
+        await kvSet(`sindi-attachments:${user}`, filtered);
+        return ok({ deleted: true });
+      }
+      if (a === 'pending-approve') {
+        if (!ADMIN_USERS.includes(user)) return forbidden();
+        const result = await approvePendingInsight(body.id);
+        return ok({ approved: !!result, insight: result });
+      }
+      if (a === 'pending-reject') {
+        if (!ADMIN_USERS.includes(user)) return forbidden();
+        await rejectPendingInsight(body.id);
+        return ok({ rejected: true });
+      }
+      if (a === 'set-active-condo') {
+        // Salva qual condomínio o user está trabalhando agora
+        const condo = String(body.condo || '').slice(0, 100);
+        await kvSet(`sindi-active-condo:${user}`, { condo, ts: Date.now() });
+        return ok({ saved: true, condo });
       }
       if (a === 'feedback') {
         // Feedback de uma resposta específica (👍/👎). Salva na auditoria.

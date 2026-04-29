@@ -308,8 +308,11 @@ export default async function handler(request) {
       (p.role ? `Função: ${p.role}\n` : '') +
       (p.condos ? `Condomínios sob gestão: ${p.condos}\n` : '') +
       (p.context ? `Contexto adicional: ${p.context}\n` : '') +
+      (osContext.activeCondo ? `\n>>> CONDOMÍNIO ATIVO NESTA CONVERSA: ${osContext.activeCondo} <<<\nFoque a resposta neste contexto específico.\n` : '') +
       `Adapte a resposta ao papel do usuário.`
     );
+  } else if (osContext.activeCondo) {
+    contextBlocks.push(`=== CONDOMÍNIO ATIVO: ${osContext.activeCondo} ===\nFoque a resposta neste contexto.`);
   }
   if (osContext.memory && osContext.memory.length) {
     const memTxt = osContext.memory

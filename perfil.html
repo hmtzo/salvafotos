@@ -186,6 +186,7 @@
       <a class="btn-sec" href="/dashboard.html">Dashboard de uso de ferramentas</a>
       <a class="btn-sec" href="/hub.html">Voltar ao Hub</a>
       <a class="btn-sec" id="adminLink" href="/admin.html" hidden>Painel admin</a>
+      <button class="btn-sec" id="exportBtn">📦 Baixar meus dados (JSON)</button>
     </div>
   </section>
 
@@ -318,6 +319,20 @@ $('clearMemories').addEventListener('click', async () => {
   });
   flash('Memórias apagadas.');
   loadAll();
+});
+
+$('exportBtn').addEventListener('click', async () => {
+  const r = await fetch('/api/sindi-os?action=export-mine');
+  if (!r.ok) { flash('Erro ao exportar'); return; }
+  const data = await r.json();
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `sindi-export-${new Date().toISOString().slice(0,10)}.json`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1500);
+  flash('Backup baixado!');
 });
 
 loadAll();

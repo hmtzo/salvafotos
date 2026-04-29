@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0a0a0c">
+<title>Wizard de Inadimplência — Sindi</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" href="/logo.svg">
+<link rel="stylesheet" href="/assets/shared.css">
+<style>
+  .wizard-hero{padding:14px 0 24px}
+  .wizard-hero h1{font-size:28px;letter-spacing:-0.02em}
+  .wizard-hero p{color:var(--text-dim);font-size:14px;margin-top:6px}
+
+  .stepper{display:flex;gap:8px;margin-bottom:24px;flex-wrap:wrap}
+  .step{
+    flex:1;min-width:120px;padding:10px 12px;border-radius:10px;
+    background:var(--bg-elev);border:1px solid var(--border);font-size:12px;
+    display:flex;align-items:center;gap:8px;color:var(--text-muted);
+    transition:all 0.2s;
+  }
+  .step.active{
+    background:rgba(99,102,241,0.18);border-color:rgba(99,102,241,0.5);color:#a5b4fc;font-weight:600;
+  }
+  .step.done{background:rgba(16,185,129,0.12);border-color:rgba(16,185,129,0.4);color:#6ee7b7}
+  .step .step-num{
+    width:22px;height:22px;border-radius:50%;background:var(--bg);
+    display:flex;align-items:center;justify-content:center;font-weight:700;flex-shrink:0;
+  }
+  .step.active .step-num{background:#6366f1;color:#fff}
+  .step.done .step-num{background:#10b981;color:#fff}
+
+  .panel{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:24px;margin-bottom:18px}
+  .panel h2{font-size:16px;font-weight:700;margin-bottom:6px}
+  .panel p{font-size:13.5px;color:var(--text-dim);line-height:1.55;margin-bottom:14px}
+  .field{margin-bottom:14px}
+  .field label{display:block;font-size:12px;font-weight:600;color:var(--text-dim);margin-bottom:6px}
+  .field input, .field textarea, .field select{
+    width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;
+    background:var(--bg-elev);color:var(--text);font-family:inherit;font-size:14px;
+  }
+  .field input:focus, .field textarea:focus, .field select:focus{outline:none;border-color:var(--accent);background:var(--accent-glow)}
+
+  .nav-actions{display:flex;justify-content:space-between;gap:10px;margin-top:14px}
+  .btn-pri, .btn-sec{
+    padding:10px 18px;border-radius:8px;font-family:inherit;font-size:13px;font-weight:600;
+    cursor:pointer;border:none;transition:all 0.15s;
+  }
+  .btn-pri{background:var(--accent);color:#fff}
+  .btn-pri:hover{background:var(--accent-bright)}
+  .btn-pri:disabled{opacity:0.4;cursor:not-allowed}
+  .btn-sec{background:transparent;color:var(--text-dim);border:1px solid var(--border)}
+  .btn-sec:hover{color:var(--text);border-color:var(--text-dim)}
+
+  .output{
+    background:#1F2023;border:1px solid #444;border-radius:10px;padding:18px;
+    font-family:'JetBrains Mono',monospace;font-size:12.5px;line-height:1.6;
+    color:#fafafa;white-space:pre-wrap;word-wrap:break-word;
+    max-height:500px;overflow-y:auto;
+  }
+  .output-actions{display:flex;gap:8px;margin-top:10px}
+</style>
+</head>
+<body>
+<div id="app-nav"></div>
+<div class="container">
+  <section class="wizard-hero">
+    <h1>🧙 Wizard de Inadimplência</h1>
+    <p>Fluxo guiado de cobrança em 5 passos: dados → cálculo → notificação → cronograma → resumo. Sindi gera os documentos prontos pra cada etapa.</p>
+  </section>
+
+  <div class="stepper" id="stepper">
+    <div class="step active" data-step="1"><span class="step-num">1</span> Dados</div>
+    <div class="step" data-step="2"><span class="step-num">2</span> Cálculo</div>
+    <div class="step" data-step="3"><span class="step-num">3</span> Notificação</div>
+    <div class="step" data-step="4"><span class="step-num">4</span> Cronograma</div>
+    <div class="step" data-step="5"><span class="step-num">5</span> Resumo</div>
+  </div>
+
+  <!-- Step 1: Dados -->
+  <section class="panel" id="step-1">
+    <h2>Dados do morador inadimplente</h2>
+    <p>Preencha as informações pra Sindi gerar a documentação correta.</p>
+    <div class="field"><label>Nome do condômino (ou "Sr./Sra. de unidade XXX" se preferir omitir)</label><input type="text" id="condomino" placeholder="Ex: João Silva ou Sr. da unidade 502"></div>
+    <div class="field"><label>Unidade</label><input type="text" id="unidade" placeholder="Ex: Apto 502, bloco B"></div>
+    <div class="field"><label>Condomínio</label><input type="text" id="condominio" placeholder="Ex: Edifício Andorinha"></div>
+    <div class="field"><label>Valor da taxa mensal (R$)</label><input type="number" step="0.01" id="taxa" placeholder="850.00"></div>
+    <div class="field"><label>Meses em atraso</label><input type="number" id="mesesAtraso" placeholder="3" value="2"></div>
+    <div class="field"><label>Data do primeiro vencimento em atraso</label><input type="date" id="primeiroVcto"></div>
+    <div class="field"><label>Tentativas amigáveis já feitas?</label><select id="tentativas">
+      <option value="nenhuma">Nenhuma — primeira ação</option>
+      <option value="conversa">Conversa informal apenas</option>
+      <option value="aviso">Já houve aviso por escrito (e-mail/whatsapp)</option>
+      <option value="notificacao">Já enviei 1 notificação extrajudicial</option>
+    </select></div>
+    <div class="nav-actions">
+      <span></span>
+      <button class="btn-pri" data-next="2">Próximo →</button>
+    </div>
+  </section>
+
+  <!-- Step 2: Cálculo -->
+  <section class="panel" id="step-2" hidden>
+    <h2>Cálculo do débito</h2>
+    <p>Aplicando juros 1%/mês + multa 2% (CC art. 1.336 §1º) + correção pelo IPCA estimado.</p>
+    <div class="output" id="calculoOutput">—</div>
+    <div class="nav-actions">
+      <button class="btn-sec" data-next="1">← Voltar</button>
+      <button class="btn-pri" data-next="3">Próximo →</button>
+    </div>
+  </section>
+
+  <!-- Step 3: Notificação -->
+  <section class="panel" id="step-3" hidden>
+    <h2>Notificação extrajudicial</h2>
+    <p>Sindi vai gerar o texto pronto pra registrar em cartório ou enviar por carta com AR.</p>
+    <button class="btn-pri" id="genNotif">⚡ Gerar notificação</button>
+    <div class="output" id="notifOutput" style="margin-top:14px;display:none">—</div>
+    <div class="output-actions" id="notifActions" style="display:none">
+      <button class="btn-sec" id="copyNotif">📋 Copiar</button>
+      <button class="btn-sec" id="exportNotif">📥 Baixar .txt</button>
+    </div>
+    <div class="nav-actions">
+      <button class="btn-sec" data-next="2">← Voltar</button>
+      <button class="btn-pri" data-next="4">Próximo →</button>
+    </div>
+  </section>
+
+  <!-- Step 4: Cronograma -->
+  <section class="panel" id="step-4" hidden>
+    <h2>Cronograma de cobrança</h2>
+    <p>Próximas etapas escalonadas baseadas no método Sindicompany.</p>
+    <div class="output" id="cronoOutput">—</div>
+    <div class="nav-actions">
+      <button class="btn-sec" data-next="3">← Voltar</button>
+      <button class="btn-pri" data-next="5">Próximo →</button>
+    </div>
+  </section>
+
+  <!-- Step 5: Resumo -->
+  <section class="panel" id="step-5" hidden>
+    <h2>Resumo & próximos passos</h2>
+    <p>Tudo gerado neste wizard ficará registrado pra continuidade.</p>
+    <div class="output" id="resumoOutput">—</div>
+    <div class="output-actions">
+      <button class="btn-sec" id="exportAll">📦 Baixar pacote completo (.md)</button>
+      <a class="btn-sec" href="/tools/sindi.html">💬 Levar pra Sindi (continuar)</a>
+    </div>
+    <div class="nav-actions">
+      <button class="btn-sec" data-next="4">← Voltar</button>
+      <a class="btn-pri" href="/hub.html">Voltar ao Hub</a>
+    </div>
+  </section>
+</div>
+<div id="app-footer"></div>
+
+<script src="/assets/shared.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+const state = {};
+
+function gotoStep(n) {
+  for (let i = 1; i <= 5; i++) {
+    $(`step-${i}`).hidden = (i !== n);
+  }
+  document.querySelectorAll('.step').forEach(s => {
+    const num = +s.dataset.step;
+    s.classList.toggle('active', num === n);
+    s.classList.toggle('done', num < n);
+  });
+  if (n === 2) calcular();
+  if (n === 4) gerarCronograma();
+  if (n === 5) gerarResumo();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+document.querySelectorAll('[data-next]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const target = +btn.dataset.next;
+    if (target === 2) collectStep1();
+    gotoStep(target);
+  });
+});
+
+function collectStep1() {
+  state.condomino = $('condomino').value.trim() || 'Sr./Sra.';
+  state.unidade = $('unidade').value.trim() || '—';
+  state.condominio = $('condominio').value.trim() || '—';
+  state.taxa = parseFloat($('taxa').value) || 0;
+  state.mesesAtraso = parseInt($('mesesAtraso').value) || 0;
+  state.primeiroVcto = $('primeiroVcto').value || new Date().toISOString().slice(0,10);
+  state.tentativas = $('tentativas').value;
+}
+
+function calcular() {
+  const t = state.taxa;
+  const m = state.mesesAtraso;
+  if (!t || !m) { $('calculoOutput').textContent = 'Preencha taxa e meses em atraso.'; return; }
+  const principal = t * m;
+  const juros = principal * 0.01 * m; // 1%/mês simples
+  const multa = principal * 0.02; // 2% única
+  const correcao = principal * 0.005 * m; // estimativa IPCA ~6%/ano
+  const total = principal + juros + multa + correcao;
+  state.calculo = { principal, juros, multa, correcao, total };
+  $('calculoOutput').textContent =
+`MEMÓRIA DE CÁLCULO — ${state.condominio}, ${state.unidade}
+
+Taxa mensal:        R$ ${t.toFixed(2)}
+Meses em atraso:    ${m}
+─────────────────────────
+Principal devido:   R$ ${principal.toFixed(2)}
+Juros (1% a.m.):    R$ ${juros.toFixed(2)}
+Multa (2% única):   R$ ${multa.toFixed(2)}
+Correção (~IPCA):   R$ ${correcao.toFixed(2)}
+─────────────────────────
+TOTAL:              R$ ${total.toFixed(2)}
+
+Base legal:
+- CC art. 1.336 §1º (juros 1%/mês + multa 2%)
+- Convenção do condomínio (índice de correção monetária)`;
+}
+
+$('genNotif').addEventListener('click', async () => {
+  $('genNotif').disabled = true;
+  $('genNotif').textContent = '⏳ Gerando…';
+  // Chama Sindi pra gerar a notificação
+  try {
+    const prompt = `GERAR PROTOCOLO de notificação extrajudicial de inadimplência.
+
+Dados:
+- Condômino: ${state.condomino}
+- Unidade: ${state.unidade}
+- Condomínio: ${state.condominio}
+- Total devido: R$ ${state.calculo.total.toFixed(2)} (principal R$ ${state.calculo.principal.toFixed(2)}, juros R$ ${state.calculo.juros.toFixed(2)}, multa R$ ${state.calculo.multa.toFixed(2)}, correção R$ ${state.calculo.correcao.toFixed(2)})
+- Meses em atraso: ${state.mesesAtraso}
+- Tentativas anteriores: ${state.tentativas}
+
+Gerar APENAS o texto da notificação (formal, registrável em cartório), sem comentários adicionais. Inclui prazo de 10 dias úteis pra regularização e menção que será encaminhada pra protesto/ação caso não pago.`;
+
+    const res = await fetch('/api/sindi', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages: [{ role: 'user', content: prompt }], mode: 'canvas' }),
+    });
+    const data = await res.json();
+    if (res.ok && data.reply) {
+      // Remove marker [CONFIANÇA: ...]
+      state.notif = data.reply.replace(/\[CONFIANÇA:[^\]]+\]/, '').trim();
+      $('notifOutput').textContent = state.notif;
+      $('notifOutput').style.display = 'block';
+      $('notifActions').style.display = 'flex';
+    } else {
+      $('notifOutput').textContent = 'Erro: ' + (data.error || 'falha ao gerar');
+      $('notifOutput').style.display = 'block';
+    }
+  } catch (e) {
+    $('notifOutput').textContent = 'Erro de conexão: ' + e.message;
+    $('notifOutput').style.display = 'block';
+  }
+  $('genNotif').disabled = false;
+  $('genNotif').textContent = '⚡ Gerar notificação';
+});
+
+$('copyNotif').addEventListener('click', () => {
+  navigator.clipboard.writeText(state.notif);
+  $('copyNotif').textContent = '✓ Copiado';
+  setTimeout(() => $('copyNotif').textContent = '📋 Copiar', 1500);
+});
+$('exportNotif').addEventListener('click', () => {
+  const blob = new Blob([state.notif], { type: 'text/plain' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `notificacao-${state.unidade.replace(/[^a-z0-9]/gi,'_')}-${Date.now()}.txt`;
+  a.click();
+});
+
+function gerarCronograma() {
+  const hoje = new Date();
+  const fmt = (d) => d.toLocaleDateString('pt-BR');
+  const addDays = (d, n) => { const r = new Date(d); r.setDate(r.getDate() + n); return r; };
+  state.cronograma =
+`CRONOGRAMA DE COBRANÇA — ${state.condominio}, ${state.unidade}
+
+Hoje (${fmt(hoje)})
+  → Enviar notificação extrajudicial via cartório (AR ou registro)
+
+D+10 (${fmt(addDays(hoje, 10))}) — fim do prazo concedido
+  → Verificar se houve regularização ou negociação
+
+D+15 (${fmt(addDays(hoje, 15))}) se sem pagamento
+  → Protestar título no cartório (Lei 9.492/97 + CPC art. 784, X)
+  → Custo aprox: R$ 50-200 (recuperável do devedor)
+
+D+30 (${fmt(addDays(hoje, 30))}) se persistir
+  → Encaminhar pra advogado: ação de execução de título extrajudicial
+  → Possibilidade de pedir penhora online (BacenJud) e do imóvel
+
+D+60 (${fmt(addDays(hoje, 60))}) follow-up
+  → Conferir andamento processual + reportar ao conselho
+
+ATENÇÃO LGPD:
+- Não expor nome/unidade do inadimplente em mural ou grupo aberto
+- Lista de inadimplentes só em ata reservada
+- Comunicação ao próprio devedor sempre por canal direto`;
+  $('cronoOutput').textContent = state.cronograma;
+}
+
+function gerarResumo() {
+  state.resumo =
+`# Pacote de cobrança — ${state.condominio}, ${state.unidade}
+
+**Devedor:** ${state.condomino}
+**Total devido:** R$ ${state.calculo.total.toFixed(2)}
+**Meses em atraso:** ${state.mesesAtraso}
+**Tentativas anteriores:** ${state.tentativas}
+
+---
+
+## 1. Cálculo
+
+\`\`\`
+${$('calculoOutput').textContent}
+\`\`\`
+
+---
+
+## 2. Notificação extrajudicial
+
+${state.notif || '_(não foi gerada nesta sessão)_'}
+
+---
+
+## 3. Cronograma
+
+\`\`\`
+${state.cronograma}
+\`\`\`
+
+---
+
+_Gerado em ${new Date().toLocaleString('pt-BR')} pelo Wizard Sindicompany_`;
+  $('resumoOutput').textContent = state.resumo;
+}
+
+$('exportAll').addEventListener('click', () => {
+  const blob = new Blob([state.resumo], { type: 'text/markdown' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `cobranca-${state.unidade.replace(/[^a-z0-9]/gi,'_')}-${Date.now()}.md`;
+  a.click();
+  trackUsage('wizard-inadimplencia', { etapa: 'completo' });
+});
+</script>
+</body>
+</html>
