@@ -228,6 +228,105 @@
   @media (max-width: 380px){
     .tools-grid{grid-template-columns:1fr}
   }
+
+  /* ========================================================================
+     DOCK (macOS-style) — fixo no rodapé com magnificação no hover
+     ======================================================================== */
+  .dock-spacer{height:120px}
+  .dock-wrap{
+    position:fixed;bottom:18px;left:50%;transform:translateX(-50%);
+    z-index:100;pointer-events:none;
+    animation:dock-rise 0.6s cubic-bezier(0.2,0.8,0.2,1) 0.3s both;
+  }
+  @keyframes dock-rise{from{opacity:0;transform:translate(-50%, 80px)}to{opacity:1;transform:translate(-50%, 0)}}
+  .dock{
+    pointer-events:auto;
+    display:flex;align-items:flex-end;gap:8px;
+    height:74px;padding:10px 14px 12px;
+    background:rgba(31,32,35,0.6);
+    border:1px solid rgba(255,255,255,0.12);
+    border-radius:24px;
+    backdrop-filter:blur(24px) saturate(180%);
+    -webkit-backdrop-filter:blur(24px) saturate(180%);
+    box-shadow:
+      0 1px 0 rgba(255,255,255,0.08) inset,
+      0 12px 40px -8px rgba(0,0,0,0.6),
+      0 4px 16px -4px rgba(0,0,0,0.4);
+  }
+
+  .dock-item{
+    --w:50px;
+    width:var(--w);height:var(--w);
+    aspect-ratio:1;
+    display:flex;align-items:center;justify-content:center;
+    border-radius:14px;cursor:pointer;
+    background:linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01));
+    border:1px solid rgba(255,255,255,0.08);
+    color:#fafafa;text-decoration:none;
+    transition:width 0.15s cubic-bezier(0.2,0.8,0.2,1), height 0.15s cubic-bezier(0.2,0.8,0.2,1), transform 0.2s cubic-bezier(0.2,0.8,0.2,1);
+    position:relative;flex-shrink:0;
+    will-change:width, height, transform;
+  }
+  .dock-item:hover{transform:translateY(-10px)}
+  .dock-item:active{transform:translateY(-2px) scale(0.95)}
+  .dock-item svg{width:48%;height:48%;flex-shrink:0;transition:transform 0.2s}
+  .dock-item:hover svg{transform:scale(1.1)}
+
+  /* Tints por categoria */
+  .dock-item.ai     {background:linear-gradient(135deg, #ec4899, #db2777)}
+  .dock-item.doc    {background:linear-gradient(135deg, #3b82f6, #2563eb)}
+  .dock-item.pdf    {background:linear-gradient(135deg, #ef4444, #dc2626)}
+  .dock-item.org    {background:linear-gradient(135deg, #f59e0b, #d97706)}
+  .dock-item.calc   {background:linear-gradient(135deg, #14b8a6, #0d9488)}
+  .dock-item.convert{background:linear-gradient(135deg, #6366f1, #4f46e5)}
+  .dock-item.image  {background:linear-gradient(135deg, #a855f7, #9333ea)}
+  .dock-item.secure {background:linear-gradient(135deg, #10b981, #059669)}
+  .dock-item.dash   {background:linear-gradient(135deg, #64748b, #475569)}
+
+  /* Shine */
+  .dock-item::before{
+    content:'';position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+    background:linear-gradient(135deg, rgba(255,255,255,0.18), transparent 50%);
+    opacity:0.3;transition:opacity 0.2s;
+  }
+  .dock-item:hover::before{opacity:0.5}
+
+  /* Active dot */
+  .dock-item::after{
+    content:'';position:absolute;bottom:-9px;left:50%;transform:translateX(-50%);
+    width:4px;height:4px;border-radius:50%;
+    background:rgba(255,255,255,0.6);
+    opacity:0;transition:opacity 0.2s;
+  }
+  .dock-item:active::after{opacity:1}
+
+  /* Tooltip */
+  .dock-item .dock-tip{
+    position:absolute;bottom:calc(100% + 14px);left:50%;transform:translateX(-50%) translateY(6px);
+    background:rgba(0,0,0,0.85);color:#fafafa;
+    padding:5px 10px;border-radius:8px;font-size:11px;font-weight:600;
+    white-space:nowrap;pointer-events:none;
+    opacity:0;transition:opacity 0.2s, transform 0.2s;
+    backdrop-filter:blur(8px);
+    border:1px solid rgba(255,255,255,0.1);
+  }
+  .dock-item:hover .dock-tip{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  /* Mobile: dock estática (sem magnificação) e scroll horizontal */
+  @media (max-width: 768px){
+    .dock-spacer{height:84px}
+    .dock-wrap{bottom:10px;left:8px;right:8px;transform:none}
+    .dock{
+      height:60px;padding:8px 10px;border-radius:18px;
+      overflow-x:auto;-webkit-overflow-scrolling:touch;
+      scroll-snap-type:x mandatory;
+      max-width:100%;
+    }
+    .dock::-webkit-scrollbar{display:none}
+    .dock-item{--w:44px;border-radius:12px;scroll-snap-align:start}
+    .dock-item:hover{transform:none}
+    .dock-item .dock-tip{display:none}
+  }
 </style>
 </head>
 <body>
@@ -268,6 +367,11 @@
 
   <div class="tools-grid" id="toolsGrid"></div>
 
+  <div class="dock-spacer"></div>
+</div>
+
+<div class="dock-wrap" aria-label="Atalhos rápidos">
+  <div class="dock" id="hubDock"></div>
 </div>
 
 <div id="app-footer"></div>
@@ -435,6 +539,53 @@ catTabs.addEventListener('click', e => {
 
 renderTools();
 requestAnimationFrame(moveLimelight);
+
+// ===== DockTabs: macOS-style dock com magnificação =====
+const DOCK_ITEMS = [
+  { slug: 'sindi',                cat: 'ai',     icon: 'bot',        label: 'Sindi (IA)' },
+  { slug: 'corretor-texto',       cat: 'ai',     icon: 'pencil',     label: 'Corretor' },
+  { slug: 'gerador-notificacao',  cat: 'doc',    icon: 'fileText',   label: 'Notificação' },
+  { slug: 'gerador-ata',          cat: 'doc',    icon: 'filePen',    label: 'Ata' },
+  { slug: 'gerador-contrato',     cat: 'doc',    icon: 'fileSign',   label: 'Contrato' },
+  { slug: 'calculadoras',         cat: 'calc',   icon: 'calculator', label: 'Calculadoras' },
+  { slug: 'editor-pdf',           cat: 'pdf',    icon: 'pdfEdit',    label: 'Editor PDF' },
+  { slug: 'comparar-pdf',         cat: 'pdf',    icon: 'scale',      label: 'Comparar' },
+  { slug: 'redigir-lgpd',         cat: 'secure', icon: 'shield',     label: 'LGPD' },
+  { slug: 'assinatura',           cat: 'secure', icon: 'signature',  label: 'Assinatura' },
+  { slug: '__dashboard',          cat: 'dash',   icon: 'sparkles',   label: 'Dashboard', href: '/dashboard.html' },
+];
+
+const hubDock = document.getElementById('hubDock');
+hubDock.innerHTML = DOCK_ITEMS.map(it => {
+  const href = it.href || `/tools/${it.slug}.html`;
+  return `<a href="${href}" class="dock-item ${it.cat}" data-slug="${it.slug}">
+    <span class="dock-tip">${it.label}</span>
+    ${svg(it.icon, 26)}
+  </a>`;
+}).join('');
+
+// Magnificação por proximidade do cursor (só desktop)
+const isDesktop = () => window.matchMedia('(min-width: 769px) and (hover: hover)').matches;
+const dockItems = () => hubDock.querySelectorAll('.dock-item');
+const BASE = 50, MAX = 78, RADIUS = 140;
+
+function magnify(e) {
+  if (!isDesktop()) return;
+  dockItems().forEach(item => {
+    const r = item.getBoundingClientRect();
+    const cx = r.left + r.width / 2;
+    const dist = Math.abs(e.clientX - cx);
+    const t = Math.max(0, 1 - dist / RADIUS);
+    const w = BASE + (MAX - BASE) * t;
+    item.style.setProperty('--w', w + 'px');
+  });
+}
+function resetDock() {
+  dockItems().forEach(item => item.style.setProperty('--w', BASE + 'px'));
+}
+hubDock.addEventListener('mousemove', magnify);
+hubDock.addEventListener('mouseleave', resetDock);
+resetDock();
 </script>
 </body>
 </html>
