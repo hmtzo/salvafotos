@@ -113,10 +113,6 @@ function renderNav() {
             <ul class="nav-menu">${desktopMenu}</ul>
           </div>
           <div class="nav-right">
-            <button id="condoSelector" class="nav-btn-outline" title="Condomínio ativo" hidden>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-              <span id="condoLabel">Condomínio</span>
-            </button>
             <button id="notifBell" class="nav-btn-outline nav-bell" title="Notificações" type="button">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 00-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
               <span class="bell-count" id="bellCount" hidden>0</span>
@@ -171,18 +167,6 @@ function renderNav() {
       <div class="nav-popover-list" id="notifList"></div>
     </div>
 
-    <!-- Popover de condomínio ativo -->
-    <div class="nav-popover" id="condoPopover" hidden style="display:none">
-      <header><strong>Condomínio ativo</strong></header>
-      <div class="nav-popover-list" id="condoList"></div>
-      <footer>
-        <input type="text" id="condoCustom" placeholder="Outro condomínio…" />
-        <button id="condoCustomSet">Definir</button>
-      </footer>
-      <footer>
-        <button id="condoClear" class="nav-popover-clear">Limpar contexto</button>
-      </footer>
-    </div>
   `;
 }
 
@@ -191,11 +175,9 @@ function setupNavInteractions() {
   fetch('/api/sindi-os?action=me-stats').then(r => r.ok ? r.json() : null).then(d => {
     if (!d) return;
     if (d.isAdmin) document.querySelectorAll('.nav-admin-link').forEach(el => el.hidden = false);
-    setupCondoSelector(d.profile);
   }).catch(() => {});
 
   setupNotifBell();
-  setupCondoPopover();
 
   // Desktop dropdowns: hover + click
   document.querySelectorAll('.nav-menu-item.has-submenu').forEach(item => {
