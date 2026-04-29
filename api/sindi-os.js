@@ -96,15 +96,16 @@ function todayKey() {
 
 // ===== Helpers exportados pra outros endpoints =====
 export async function loadOSContext(user) {
-  if (!user) return { profile: null, memory: [] };
-  const [profile, memoryList] = await Promise.all([
+  if (!user) return { profile: null, memory: [], insights: [] };
+  const [profile, memoryList, insights] = await Promise.all([
     kvGet(`sindi-profile:${user}`),
-    kvLRange(`sindi-memory:${user}`, 0, 4), // últimas 5 conversas
+    kvLRange(`sindi-memory:${user}`, 0, 4),
+    loadSharedInsights(80),
   ]);
   const memory = (memoryList || []).map(s => {
     try { return JSON.parse(s); } catch { return null; }
   }).filter(Boolean);
-  return { profile: profile || null, memory };
+  return { profile: profile || null, memory, insights: insights || [] };
 }
 
 export async function logAudit(user, payload) {
@@ -136,6 +137,128 @@ export async function incrementQuota(user) {
     kvExpire(userKey, 36 * 3600),
   ]);
   return { global, user: userCount };
+}
+
+// =====================================================================
+// INSIGHTS COMPARTILHADOS — cérebro coletivo da Sindicompany
+// =====================================================================
+// Cada insight é um Q→A destilado que pode ser reutilizado por outros
+// usuários. Salvos em sindi-insights:global (lista capped 500).
+
+// Sanitiza dados sensíveis antes de salvar (LGPD)
+function sanitizeForSharing(text) {
+  if (!text) return '';
+  return String(text)
+    // CPF
+    .replace(/\b\d{3}\.?\d{3}\.?\d{3}-?\d{2}\b/g, '[CPF]')
+    // CNPJ
+    .replace(/\b\d{2}\.?\d{3}\.?\d{3}\/?\d{4}-?\d{2}\b/g, '[CNPJ]')
+    // RG (formato brasileiro)
+    .replace(/\b\d{1,2}\.?\d{3}\.?\d{3}-?[\dXx]\b/g, '[RG]')
+    // Email
+    .replace(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g, '[email]')
+    // Telefones brasileiros
+    .replace(/\(?(\d{2})\)?\s?9?\d{4}[-.\s]?\d{4}/g, '[telefone]')
+    // Nomes de moradores referenciados (heurística simples: "Sr./Sra. NOME")
+    .replace(/\b(Sr\.?|Sra\.?|Dr\.?|Dra\.?)\s+[A-ZÀ-Ý][a-zà-ý]+(\s+[A-ZÀ-Ý][a-zà-ý]+)?/g, '[pessoa]');
+}
+
+export async function saveInsight(insight) {
+  if (!insight || !insight.summary) return null;
+  const id = 'ins-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 6);
+  const safe = {
+    id,
+    title: sanitizeForSharing(insight.title || insight.question || '').slice(0, 200),
+    question: sanitizeForSharing(insight.question || '').slice(0, 300),
+    content: sanitizeForSharing(insight.summary).slice(0, 1500),
+    summary: sanitizeForSharing(insight.summary).slice(0, 1500), // alias compat com retriever
+    tags: Array.isArray(insight.tags)
+      ? insight.tags.slice(0, 8).map(t => String(t).toLowerCase().slice(0, 40))
+      : [],
+    category: insight.category || 'outros',
+    contributedBy: insight.contributedBy || null,
+    confidence: typeof insight.confidence === 'number' ? insight.confidence : null,
+    votes: 0,
+    ts: Date.now(),
+  };
+  await kvLPush('sindi-insights:global', JSON.stringify(safe));
+  await kvLTrim('sindi-insights:global', 0, 499); // até 500 insights
+  return safe;
+}
+
+export async function loadSharedInsights(limit = 80) {
+  const list = await kvLRange('sindi-insights:global', 0, limit - 1);
+  return (list || []).map(s => {
+    try { return JSON.parse(s); } catch { return null; }
+  }).filter(Boolean);
+}
+
+// Extrai insight reutilizável de uma troca usando Gemini (background, não bloqueia user)
+export async function extractInsightAsync({ question, answer, user, confidence, mode }) {
+  const apiKey = process.env.GOOGLE_API_KEY;
+  if (!apiKey) return null;
+
+  // Heurísticas: só extrai se vale a pena
+  if (!question || !answer) return null;
+  if (question.length < 20) return null; // pergunta muito curta = não vale
+  if (answer.length < 100) return null; // resposta trivial
+  if (confidence != null && confidence < 60) return null; // baixa confiança = não destila
+  if (/\[Documento anexado/i.test(question)) return null; // docs anexados podem ter dados sensíveis
+
+  try {
+    const prompt = `Você é um destilador de conhecimento operacional para a Sindicompany (administração condominial).
+
+A partir da pergunta e resposta abaixo, extraia uma INSIGHT REUTILIZÁVEL que possa ajudar outros colegas no futuro.
+
+Retorne APENAS um JSON válido (sem markdown, sem comentários) no formato:
+{
+  "title": "título curto canônico (max 80 chars)",
+  "question": "pergunta canônica reformulada genericamente (max 200 chars, sem nomes/dados pessoais)",
+  "summary": "destilação dos pontos-chave da resposta (max 800 chars, em markdown leve, focado em direção/regra/procedimento)",
+  "tags": ["até 6 tags em lowercase"],
+  "category": "juridico" | "engenharia" | "financeiro" | "operacional" | "governanca" | "rh" | "atendimento" | "outros",
+  "shouldStore": true se a insight é genuinamente reutilizável; false se foi muito específica/pessoal/contextual
+}
+
+PERGUNTA:
+"""
+${question.slice(0, 1500)}
+"""
+
+RESPOSTA:
+"""
+${answer.slice(0, 3000)}
+"""`;
+
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        generationConfig: { temperature: 0.2, maxOutputTokens: 800, responseMimeType: 'application/json' },
+      }),
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    const text = data.candidates?.[0]?.content?.parts?.map(p => p.text).join('') || '';
+    if (!text) return null;
+    const parsed = JSON.parse(text);
+    if (!parsed.shouldStore) return null;
+
+    return await saveInsight({
+      title: parsed.title,
+      question: parsed.question,
+      summary: parsed.summary,
+      tags: parsed.tags,
+      category: parsed.category,
+      contributedBy: user || null,
+      confidence,
+    });
+  } catch (e) {
+    console.warn('insight extraction failed', e);
+    return null;
+  }
 }
 
 export async function saveMemorySummary(user, convId, summary) {
@@ -282,9 +405,17 @@ export default async function handler(request) {
         const custom = await kvGet('sindi-kb:custom') || [];
         return ok({ custom });
       }
+      if (action === 'insights-list') {
+        // qualquer usuário autenticado vê (cérebro coletivo)
+        const limit = Math.min(parseInt(url.searchParams.get('limit') || '50'), 200);
+        const cat = url.searchParams.get('category') || null;
+        let list = await loadSharedInsights(limit);
+        if (cat) list = list.filter(i => i.category === cat);
+        return ok({ insights: list, count: list.length });
+      }
       return ok({
         ok: true,
-        actions: ['profile', 'memory', 'audit', 'audit-mine', 'quota', 'me-stats', 'admin-overview', 'admin-audit', 'kb-list'],
+        actions: ['profile', 'memory', 'audit', 'audit-mine', 'quota', 'me-stats', 'admin-overview', 'admin-audit', 'kb-list', 'insights-list'],
       });
     }
 
@@ -341,6 +472,75 @@ export default async function handler(request) {
         const filtered = list.filter(p => p.id !== id);
         await kvSet('sindi-kb:custom', filtered);
         return ok({ deleted: true, count: filtered.length });
+      }
+      if (a === 'insight-vote') {
+        const id = String(body.id || '');
+        const direction = body.direction === 'up' ? 1 : body.direction === 'down' ? -1 : 0;
+        if (!id || !direction) {
+          return new Response(JSON.stringify({ error: 'id e direction obrigatórios' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+        }
+        // Pega lista, atualiza, regrava
+        const list = await loadSharedInsights(500);
+        const updated = list.map(i => i.id === id ? { ...i, votes: (i.votes || 0) + direction } : i);
+        // Regrava lista (DEL + LPUSH em ordem)
+        await kv('POST', `/del/${encodeURIComponent('sindi-insights:global')}`);
+        for (let i = updated.length - 1; i >= 0; i--) {
+          await kvLPush('sindi-insights:global', JSON.stringify(updated[i]));
+        }
+        // Registra quem votou pra evitar repeat (TTL 30 dias)
+        await kvSet(`sindi-insight-vote:${user}:${id}`, { ts: Date.now(), direction });
+        await kvExpire(`sindi-insight-vote:${user}:${id}`, 30 * 86400);
+        return ok({ voted: true });
+      }
+      if (a === 'insight-delete') {
+        if (!ADMIN_USERS.includes(user)) return forbidden();
+        const id = String(body.id || '');
+        const list = await loadSharedInsights(500);
+        const filtered = list.filter(i => i.id !== id);
+        await kv('POST', `/del/${encodeURIComponent('sindi-insights:global')}`);
+        for (let i = filtered.length - 1; i >= 0; i--) {
+          await kvLPush('sindi-insights:global', JSON.stringify(filtered[i]));
+        }
+        return ok({ deleted: true, count: filtered.length });
+      }
+      if (a === 'insight-promote') {
+        // Promove insight pra KB customizada (só admin)
+        if (!ADMIN_USERS.includes(user)) return forbidden();
+        const id = String(body.id || '');
+        const list = await loadSharedInsights(500);
+        const insight = list.find(i => i.id === id);
+        if (!insight) {
+          return new Response(JSON.stringify({ error: 'insight não encontrado' }), { status: 404, headers: { 'Content-Type': 'application/json' } });
+        }
+        const kbList = (await kvGet('sindi-kb:custom')) || [];
+        const newPiece = {
+          id: 'kb-promoted-' + Date.now().toString(36),
+          tags: insight.tags || [],
+          title: insight.title || insight.question || 'Insight promovida',
+          content: insight.summary || insight.content || '',
+          createdAt: Date.now(),
+          createdBy: user,
+          promotedFrom: insight.id,
+        };
+        kbList.unshift(newPiece);
+        await kvSet('sindi-kb:custom', kbList.slice(0, 100));
+        return ok({ promoted: newPiece });
+      }
+      if (a === 'feedback') {
+        // Feedback de uma resposta específica (👍/👎). Salva na auditoria.
+        const direction = body.direction === 'up' ? 'up' : body.direction === 'down' ? 'down' : null;
+        if (!direction) {
+          return new Response(JSON.stringify({ error: 'direction obrigatório' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+        }
+        await logAudit(user, {
+          type: 'feedback',
+          direction,
+          q: String(body.question || '').slice(0, 200),
+          replyHash: String(body.replyHash || '').slice(0, 32),
+        });
+        // Incrementa contador global
+        await kvIncr(`sindi-feedback:${direction}`);
+        return ok({ saved: true });
       }
       return new Response(JSON.stringify({ error: 'Ação inválida' }), {
         status: 400, headers: { 'Content-Type': 'application/json' },

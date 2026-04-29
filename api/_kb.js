@@ -360,15 +360,20 @@ Erro comum: cobrar despesa extraordinária do inquilino em vez do proprietário 
 // Retorna até `limit` peças mais relevantes pra query.
 // `customPieces` é opcional — quando fornecido, é mesclado com o array
 // hardcoded pra busca (peças custom adicionadas pelo admin via UI).
-export function retrieveKnowledge(query, limit = 3, customPieces = []) {
+export function retrieveKnowledge(query, limit = 3, customPieces = [], sharedInsights = []) {
   if (!query || typeof query !== 'string') return [];
-  const q = query.toLowerCase();
-  const normalize = s => s.toLowerCase()
+  const normalize = s => String(s || '').toLowerCase()
     .normalize('NFD').replace(/[̀-ͯ]/g, '');
-  const qNorm = normalize(q);
+  const qNorm = normalize(query);
 
-  const all = [...KNOWLEDGE_BASE, ...(customPieces || [])];
-  const scored = all.map(kb => {
+  // Marca origem pra identificar nas respostas
+  const tagged = [
+    ...KNOWLEDGE_BASE.map(k => ({ ...k, _source: 'core' })),
+    ...(customPieces || []).map(k => ({ ...k, _source: 'custom' })),
+    ...(sharedInsights || []).map(k => ({ ...k, _source: 'insight' })),
+  ];
+
+  const scored = tagged.map(kb => {
     let score = 0;
     const tags = Array.isArray(kb.tags) ? kb.tags : [];
     for (const tag of tags) {
@@ -378,6 +383,10 @@ export function retrieveKnowledge(query, limit = 3, customPieces = []) {
     const titleWords = normalize(kb.title || '').split(/\s+/).filter(w => w.length > 3);
     for (const w of titleWords) {
       if (qNorm.includes(w)) score += 1;
+    }
+    // Boost por votos positivos (insights da equipe)
+    if (kb._source === 'insight' && typeof kb.votes === 'number') {
+      score += Math.max(0, Math.min(3, kb.votes));
     }
     return { kb, score };
   });

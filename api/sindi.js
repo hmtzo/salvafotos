@@ -12,7 +12,7 @@
 // =====================================================================
 
 import { retrieveKnowledge } from './_kb.js';
-import { loadOSContext, logAudit, incrementQuota } from './sindi-os.js';
+import { loadOSContext, logAudit, incrementQuota, extractInsightAsync } from './sindi-os.js';
 
 export const config = { runtime: 'edge' };
 
@@ -292,9 +292,10 @@ export default async function handler(request) {
       } catch {}
     }
     [osContext] = await Promise.all([
-      user ? loadOSContext(user) : Promise.resolve({ profile: null, memory: [] }),
+      user ? loadOSContext(user) : Promise.resolve({ profile: null, memory: [], insights: [] }),
     ]);
-    kbHits = retrieveKnowledge(lastUserMsg, 3, customKb);
+    // Recupera 3 fontes: KB hardcoded + KB custom (admin) + insights compartilhados (cérebro coletivo)
+    kbHits = retrieveKnowledge(lastUserMsg, 4, customKb, osContext.insights || []);
   } catch (e) { console.warn('OS context load failed', e); }
 
   // Constrói bloco de contexto pra anexar ao system prompt
@@ -320,11 +321,26 @@ export default async function handler(request) {
     );
   }
   if (kbHits.length) {
-    const kbTxt = kbHits.map(k =>
-      `[${k.id}] ${k.title}\n${k.content}`
-    ).join('\n\n---\n\n');
+    const coreHits = kbHits.filter(k => k._source !== 'insight');
+    const insightHits = kbHits.filter(k => k._source === 'insight');
+    const blocks = [];
+    if (coreHits.length) {
+      const kbTxt = coreHits.map(k =>
+        `[${k.id}] ${k.title}\n${k.content || k.summary || ''}`
+      ).join('\n\n---\n\n');
+      blocks.push(`=== BASE DE CONHECIMENTO SINDICOMPANY ===\n${kbTxt}`);
+    }
+    if (insightHits.length) {
+      const insTxt = insightHits.map(k =>
+        `[${k.id}] ${k.title}${k.votes ? ` (👍 ${k.votes})` : ''}\n${k.content || k.summary || ''}`
+      ).join('\n\n---\n\n');
+      blocks.push(
+        `=== APRENDIZADOS DA EQUIPE (insights destilados de conversas anteriores) ===\n${insTxt}`
+      );
+    }
     contextBlocks.push(
-      `=== BASE DE CONHECIMENTO SINDICOMPANY (recuperada por relevância) ===\n${kbTxt}\n\nUse essas peças como fonte primária. Cite o id [kb-xxx] quando aplicar uma delas.`
+      blocks.join('\n\n') +
+      `\n\nUse essas peças como fonte primária. Cite o id quando aplicar uma delas. Aprendizados da equipe representam decisões/respostas anteriores reutilizáveis — confie neles, mas se contradizerem a base oficial, prefira a base oficial e sinalize.`
     );
   }
 
@@ -406,7 +422,7 @@ export default async function handler(request) {
     const confMatch = text.match(/\[CONFIANÇA:\s*(\d+)%[^\]]*\]/i);
     const confidence = confMatch ? parseInt(confMatch[1]) : null;
 
-    // Audit + quota (não bloqueia resposta)
+    // Audit + quota + insight extraction (background, não bloqueia resposta)
     if (user) {
       Promise.all([
         logAudit(user, {
@@ -418,7 +434,15 @@ export default async function handler(request) {
           kb: kbHits.map(k => k.id),
         }),
         incrementQuota(user),
-      ]).catch(e => console.warn('audit/quota failed', e));
+        // Cérebro coletivo: extrai insight reutilizável (só se confiança alta)
+        extractInsightAsync({
+          question: lastUserMsg,
+          answer: text,
+          user,
+          confidence,
+          mode: mode || null,
+        }),
+      ]).catch(e => console.warn('audit/quota/insight failed', e));
     }
 
     return new Response(JSON.stringify({
@@ -427,7 +451,7 @@ export default async function handler(request) {
       model,
       mode: mode || null,
       confidence,
-      knowledgeUsed: kbHits.map(k => ({ id: k.id, title: k.title })),
+      knowledgeUsed: kbHits.map(k => ({ id: k.id, title: k.title, source: k._source || 'core' })),
       hasProfile: !!osContext.profile,
       memoryCount: osContext.memory.length,
     }), { status: 200, headers: { 'Content-Type': 'application/json' } });
