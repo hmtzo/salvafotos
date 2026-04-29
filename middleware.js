@@ -19,7 +19,7 @@ const USERS = new Set([
 
 export const config = {
   // Protege APENAS rotas autenticadas. Resto (/, /login.html, /assets/*, /api/login etc) público.
-  matcher: ['/hub.html', '/tools/:path*', '/dashboard.html', '/api/sindi', '/api/sindi-chats', '/api/corretor'],
+  matcher: ['/hub.html', '/tools/:path*', '/dashboard.html', '/api/sindi', '/api/sindi-chats', '/api/sindi-os', '/api/corretor'],
 };
 
 export default function middleware(request) {
