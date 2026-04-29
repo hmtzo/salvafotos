@@ -11,7 +11,7 @@
 // - 1M tokens de contexto
 // =====================================================================
 
-import { retrieveKnowledge } from './_kb.js';
+import { retrieveKnowledge, retrieveKnowledgeHybrid } from './_kb.js';
 import { loadOSContext, logAudit, incrementQuota, extractInsightAsync } from './sindi-os.js';
 
 export const config = { runtime: 'edge' };
@@ -294,8 +294,8 @@ export default async function handler(request) {
     [osContext] = await Promise.all([
       user ? loadOSContext(user) : Promise.resolve({ profile: null, memory: [], insights: [] }),
     ]);
-    // Recupera 3 fontes: KB hardcoded + KB custom (admin) + insights compartilhados (cérebro coletivo)
-    kbHits = retrieveKnowledge(lastUserMsg, 4, customKb, osContext.insights || []);
+    // Hybrid retrieval: vetorial quando Upstash Vector tá conectado, keyword fallback
+    kbHits = await retrieveKnowledgeHybrid(lastUserMsg, 4, customKb, osContext.insights || []);
   } catch (e) { console.warn('OS context load failed', e); }
 
   // Constrói bloco de contexto pra anexar ao system prompt

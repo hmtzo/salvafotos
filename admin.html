@@ -201,6 +201,19 @@
       </div>
     </div>
 
+    <!-- Vector Status & Reindex -->
+    <section class="panel">
+      <h2>🎯 Busca semântica (Upstash Vector) <span class="meta" id="vectorStatus">verificando…</span></h2>
+      <p style="font-size:12px;color:var(--text-muted);margin-bottom:14px;line-height:1.55">
+        Quando conectado, a Sindi usa <strong>embeddings reais</strong> (Gemini text-embedding-004, 768d, free) pra recuperar conhecimento por significado em vez de palavra-chave. Aumenta drasticamente a qualidade do RAG.
+      </p>
+      <div id="vectorBox" style="padding:14px;background:var(--bg-elev);border-radius:10px;font-size:13px;color:var(--text-dim);line-height:1.6"></div>
+      <div class="btn-row" style="margin-top:14px;display:flex;gap:10px">
+        <button class="btn-pri" id="reindexBtn">🔁 Reindexar tudo</button>
+        <button class="btn-sec" id="vectorRefresh">↻ Atualizar status</button>
+      </div>
+    </section>
+
     <!-- Analytics -->
     <section class="panel">
       <h2>📊 Analytics da Sindi <span class="meta" id="analyticsMeta">—</span></h2>
@@ -326,7 +339,65 @@ async function loadAll() {
   if (anaRes.ok) renderAnalytics(await anaRes.json());
   if (penRes.ok) renderPending((await penRes.json()).insights || []);
   renderHardcodedKbHints();
+  loadVectorStatus();
 }
+
+async function loadVectorStatus() {
+  const status = $('vectorStatus');
+  const box = $('vectorBox');
+  try {
+    const r = await fetch('/api/sindi-os?action=vector-stats');
+    if (!r.ok) return;
+    const d = await r.json();
+    if (!d.available) {
+      status.textContent = '⏸ não conectado';
+      box.innerHTML = `<strong style="color:#fcd34d">⚠️ Upstash Vector não está conectado.</strong><br><br>
+        Pra ativar:<br>
+        1. Vercel Dashboard → <strong>Storage</strong> → <strong>Marketplace</strong> → procure <strong>"Upstash Vector"</strong><br>
+        2. Create database → name: <code>sindi-vector</code> → <strong>DIMENSION: 768</strong> → <strong>SIMILARITY: cosine</strong><br>
+        3. Connect to project <code>whatsapp-fotos</code><br>
+        4. Vercel injeta automaticamente <code>UPSTASH_VECTOR_REST_URL</code> e <code>UPSTASH_VECTOR_REST_TOKEN</code><br>
+        5. Aguarde redeploy + clique em <strong>Reindexar tudo</strong> aqui<br><br>
+        <em>Custo: free tier dá 10K vetors + 10K queries/dia (mais que suficiente).</em>`;
+      $('reindexBtn').disabled = true;
+    } else {
+      status.textContent = `✓ ${d.vectorCount || 0} vetors indexados`;
+      box.innerHTML = `<strong style="color:#6ee7b7">✓ Conectado.</strong><br>
+        Dimensão: <strong>${d.dimension || 768}</strong> · Métrica: <strong>${d.similarityFunction || 'COSINE'}</strong> · Vetors: <strong>${d.vectorCount || 0}</strong> / ${d.indexSize || 'N/A'}<br>
+        Última atualização: <strong>${fmtRel(Date.now())}</strong>`;
+      $('reindexBtn').disabled = false;
+    }
+  } catch (e) {
+    status.textContent = 'erro';
+    box.textContent = 'Erro ao verificar status: ' + e.message;
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  $('reindexBtn')?.addEventListener('click', async () => {
+    if (!confirm('Reindexar tudo? Vai gerar embeddings de toda a KB hardcoded + custom + insights. Demora ~30s.')) return;
+    $('reindexBtn').disabled = true;
+    $('reindexBtn').textContent = '⏳ Reindexando…';
+    try {
+      const r = await fetch('/api/sindi-os', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'reindex-all' }),
+      });
+      const d = await r.json();
+      if (d.ok) {
+        alert(`✓ Reindexação concluída!\n\nTotal: ${d.total}\nSucesso: ${d.success}\nFalhas: ${d.failed}`);
+        loadVectorStatus();
+      } else {
+        alert('Falha: ' + (d.reason || d.error || 'erro desconhecido'));
+      }
+    } catch (e) {
+      alert('Erro: ' + e.message);
+    }
+    $('reindexBtn').disabled = false;
+    $('reindexBtn').textContent = '🔁 Reindexar tudo';
+  });
+  $('vectorRefresh')?.addEventListener('click', loadVectorStatus);
+});
 
 function renderAnalytics(d) {
   $('analyticsMeta').textContent = `${d.totalAuditEntries} interações registradas`;

@@ -209,6 +209,33 @@ export async function saveAttachment(user, attachment) {
   return safe;
 }
 
+// Indexa peça no Upstash Vector (sem bloquear caller)
+async function indexInVector(item, source) {
+  try {
+    const { indexDoc } = await import('./_embeddings.js');
+    const text = `${item.title || ''}\n${item.content || item.summary || ''}\n${(item.tags || []).join(' ')}`;
+    await indexDoc({
+      id: item.id,
+      text,
+      metadata: {
+        source,
+        id: item.id,
+        title: item.title,
+        content: item.content || item.summary,
+        tags: item.tags || [],
+        votes: item.votes || 0,
+        category: item.category,
+      },
+    });
+  } catch (e) { console.warn('vector index failed', e); }
+}
+async function deleteFromVector(id) {
+  try {
+    const { deleteDoc } = await import('./_embeddings.js');
+    await deleteDoc(id);
+  } catch (e) {}
+}
+
 export async function saveInsight(insight) {
   if (!insight || !insight.summary) return null;
   const id = 'ins-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 6);
@@ -229,6 +256,8 @@ export async function saveInsight(insight) {
   };
   await kvLPush('sindi-insights:global', JSON.stringify(safe));
   await kvLTrim('sindi-insights:global', 0, 499); // até 500 insights
+  // Auto-indexa no Upstash Vector (background)
+  indexInVector(safe, 'insight').catch(() => {});
   return safe;
 }
 
@@ -601,6 +630,16 @@ export default async function handler(request) {
           totalAuditEntries: auditEntries.length,
         });
       }
+      if (action === 'vector-stats') {
+        if (!ADMIN_USERS.includes(user)) return forbidden();
+        try {
+          const { vectorStats } = await import('./_embeddings.js');
+          const stats = await vectorStats();
+          return ok(stats);
+        } catch (e) {
+          return ok({ available: false, error: e.message });
+        }
+      }
       if (action === 'export-mine') {
         // Exporta tudo do usuário (chats, profile, memories, attachments)
         const [chats, profile, mem, atts] = await Promise.all([
@@ -668,6 +707,8 @@ export default async function handler(request) {
         };
         list.unshift(newPiece);
         await kvSet('sindi-kb:custom', list.slice(0, 100));
+        // Auto-indexa
+        indexInVector(newPiece, 'custom').catch(() => {});
         return ok({ added: newPiece });
       }
       if (a === 'kb-delete') {
@@ -676,6 +717,7 @@ export default async function handler(request) {
         const list = (await kvGet('sindi-kb:custom')) || [];
         const filtered = list.filter(p => p.id !== id);
         await kvSet('sindi-kb:custom', filtered);
+        deleteFromVector(id).catch(() => {});
         return ok({ deleted: true, count: filtered.length });
       }
       if (a === 'insight-vote') {
@@ -706,6 +748,7 @@ export default async function handler(request) {
         for (let i = filtered.length - 1; i >= 0; i--) {
           await kvLPush('sindi-insights:global', JSON.stringify(filtered[i]));
         }
+        deleteFromVector(id).catch(() => {});
         return ok({ deleted: true, count: filtered.length });
       }
       if (a === 'insight-promote') {
@@ -729,6 +772,7 @@ export default async function handler(request) {
         };
         kbList.unshift(newPiece);
         await kvSet('sindi-kb:custom', kbList.slice(0, 100));
+        indexInVector(newPiece, 'custom').catch(() => {});
         return ok({ promoted: newPiece });
       }
       if (a === 'notif-read') {
@@ -767,6 +811,40 @@ export default async function handler(request) {
         if (!ADMIN_USERS.includes(user)) return forbidden();
         await rejectPendingInsight(body.id);
         return ok({ rejected: true });
+      }
+      if (a === 'reindex-all') {
+        if (!ADMIN_USERS.includes(user)) return forbidden();
+        try {
+          const { reindexBatch, vectorAvailable } = await import('./_embeddings.js');
+          if (!vectorAvailable()) {
+            return ok({ ok: false, reason: 'Upstash Vector não conectado. Configure UPSTASH_VECTOR_REST_URL e UPSTASH_VECTOR_REST_TOKEN.' });
+          }
+          const { KNOWLEDGE_BASE } = await import('./_kb.js');
+          const customKb = (await kvGet('sindi-kb:custom')) || [];
+          const insights = await loadSharedInsights(500);
+
+          const docs = [
+            ...KNOWLEDGE_BASE.map(k => ({
+              id: k.id,
+              text: `${k.title}\n${k.content}\n${(k.tags||[]).join(' ')}`,
+              metadata: { source: 'core', id: k.id, title: k.title, content: k.content, tags: k.tags || [] },
+            })),
+            ...customKb.map(k => ({
+              id: k.id,
+              text: `${k.title}\n${k.content}\n${(k.tags||[]).join(' ')}`,
+              metadata: { source: 'custom', id: k.id, title: k.title, content: k.content, tags: k.tags || [] },
+            })),
+            ...insights.map(k => ({
+              id: k.id,
+              text: `${k.title || k.question || ''}\n${k.content || k.summary || ''}\n${(k.tags||[]).join(' ')}`,
+              metadata: { source: 'insight', id: k.id, title: k.title || k.question, content: k.content || k.summary, tags: k.tags || [], votes: k.votes || 0, category: k.category },
+            })),
+          ];
+          const result = await reindexBatch(docs);
+          return ok({ ok: true, total: docs.length, ...result });
+        } catch (e) {
+          return ok({ ok: false, error: e.message });
+        }
       }
       if (a === 'set-active-condo') {
         // Salva qual condomínio o user está trabalhando agora

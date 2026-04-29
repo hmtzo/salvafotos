@@ -360,6 +360,64 @@ Erro comum: cobrar despesa extraordinária do inquilino em vez do proprietário 
 // Retorna até `limit` peças mais relevantes pra query.
 // `customPieces` é opcional — quando fornecido, é mesclado com o array
 // hardcoded pra busca (peças custom adicionadas pelo admin via UI).
+// Versão semântica: usa Upstash Vector quando disponível, mescla com keyword
+// Retorna o mesmo formato que retrieveKnowledge mas com scores melhores
+export async function retrieveKnowledgeHybrid(query, limit = 4, customPieces = [], sharedInsights = []) {
+  // Imports dinâmicos pra não obrigar quem não tem o env de embeddings
+  let vectorAvailable, vectorSearch;
+  try {
+    const m = await import('./_embeddings.js');
+    vectorAvailable = m.vectorAvailable;
+    vectorSearch = m.vectorSearch;
+  } catch { /* fallback */ }
+
+  // Se vector não disponível, usa keyword puro
+  if (!vectorAvailable || !vectorAvailable()) {
+    return retrieveKnowledge(query, limit, customPieces, sharedInsights);
+  }
+
+  // Busca semântica
+  const hits = await vectorSearch(query, limit * 2);
+  if (!hits.length) {
+    return retrieveKnowledge(query, limit, customPieces, sharedInsights);
+  }
+
+  // Reconstroi peças completas a partir dos metadados retornados
+  // Os metadados já contêm: id, source, title, content, tags, votes (se for insight)
+  const all = [
+    ...KNOWLEDGE_BASE.map(k => ({ ...k, _source: 'core' })),
+    ...(customPieces || []).map(k => ({ ...k, _source: 'custom' })),
+    ...(sharedInsights || []).map(k => ({ ...k, _source: 'insight' })),
+  ];
+  const byId = new Map(all.map(k => [k.id, k]));
+
+  const enriched = hits.map(h => {
+    // Tenta recuperar full piece por id (mais confiável que metadata)
+    const full = byId.get(h.id);
+    if (full) return { ...full, _vectorScore: h.score };
+    // Fallback: usa metadata direto (caso peça tenha sido removida)
+    if (h.metadata) {
+      return {
+        ...h.metadata,
+        id: h.id,
+        _source: h.metadata.source || 'core',
+        _vectorScore: h.score,
+      };
+    }
+    return null;
+  }).filter(Boolean);
+
+  // Boost por votos pra insights
+  enriched.forEach(k => {
+    if (k._source === 'insight' && typeof k.votes === 'number') {
+      k._vectorScore = (k._vectorScore || 0) + Math.min(0.1, k.votes * 0.02);
+    }
+  });
+
+  enriched.sort((a, b) => (b._vectorScore || 0) - (a._vectorScore || 0));
+  return enriched.slice(0, limit);
+}
+
 export function retrieveKnowledge(query, limit = 3, customPieces = [], sharedInsights = []) {
   if (!query || typeof query !== 'string') return [];
   const normalize = s => String(s || '').toLowerCase()
