@@ -105,9 +105,133 @@
     pointer-events:none;
   }
 
+  /* ===== Sindi Hero Card — destaque principal ===== */
+  .sindi-hero{
+    position:relative;z-index:2;margin:8px auto 28px;max-width:760px;
+    background:
+      radial-gradient(120% 120% at 0% 0%, rgba(236,72,153,0.18) 0%, transparent 50%),
+      radial-gradient(120% 120% at 100% 100%, rgba(99,102,241,0.18) 0%, transparent 50%),
+      rgba(31,32,35,0.7);
+    border:1px solid rgba(255,255,255,0.1);border-radius:24px;
+    padding:32px 36px;backdrop-filter:blur(20px);
+    box-shadow:0 24px 60px -12px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.08);
+    overflow:hidden;
+  }
+  .sindi-hero::before{
+    content:'';position:absolute;top:-40%;right:-20%;width:60%;height:160%;
+    background:radial-gradient(closest-side, rgba(236,72,153,0.25), transparent);
+    filter:blur(40px);pointer-events:none;
+  }
+  .sindi-hero-row{display:flex;align-items:center;gap:24px;position:relative;z-index:1}
+  .sindi-avatar{
+    width:84px;height:84px;border-radius:22px;flex-shrink:0;
+    background:linear-gradient(135deg, #ec4899 0%, #6366f1 100%);
+    display:flex;align-items:center;justify-content:center;color:white;
+    box-shadow:0 12px 32px -8px rgba(236,72,153,0.5), inset 0 1px 0 rgba(255,255,255,0.3);
+    position:relative;
+  }
+  .sindi-avatar::after{
+    content:'';position:absolute;inset:-4px;border-radius:26px;
+    background:linear-gradient(135deg, #ec4899, #6366f1);
+    opacity:0.3;filter:blur(10px);z-index:-1;
+    animation:sindi-pulse 3s ease-in-out infinite;
+  }
+  @keyframes sindi-pulse{0%,100%{opacity:0.3;transform:scale(1)}50%{opacity:0.5;transform:scale(1.05)}}
+  .sindi-info{flex:1;min-width:0}
+  .sindi-tag{
+    display:inline-flex;align-items:center;gap:6px;
+    padding:4px 10px;border-radius:100px;
+    background:rgba(236,72,153,0.15);border:1px solid rgba(236,72,153,0.3);
+    font-size:11px;font-weight:600;color:#f9a8d4;text-transform:uppercase;
+    letter-spacing:0.08em;margin-bottom:8px;
+  }
+  .sindi-tag .dot{width:6px;height:6px;border-radius:50%;background:#10b981;box-shadow:0 0 8px #10b981}
+  .sindi-info h2{font-size:28px;font-weight:800;letter-spacing:-0.02em;margin:0 0 6px;line-height:1.1}
+  .sindi-info p{font-size:14px;color:var(--text-dim);margin:0;line-height:1.5}
+  .sindi-cta{
+    margin-top:18px;display:flex;gap:10px;flex-wrap:wrap;position:relative;z-index:1;
+  }
+  .sindi-btn{
+    flex:1;min-width:220px;display:inline-flex;align-items:center;justify-content:center;gap:10px;
+    padding:14px 22px;border-radius:14px;font-size:15px;font-weight:600;
+    text-decoration:none;transition:all 0.2s;font-family:inherit;cursor:pointer;border:none;
+  }
+  .sindi-btn.primary{
+    background:linear-gradient(135deg, #ec4899 0%, #db2777 100%);
+    color:white;box-shadow:0 8px 24px -6px rgba(236,72,153,0.5);
+  }
+  .sindi-btn.primary:hover{transform:translateY(-2px);box-shadow:0 12px 32px -6px rgba(236,72,153,0.6)}
+  .sindi-btn.ghost{
+    background:rgba(255,255,255,0.06);color:var(--text);
+    border:1px solid rgba(255,255,255,0.12);
+  }
+  .sindi-btn.ghost:hover{background:rgba(255,255,255,0.1)}
+  .sindi-quick{
+    margin-top:16px;display:flex;flex-wrap:wrap;gap:8px;position:relative;z-index:1;
+  }
+  .sindi-quick-chip{
+    padding:7px 12px;border-radius:100px;
+    background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);
+    font-size:12px;color:var(--text-dim);cursor:pointer;transition:all 0.15s;
+    font-family:inherit;
+  }
+  .sindi-quick-chip:hover{background:rgba(255,255,255,0.08);color:var(--text);border-color:rgba(255,255,255,0.15)}
+  @media (max-width:640px){
+    .sindi-hero{padding:22px 20px;margin:0 auto 20px}
+    .sindi-hero-row{gap:14px}
+    .sindi-avatar{width:60px;height:60px;border-radius:16px}
+    .sindi-avatar svg{width:32px;height:32px}
+    .sindi-info h2{font-size:20px}
+    .sindi-info p{font-size:13px}
+    .sindi-btn{min-width:0;width:100%;padding:12px 18px;font-size:14px}
+    .sindi-cta{flex-direction:column}
+  }
+
+  /* ===== Ferramentas dropdown trigger + panel ===== */
+  .tools-trigger-wrap{
+    position:relative;z-index:3;max-width:760px;margin:0 auto 28px;
+    display:flex;align-items:center;gap:12px;
+  }
+  .tools-trigger{
+    flex:1;display:flex;align-items:center;justify-content:space-between;gap:12px;
+    padding:14px 18px;border-radius:14px;cursor:pointer;font-family:inherit;
+    background:rgba(31,32,35,0.7);border:1px solid rgba(255,255,255,0.08);
+    color:var(--text);font-size:14px;font-weight:500;
+    backdrop-filter:blur(20px);transition:all 0.15s;
+  }
+  .tools-trigger:hover{border-color:rgba(255,255,255,0.16);background:rgba(31,32,35,0.85)}
+  .tools-trigger .trigger-left{display:flex;align-items:center;gap:12px}
+  .tools-trigger .trigger-icon{
+    width:36px;height:36px;border-radius:10px;flex-shrink:0;
+    background:linear-gradient(135deg, #6366f1, #4f46e5);
+    display:flex;align-items:center;justify-content:center;color:white;
+  }
+  .tools-trigger .trigger-label{font-weight:600}
+  .tools-trigger .trigger-meta{font-size:12px;color:var(--text-muted);margin-top:2px}
+  .tools-trigger .chev{transition:transform 0.25s;color:var(--text-muted)}
+  .tools-trigger[aria-expanded="true"] .chev{transform:rotate(180deg)}
+
+  .tools-panel{
+    position:relative;z-index:2;max-width:760px;margin:-16px auto 40px;
+    background:rgba(20,21,24,0.85);border:1px solid rgba(255,255,255,0.08);
+    border-radius:20px;padding:22px;backdrop-filter:blur(24px);
+    box-shadow:0 24px 60px -12px rgba(0,0,0,0.7);
+    max-height:0;overflow:hidden;opacity:0;
+    transition:max-height 0.35s cubic-bezier(.2,.8,.2,1), opacity 0.25s, padding 0.3s, margin 0.3s;
+    padding-top:0;padding-bottom:0;
+  }
+  .tools-panel.open{
+    max-height:2400px;opacity:1;padding:22px;margin-bottom:40px;
+  }
+  @media (max-width:640px){
+    .tools-trigger-wrap{margin:0 auto 18px}
+    .tools-panel{padding:0 18px;margin:-12px auto 24px}
+    .tools-panel.open{padding:18px}
+  }
+
   .tools-grid{
-    display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));
-    gap:16px;margin-bottom:40px;position:relative;z-index:2;
+    display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));
+    gap:14px;margin-bottom:0;position:relative;z-index:2;
   }
   /* ===== GlowCard tool cards (cursor-tracking spotlight, dark) ===== */
   .tool-card{
@@ -336,23 +460,70 @@
 
 <div class="container">
 
-  <section class="hub-hero">
+  <section class="hub-hero" style="padding:36px 0 18px">
     <span class="hub-eyebrow">Sindicompany Hub · Uso interno</span>
-    <h1>
-      <span class="silver-matte">Ferramentas para o</span><br>
-      <span class="highlight">dia a dia do escritório</span>
+    <h1 style="font-size:clamp(32px,5.5vw,56px);margin-bottom:8px">
+      <span class="silver-matte">Olá. Como posso</span><br>
+      <span class="highlight">ajudar hoje?</span>
     </h1>
-    <p>26 ferramentas, IA integrada, processado direto no navegador. Tudo num só lugar.</p>
+    <p>Pergunte pra Sindi, ou abra o menu de ferramentas.</p>
+  </section>
 
-    <div class="search-wrap">
+  <!-- ===== SINDI HERO CARD ===== -->
+  <section class="sindi-hero">
+    <div class="sindi-hero-row">
+      <div class="sindi-avatar">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8V4H8"/><rect x="4" y="8" width="16" height="12" rx="2"/><path d="M2 14h2M20 14h2M15 13v2M9 13v2"/></svg>
+      </div>
+      <div class="sindi-info">
+        <span class="sindi-tag"><span class="dot"></span> Sindi · IA Interna</span>
+        <h2>Copiloto jurídico-condominial</h2>
+        <p>Lê documentos, redige notificações, responde dúvidas de direito condominial e ainda salva o histórico das suas conversas.</p>
+      </div>
+    </div>
+    <div class="sindi-cta">
+      <a href="/tools/sindi.html" class="sindi-btn primary">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        Conversar com a Sindi
+      </a>
+      <a href="/tools/corretor-texto.html" class="sindi-btn ghost">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
+        Corrigir texto PT-BR
+      </a>
+    </div>
+    <div class="sindi-quick">
+      <button class="sindi-quick-chip" data-prompt="Redija uma notificação de inadimplência para um morador com 2 meses em atraso.">📋 Notificar inadimplência</button>
+      <button class="sindi-quick-chip" data-prompt="Quais são os passos para realizar uma assembleia extraordinária?">🏛️ Assembleia extraordinária</button>
+      <button class="sindi-quick-chip" data-prompt="O que diz o Código Civil sobre obras em áreas comuns?">⚖️ Obras em áreas comuns</button>
+      <button class="sindi-quick-chip" data-prompt="Como aplicar multa de barulho de forma legal?">🔊 Multa de barulho</button>
+    </div>
+  </section>
+
+  <!-- ===== TRIGGER + DROPDOWN PANEL ===== -->
+  <div class="tools-trigger-wrap">
+    <button class="tools-trigger" id="toolsTrigger" aria-expanded="false" aria-controls="toolsPanel">
+      <div class="trigger-left">
+        <div class="trigger-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg>
+        </div>
+        <div>
+          <div class="trigger-label">Ferramentas</div>
+          <div class="trigger-meta" id="triggerMeta">26 ferramentas · PDF, conversões, geradores, cálculos</div>
+        </div>
+      </div>
+      <svg class="chev" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+    </button>
+  </div>
+
+  <div class="tools-panel" id="toolsPanel" role="region" aria-label="Lista de ferramentas">
+    <div class="search-wrap" style="margin-top:0">
       <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
       <input type="text" id="search" placeholder="Buscar ferramenta…" autocomplete="off">
     </div>
 
-    <div class="category-tabs-wrap">
+    <div class="category-tabs-wrap" style="margin-top:14px">
       <div class="category-tabs" id="catTabs">
         <button class="cat-tab active" data-cat="all">Todas</button>
-        <button class="cat-tab" data-cat="ai">IA</button>
         <button class="cat-tab" data-cat="doc">Documentos</button>
         <button class="cat-tab" data-cat="calc">Cálculos</button>
         <button class="cat-tab" data-cat="convert">Conversões</button>
@@ -363,9 +534,9 @@
         <div class="limelight" id="limelight"></div>
       </div>
     </div>
-  </section>
 
-  <div class="tools-grid" id="toolsGrid"></div>
+    <div class="tools-grid" id="toolsGrid" style="margin-top:18px"></div>
+  </div>
 
   <div class="dock-spacer"></div>
 </div>
@@ -539,6 +710,46 @@ catTabs.addEventListener('click', e => {
 
 renderTools();
 requestAnimationFrame(moveLimelight);
+
+// ===== Ferramentas dropdown =====
+const toolsTrigger = document.getElementById('toolsTrigger');
+const toolsPanel = document.getElementById('toolsPanel');
+const triggerMeta = document.getElementById('triggerMeta');
+
+function setPanelOpen(open) {
+  toolsTrigger.setAttribute('aria-expanded', open ? 'true' : 'false');
+  toolsPanel.classList.toggle('open', open);
+  if (open) {
+    requestAnimationFrame(() => { moveLimelight(); document.getElementById('search').focus(); });
+  }
+}
+toolsTrigger.addEventListener('click', () => {
+  setPanelOpen(toolsTrigger.getAttribute('aria-expanded') !== 'true');
+});
+
+// Atualiza contador no trigger (excluindo IA que já está em destaque)
+const nonAiCount = TOOLS.filter(t => t.cat !== 'ai').length;
+triggerMeta.textContent = `${nonAiCount} ferramentas · PDF, conversões, geradores, cálculos`;
+
+// Abre painel se usuário começar a digitar a busca via teclado (atalho /)
+document.addEventListener('keydown', e => {
+  if (e.key === '/' && !['INPUT','TEXTAREA'].includes(document.activeElement.tagName)) {
+    e.preventDefault();
+    setPanelOpen(true);
+  }
+  if (e.key === 'Escape' && toolsTrigger.getAttribute('aria-expanded') === 'true') {
+    setPanelOpen(false);
+  }
+});
+
+// ===== Quick prompts (Sindi chips) =====
+document.querySelectorAll('.sindi-quick-chip').forEach(chip => {
+  chip.addEventListener('click', () => {
+    const prompt = chip.dataset.prompt;
+    try { sessionStorage.setItem('sindi_initial_prompt', prompt); } catch(e){}
+    window.location.href = '/tools/sindi.html';
+  });
+});
 
 // ===== DockTabs: macOS-style dock com magnificação =====
 const DOCK_ITEMS = [

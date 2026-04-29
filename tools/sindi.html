@@ -599,6 +599,17 @@ function formatRelative(ts) {
       }
     }
   } catch (e) { console.warn('handoff pickup failed', e); }
+
+  // Pickup de prompt inicial (vindo dos chips do hub)
+  try {
+    const initial = sessionStorage.getItem('sindi_initial_prompt');
+    if (initial) {
+      sessionStorage.removeItem('sindi_initial_prompt');
+      input.value = initial;
+      input.focus();
+      input.dispatchEvent(new Event('input'));
+    }
+  } catch (e) {}
 })();
 
 input.addEventListener('input', () => {
