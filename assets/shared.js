@@ -3,7 +3,7 @@
 // =============================================================================
 
 // Logo Sindicompany — usa o PNG oficial (texto branco para tema dark)
-const SINDI_LOGO_SVG = `<img src="/assets/brand/logo-white-v2.png" alt="Sindicompany" class="sindi-logo-img">`;
+const SINDI_LOGO_SVG = `<img src="/assets/brand/icon-color.png" alt="Sindicompany" class="sindi-logo-img">`;
 
 // Lucide SVG icons (stroke 1.75)
 const NAV_ICONS = {
