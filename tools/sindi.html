@@ -396,6 +396,32 @@
     margin:8px 0 0;font-size:16px;color:#d4d4d8;max-width:560px;line-height:1.5;
     text-shadow:0 2px 8px rgba(0,0,0,0.5);
   }
+  .welcome-resume{
+    margin-top:18px;padding:12px 16px;border-radius:12px;max-width:540px;
+    background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);
+    backdrop-filter:blur(12px);
+    text-align:left;
+  }
+  .welcome-resume-label{
+    font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;
+    color:#9ca3af;margin-bottom:6px;
+  }
+  .welcome-resume-text{
+    font-size:13px;color:#e5e5e5;line-height:1.5;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+  }
+  .welcome-resume-action{
+    margin-top:10px;padding:6px 12px;border-radius:8px;font-size:12px;font-weight:600;
+    background:rgba(99,102,241,0.18);border:1px solid rgba(99,102,241,0.4);color:#a5b4fc;
+    cursor:pointer;font-family:inherit;transition:all 0.15s;
+  }
+  .welcome-resume-action:hover{background:rgba(99,102,241,0.3);color:#fff}
+  .welcome-name-link{
+    background:transparent;border:none;color:#a5b4fc;cursor:pointer;
+    font-family:inherit;font-size:inherit;font-weight:600;
+    padding:0;text-decoration:underline;text-underline-offset:3px;
+  }
+  .welcome-name-link:hover{color:#fff}
 
   /* Box do input grande */
   .ruixen-input-section{
@@ -672,9 +698,14 @@
 <!-- ===== RUIXEN MOON CHAT — welcome fullscreen (visível enquanto não há mensagens) ===== -->
 <section class="ruixen" id="ruixenWelcome" aria-label="Bem-vindo">
   <div class="ruixen-title">
-    <span class="ruixen-eyebrow"><span class="dot"></span> Sindicompany OS · Inteligência Interna</span>
-    <h1>Sindi</h1>
-    <p>Cérebro operacional da Sindicompany. 10 especialistas (jurídico, engenharia, financeiro, governança, auditoria…) operando juntos. Use comandos como <strong>GERAR PROTOCOLO</strong>, <strong>AUDITE ISSO</strong>, <strong>COMO AGIR</strong>, <strong>ANALISE RISCO</strong> ou pergunte direto.</p>
+    <span class="ruixen-eyebrow" id="welcomeEyebrow"><span class="dot"></span> <span id="welcomeEyebrowText">Sindicompany OS · Inteligência Interna</span></span>
+    <h1 id="welcomeGreet">Sindi</h1>
+    <p id="welcomeSub">Cérebro operacional da Sindicompany. 10 especialistas (jurídico, engenharia, financeiro, governança, auditoria…) operando juntos. Use comandos como <strong>GERAR PROTOCOLO</strong>, <strong>AUDITE ISSO</strong>, <strong>COMO AGIR</strong>, <strong>ANALISE RISCO</strong> ou pergunte direto.</p>
+    <div class="welcome-resume" id="welcomeResume" hidden>
+      <div class="welcome-resume-label">Da última vez</div>
+      <div class="welcome-resume-text" id="welcomeResumeText"></div>
+      <button class="welcome-resume-action" id="welcomeResumeAction">Continuar de onde parou →</button>
+    </div>
   </div>
 
   <div class="ruixen-input-section">
@@ -1644,7 +1675,94 @@ async function loadProfile() {
       profileBtnLabel.textContent = cachedProfile.name || cachedProfile.role || 'Perfil';
     }
   } catch (e) {}
+  personalizeWelcome();
 }
+
+// =============================================================
+// SAUDAÇÃO PERSONALIZADA — usa profile + horário + última conversa
+// =============================================================
+function getTimeGreeting() {
+  // Brasília UTC-3
+  const offset = -3 * 60;
+  const local = new Date(Date.now() + (new Date().getTimezoneOffset() + offset) * 60000);
+  const h = local.getHours();
+  if (h >= 5 && h < 12) return 'Bom dia';
+  if (h >= 12 && h < 18) return 'Boa tarde';
+  return 'Boa noite';
+}
+
+function getFirstName(full) {
+  if (!full) return null;
+  return full.trim().split(/\s+/)[0];
+}
+
+async function personalizeWelcome() {
+  const eyebrow = document.getElementById('welcomeEyebrowText');
+  const greet   = document.getElementById('welcomeGreet');
+  const sub     = document.getElementById('welcomeSub');
+  const resume  = document.getElementById('welcomeResume');
+  const resumeText = document.getElementById('welcomeResumeText');
+
+  if (!greet) return;
+
+  const time = getTimeGreeting();
+  const firstName = getFirstName(cachedProfile?.name);
+  const role = cachedProfile?.role || null;
+
+  if (firstName) {
+    // Saudação personalizada
+    greet.textContent = `${time}, ${firstName}.`;
+    if (eyebrow) {
+      eyebrow.textContent = role
+        ? `Sindicompany OS · ${role}`
+        : 'Sindicompany OS · Inteligência Interna';
+    }
+    if (sub) {
+      const condos = cachedProfile?.condos
+        ? ` Estou aqui pra ${cachedProfile.condos.length > 70 ? 'os condomínios' : cachedProfile.condos}.`
+        : '';
+      sub.innerHTML =
+        `Pronta pra ajudar.${condos} Pergunte direto ou use comandos: ` +
+        `<strong>GERAR PROTOCOLO</strong>, <strong>AUDITE ISSO</strong>, ` +
+        `<strong>COMO AGIR</strong>, <strong>ANALISE RISCO</strong>.`;
+    }
+  } else {
+    // Sem perfil → CTA pra preencher
+    greet.textContent = `${time}.`;
+    if (sub) {
+      sub.innerHTML =
+        `Sou a Sindi — cérebro operacional da Sindicompany. ` +
+        `<button class="welcome-name-link" id="welcomeProfilePrompt">Configure seu perfil</button> ` +
+        `pra eu adaptar minhas respostas. Ou pergunte direto.`;
+      const link = document.getElementById('welcomeProfilePrompt');
+      if (link) link.addEventListener('click', openProfile);
+    }
+  }
+
+  // Tenta buscar última conversa pra exibir hint de continuidade
+  try {
+    const memRes = await fetch('/api/sindi-os?action=memory');
+    if (memRes.ok) {
+      const { memory } = await memRes.json();
+      const last = memory?.[0];
+      if (last?.summary && resume && resumeText) {
+        // Extrai só os tópicos (sem prefixo "Tópicos: ")
+        const cleanSummary = last.summary
+          .replace(/^Tópicos:\s*/i, '')
+          .replace(/\n\nÚltima conclusão:.*/is, '')
+          .slice(0, 200);
+        resumeText.textContent = cleanSummary;
+        resume.hidden = false;
+      }
+    }
+  } catch (e) {}
+}
+
+// Botão "Continuar de onde parou" → abre conversa mais recente
+document.getElementById('welcomeResumeAction')?.addEventListener('click', () => {
+  const lastConv = chatState?.conversations?.[0];
+  if (lastConv) loadConversation(lastConv.id);
+});
 
 function openProfile() {
   document.getElementById('profName').value = cachedProfile?.name || '';
