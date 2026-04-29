@@ -238,6 +238,7 @@ h3{font-size:16px;font-weight:600;color:var(--text)}
 
 /* ===== DROP ZONE ===== */
 .drop-zone{
+  display:block;
   border:2px dashed var(--border-bright);border-radius:var(--radius);
   padding:40px 24px;text-align:center;cursor:pointer;
   transition:all 0.15s;background:var(--bg-elev);
