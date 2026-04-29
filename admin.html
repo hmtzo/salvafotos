@@ -211,6 +211,7 @@
       <div class="btn-row" style="margin-top:14px;display:flex;gap:10px">
         <button class="btn-pri" id="reindexBtn">🔁 Reindexar tudo</button>
         <button class="btn-sec" id="vectorRefresh">↻ Atualizar status</button>
+        <button class="btn-sec" id="vectorDiagBtn">🔎 Diagnóstico</button>
       </div>
     </section>
 
@@ -397,6 +398,27 @@ document.addEventListener('DOMContentLoaded', () => {
     $('reindexBtn').textContent = '🔁 Reindexar tudo';
   });
   $('vectorRefresh')?.addEventListener('click', loadVectorStatus);
+  $('vectorDiagBtn')?.addEventListener('click', async () => {
+    const box = $('vectorBox');
+    box.innerHTML = '⏳ Diagnosticando…';
+    try {
+      const r = await fetch('/api/sindi-os?action=vector-diag');
+      const d = await r.json();
+      const row = (k, v) => `<div>${v ? '✅' : '❌'} <code>${k}</code></div>`;
+      box.innerHTML = `
+        <strong>Variáveis de ambiente:</strong><br>
+        ${row('UPSTASH_VECTOR_REST_URL', d.env.UPSTASH_VECTOR_REST_URL)}
+        ${row('UPSTASH_VECTOR_REST_TOKEN', d.env.UPSTASH_VECTOR_REST_TOKEN)}
+        ${row('GOOGLE_API_KEY', d.env.GOOGLE_API_KEY)}
+        <br><strong>Conectividade:</strong><br>
+        <div>Upstash /info: ${d.pingVector ? `<code>${JSON.stringify(d.pingVector)}</code>` : '— (var faltando)'}</div>
+        <div>Gemini embed: ${d.pingGemini ? `<code>${JSON.stringify(d.pingGemini)}</code>` : '— (var faltando)'}</div>
+        ${d.missing.length ? `<br><strong style="color:#fcd34d">Faltando:</strong> ${d.missing.join(', ')}` : '<br><strong style="color:#86efac">✓ Tudo conectado</strong>'}
+      `;
+    } catch (e) {
+      box.innerHTML = `❌ Erro: ${e.message}`;
+    }
+  });
 });
 
 function renderAnalytics(d) {

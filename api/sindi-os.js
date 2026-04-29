@@ -640,6 +640,33 @@ export default async function handler(request) {
           return ok({ available: false, error: e.message });
         }
       }
+      if (action === 'vector-diag') {
+        if (!ADMIN_USERS.includes(user)) return forbidden();
+        const env = {
+          UPSTASH_VECTOR_REST_URL: !!process.env.UPSTASH_VECTOR_REST_URL,
+          UPSTASH_VECTOR_REST_TOKEN: !!process.env.UPSTASH_VECTOR_REST_TOKEN,
+          GOOGLE_API_KEY: !!process.env.GOOGLE_API_KEY,
+        };
+        const allPresent = env.UPSTASH_VECTOR_REST_URL && env.UPSTASH_VECTOR_REST_TOKEN && env.GOOGLE_API_KEY;
+        const missing = Object.entries(env).filter(([, v]) => !v).map(([k]) => k);
+        let pingVector = null, pingGemini = null;
+        if (env.UPSTASH_VECTOR_REST_URL && env.UPSTASH_VECTOR_REST_TOKEN) {
+          try {
+            const r = await fetch(`${process.env.UPSTASH_VECTOR_REST_URL}/info`, {
+              headers: { Authorization: `Bearer ${process.env.UPSTASH_VECTOR_REST_TOKEN}` },
+            });
+            pingVector = { status: r.status, ok: r.ok };
+          } catch (e) { pingVector = { error: e.message }; }
+        }
+        if (env.GOOGLE_API_KEY) {
+          try {
+            const { embed } = await import('./_embeddings.js');
+            const v = await embed('ping', 'RETRIEVAL_QUERY');
+            pingGemini = { ok: !!v, dims: v?.length || 0 };
+          } catch (e) { pingGemini = { error: e.message }; }
+        }
+        return ok({ env, allPresent, missing, pingVector, pingGemini });
+      }
       if (action === 'export-mine') {
         // Exporta tudo do usuário (chats, profile, memories, attachments)
         const [chats, profile, mem, atts] = await Promise.all([
