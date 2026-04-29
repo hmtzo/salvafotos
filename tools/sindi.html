@@ -349,9 +349,181 @@
     .quick-prompts{padding:0 12px 12px !important;gap:6px !important}
     .quick-prompts button{padding:7px 12px !important;font-size:11px !important}
   }
+
+  /* ================================================================== */
+  /* RUIXEN WELCOME — overlay fullscreen estilo Ruixen Moon Chat        */
+  /* ================================================================== */
+  .ruixen{
+    position:fixed;inset:0;z-index:90;
+    display:flex;flex-direction:column;align-items:center;
+    padding:6vh 24px 8vh;
+    transition:opacity 0.35s ease, visibility 0.35s ease;
+  }
+  .ruixen.hidden{opacity:0;visibility:hidden;pointer-events:none}
+  body.has-messages .ruixen{opacity:0;visibility:hidden;pointer-events:none}
+  body.has-messages .container{display:block}
+  body:not(.has-messages) .container{display:none}
+  body:not(.has-messages) #app-nav{position:relative;z-index:91}
+
+  /* Título centralizado verticalmente */
+  .ruixen-title{
+    flex:1;width:100%;display:flex;flex-direction:column;
+    align-items:center;justify-content:center;text-align:center;gap:10px;
+  }
+  .ruixen-title .ruixen-eyebrow{
+    display:inline-flex;align-items:center;gap:8px;
+    padding:5px 14px;border-radius:100px;
+    background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.12);
+    font-size:11px;font-weight:600;color:#e5e5e5;text-transform:uppercase;
+    letter-spacing:0.1em;margin-bottom:8px;backdrop-filter:blur(20px);
+  }
+  .ruixen-eyebrow .dot{width:6px;height:6px;border-radius:50%;background:#10b981;box-shadow:0 0 10px #10b981}
+  .ruixen-title h1{
+    font-size:clamp(36px, 6vw, 56px);font-weight:600;letter-spacing:-0.02em;
+    color:#fff;line-height:1.05;margin:0;
+    text-shadow:0 4px 24px rgba(0,0,0,0.6);
+  }
+  .ruixen-title p{
+    margin:8px 0 0;font-size:16px;color:#d4d4d8;max-width:560px;line-height:1.5;
+    text-shadow:0 2px 8px rgba(0,0,0,0.5);
+  }
+
+  /* Box do input grande */
+  .ruixen-input-section{
+    width:100%;max-width:780px;margin-bottom:20vh;
+  }
+  .ruixen-box{
+    position:relative;
+    background:rgba(0,0,0,0.6);
+    border:1px solid rgba(115,115,115,0.5);
+    border-radius:14px;
+    backdrop-filter:blur(12px);
+    transition:border-color 0.2s;
+  }
+  .ruixen-box:focus-within{border-color:rgba(255,255,255,0.4)}
+  .ruixen-textarea{
+    width:100%;padding:14px 18px;border:none;outline:none;
+    background:transparent;color:#fff;font-family:inherit;
+    font-size:14px;line-height:1.5;
+    min-height:48px;max-height:150px;resize:none;overflow:hidden;
+  }
+  .ruixen-textarea::placeholder{color:#a1a1aa}
+
+  .ruixen-footer{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:10px 12px;
+  }
+  .ruixen-ghost-btn{
+    width:36px;height:36px;border-radius:8px;
+    display:inline-flex;align-items:center;justify-content:center;
+    background:transparent;border:none;cursor:pointer;color:#fff;
+    transition:background 0.15s;
+  }
+  .ruixen-ghost-btn:hover{background:rgba(115,115,115,0.4)}
+  .ruixen-ghost-btn svg{width:16px;height:16px}
+
+  .ruixen-send{
+    display:inline-flex;align-items:center;justify-content:center;
+    padding:8px 14px;border-radius:10px;border:none;cursor:pointer;
+    background:#404040;color:#a3a3a3;
+    transition:all 0.15s;
+  }
+  .ruixen-send svg{width:16px;height:16px}
+  .ruixen-send:disabled{cursor:not-allowed}
+  .ruixen-send.has-content{background:#fff;color:#000}
+  .ruixen-send.has-content:hover{background:#f4f4f5;transform:scale(1.05)}
+
+  /* Quick actions */
+  .ruixen-quick{
+    display:flex;align-items:center;justify-content:center;flex-wrap:wrap;
+    gap:12px;margin-top:24px;
+  }
+  .ruixen-chip{
+    display:inline-flex;align-items:center;gap:8px;
+    padding:8px 14px;border-radius:100px;
+    background:rgba(0,0,0,0.5);border:1px solid rgba(115,115,115,0.6);
+    color:#d4d4d8;font-family:inherit;font-size:12px;font-weight:500;
+    cursor:pointer;backdrop-filter:blur(12px);transition:all 0.18s;
+  }
+  .ruixen-chip:hover{
+    background:rgba(115,115,115,0.4);
+    color:#fff;border-color:rgba(255,255,255,0.25);
+    transform:translateY(-1px);
+  }
+  .ruixen-chip svg{width:14px;height:14px;flex-shrink:0;opacity:0.9}
+
+  @media (max-width:640px){
+    .ruixen{padding:4vh 16px 6vh}
+    .ruixen-title h1{font-size:32px}
+    .ruixen-title p{font-size:14px}
+    .ruixen-input-section{margin-bottom:8vh}
+    .ruixen-textarea{font-size:16px}
+    .ruixen-quick{gap:8px;margin-top:18px}
+    .ruixen-chip{padding:7px 12px;font-size:11px}
+  }
 </style>
 </head>
 <body>
+<!-- ===== RUIXEN MOON CHAT — welcome fullscreen (visível enquanto não há mensagens) ===== -->
+<section class="ruixen" id="ruixenWelcome" aria-label="Bem-vindo">
+  <div class="ruixen-title">
+    <span class="ruixen-eyebrow"><span class="dot"></span> Sindi · IA Interna</span>
+    <h1>Sindi AI</h1>
+    <p>Comece digitando sua dúvida abaixo — direito condominial, LGPD, atas, contratos.</p>
+  </div>
+
+  <div class="ruixen-input-section">
+    <div class="ruixen-box">
+      <textarea id="ruixenInput" class="ruixen-textarea" placeholder="Digite sua pergunta…" rows="1"></textarea>
+      <div class="ruixen-footer">
+        <button class="ruixen-ghost-btn" id="ruixenAttach" type="button" title="Anexar PDF">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/></svg>
+        </button>
+        <button class="ruixen-send" id="ruixenSend" type="button" disabled aria-label="Enviar">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="ruixen-quick">
+      <button class="ruixen-chip" data-q="Resume os principais pontos da convenção condominial padrão.">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
+        Resumir convenção
+      </button>
+      <button class="ruixen-chip" data-q="Como redigir uma notificação de inadimplência?">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        Notificar inadimplência
+      </button>
+      <button class="ruixen-chip" data-q="Quórum mínimo para alterar a convenção do condomínio?">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 16 3-8 3 8c-2 1-4 1-6 0M2 16l3-8 3 8c-2 1-4 1-6 0M7 21h10M12 3v18M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"/></svg>
+        Quórum de assembleia
+      </button>
+      <button class="ruixen-chip" data-q="Como gerar uma ata de assembleia ordinária?">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.5 22H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8.5L20 7.5V11"/><path d="m18.4 9.6 3 3-7 7H11v-3.4z"/></svg>
+        Gerar ata
+      </button>
+      <button class="ruixen-chip" data-q="Como funciona reajuste de aluguel pelo IGPM/IPCA?">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 17 9 11 13 15 21 7"/><polyline points="14 7 21 7 21 14"/></svg>
+        Reajuste de aluguel
+      </button>
+      <button class="ruixen-chip" data-q="O que diz a LGPD sobre dados de moradores?">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        LGPD em condomínio
+      </button>
+      <button class="ruixen-chip" data-q="Quais documentos preciso pra renovar o AVCB?">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        Documentos AVCB
+      </button>
+      <button class="ruixen-chip" data-q="Modelo de contrato de prestação de serviços para condomínio.">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><path d="M14 2v6h6"/><path d="m11 14-3 3 1.5 1.5L13 15"/></svg>
+        Modelo de contrato
+      </button>
+    </div>
+  </div>
+</section>
+
+<input type="file" id="ruixenAttachInput" accept="application/pdf,text/plain" style="display:none">
+
 <div id="app-nav"></div>
 <div class="container">
   <section class="tool-hero">
@@ -669,20 +841,29 @@ document.getElementById('newChatBtn').addEventListener('click', () => newConvers
 
 function resetChatUI() {
   msgsEl.innerHTML = '';
+  document.body.classList.remove('has-messages');
   const moonWelcome = document.getElementById('moonWelcome');
   const quickPrompts = document.getElementById('quickPrompts');
   if (moonWelcome) moonWelcome.classList.remove('hidden');
   if (quickPrompts) quickPrompts.style.display = '';
+  // Reset Ruixen welcome também
+  const ruixen = document.getElementById('ruixenWelcome');
+  if (ruixen) ruixen.classList.remove('hidden');
+  const rIn = document.getElementById('ruixenInput');
+  if (rIn) { rIn.value = ''; rIn.style.height = '48px'; }
   docContext = null;
   docBanner.classList.remove('show');
   docInput.value = '';
 }
 
 function hideMoonWelcome() {
+  document.body.classList.add('has-messages');
   const moonWelcome = document.getElementById('moonWelcome');
   const quickPrompts = document.getElementById('quickPrompts');
   if (moonWelcome) moonWelcome.classList.add('hidden');
   if (quickPrompts) quickPrompts.style.display = 'none';
+  const ruixen = document.getElementById('ruixenWelcome');
+  if (ruixen) ruixen.classList.add('hidden');
 }
 
 function formatRelative(ts) {
@@ -743,9 +924,17 @@ function formatRelative(ts) {
     const initial = sessionStorage.getItem('sindi_initial_prompt');
     if (initial) {
       sessionStorage.removeItem('sindi_initial_prompt');
-      input.value = initial;
-      input.focus();
-      input.dispatchEvent(new Event('input'));
+      // Se welcome ainda visível, joga no Ruixen input; senão, no input do chat
+      const rIn = document.getElementById('ruixenInput');
+      if (rIn && !document.body.classList.contains('has-messages')) {
+        rIn.value = initial;
+        rIn.focus();
+        rIn.dispatchEvent(new Event('input'));
+      } else {
+        input.value = initial;
+        input.focus();
+        input.dispatchEvent(new Event('input'));
+      }
     }
   } catch (e) {}
 })();
@@ -919,6 +1108,72 @@ async function send() {
 }
 
 sendBtn.addEventListener('click', send);
+
+// ===================================================================
+// RUIXEN WELCOME — input + chips + send → encaminha pra send() do chat
+// ===================================================================
+(function setupRuixen() {
+  const rWrap   = document.getElementById('ruixenWelcome');
+  const rInput  = document.getElementById('ruixenInput');
+  const rSend   = document.getElementById('ruixenSend');
+  const rAttach = document.getElementById('ruixenAttach');
+  const rAttachInput = document.getElementById('ruixenAttachInput');
+  if (!rWrap || !rInput || !rSend) return;
+
+  // Auto-resize textarea (igual ao useAutoResizeTextarea)
+  function adjustHeight(reset) {
+    if (reset) { rInput.style.height = '48px'; return; }
+    rInput.style.height = '48px';
+    const h = Math.max(48, Math.min(rInput.scrollHeight, 150));
+    rInput.style.height = h + 'px';
+  }
+  rInput.style.height = '48px';
+
+  rInput.addEventListener('input', () => {
+    const has = rInput.value.trim().length > 0;
+    rSend.disabled = !has;
+    rSend.classList.toggle('has-content', has);
+    adjustHeight();
+  });
+
+  rInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); rSendSubmit(); }
+  });
+
+  function rSendSubmit() {
+    const text = rInput.value.trim();
+    if (!text) return;
+    // Encaminha o texto pro input principal e dispara send()
+    input.value = text;
+    input.dispatchEvent(new Event('input'));
+    rInput.value = '';
+    adjustHeight(true);
+    rSend.disabled = true;
+    rSend.classList.remove('has-content');
+    // Esconde welcome e dispara o send do chat
+    hideMoonWelcome();
+    setTimeout(() => send(), 50);
+  }
+  rSend.addEventListener('click', rSendSubmit);
+
+  // Chips → preenche o input ao invés de mandar direto
+  rWrap.querySelectorAll('.ruixen-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      rInput.value = chip.dataset.q;
+      rInput.dispatchEvent(new Event('input'));
+      rInput.focus();
+    });
+  });
+
+  // Anexo: encaminha pro docInput
+  rAttach.addEventListener('click', () => rAttachInput.click());
+  rAttachInput.addEventListener('change', e => {
+    if (e.target.files.length) {
+      docInput.files = e.target.files;
+      docInput.dispatchEvent(new Event('change'));
+    }
+  });
+})();
 </script>
 </body>
 </html>
