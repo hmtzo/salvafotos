@@ -359,20 +359,25 @@
   .ruixen{
     position:fixed;inset:0;z-index:90;
     display:flex;flex-direction:column;align-items:center;
-    padding:6vh 24px 8vh;
+    padding:84px 24px 8vh; /* 84px top compensa altura da navbar */
     transition:opacity 0.35s ease, visibility 0.35s ease;
+    overflow-y:auto;
+    /* Backdrop sólido por cima do moon-bg pra esconder qualquer coisa por baixo */
+    background:
+      radial-gradient(120% 80% at 50% 30%, rgba(8,10,16,0.5) 0%, rgba(8,10,16,0.85) 70%, rgba(8,10,16,0.95) 100%);
   }
   .ruixen.hidden{opacity:0;visibility:hidden;pointer-events:none}
   body.has-messages .ruixen{opacity:0;visibility:hidden;pointer-events:none}
   body.has-messages .container{display:block}
-  body:not(.has-messages) .container{display:none}
-  body:not(.has-messages) #app-footer{display:none}
-  body:not(.has-messages) #app-nav{position:relative;z-index:91}
+  body:not(.has-messages) .container{display:none !important}
+  body:not(.has-messages) #app-footer{display:none !important}
+  body:not(.has-messages) #app-nav{position:fixed;top:0;left:0;right:0;z-index:95}
 
   /* Título centralizado verticalmente */
   .ruixen-title{
     flex:1;width:100%;display:flex;flex-direction:column;
     align-items:center;justify-content:center;text-align:center;gap:10px;
+    padding:32px 0;min-height:200px;
   }
   .ruixen-title .ruixen-eyebrow{
     display:inline-flex;align-items:center;gap:8px;
