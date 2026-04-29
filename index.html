@@ -26,17 +26,17 @@
   /* === Top minimal nav === */
   .land-nav{
     position:fixed;top:0;left:0;right:0;z-index:200;
-    padding:16px 24px;display:flex;align-items:center;justify-content:space-between;
-    background:rgba(10,10,12,0.5);backdrop-filter:blur(20px);
+    padding:12px 20px;display:flex;align-items:center;justify-content:space-between;
+    background:rgba(10,10,12,0.55);backdrop-filter:blur(20px);
     border-bottom:1px solid rgba(255,255,255,0.06);
   }
   .land-nav .logo{display:flex;align-items:center;gap:10px;color:var(--fg);text-decoration:none}
-  .land-nav .logo svg{height:28px;width:auto}
+  .land-nav .logo svg{height:24px;width:auto}
   .land-nav .logo svg path[fill="#1a1c29"]{fill:#fafafa}
   .land-nav .cta-btn{
-    padding:9px 18px;background:#fafafa;color:#0a0a0c;border:none;border-radius:100px;
-    font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;text-decoration:none;
-    display:inline-flex;align-items:center;gap:6px;transition:all 0.2s;
+    padding:7px 14px;background:#fafafa;color:#0a0a0c;border:none;border-radius:100px;
+    font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;text-decoration:none;
+    display:inline-flex;align-items:center;gap:5px;transition:all 0.2s;
   }
   .land-nav .cta-btn:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(255,255,255,0.15)}
   .land-nav .cta-btn svg{width:14px;height:14px}
@@ -71,14 +71,14 @@
     position:relative;z-index:10;padding:0 16px;will-change:transform;
   }
   .text-track,.text-days{
-    font-size:clamp(40px, 8.5vw, 110px);
-    font-weight:800;letter-spacing:-0.04em;line-height:1;
+    font-size:clamp(32px, 5.6vw, 72px);
+    font-weight:800;letter-spacing:-0.035em;line-height:1.02;
     display:block;
   }
   .text-track{
     color:var(--fg);
-    text-shadow:0 10px 30px rgba(255,255,255,0.18), 0 2px 4px rgba(255,255,255,0.08);
-    margin-bottom:6px;
+    text-shadow:0 8px 24px rgba(255,255,255,0.14), 0 2px 4px rgba(255,255,255,0.06);
+    margin-bottom:2px;
     visibility:hidden;
   }
   .text-days{
@@ -96,22 +96,22 @@
     padding:0 24px;will-change:transform,opacity,filter;
   }
   .cta-wrapper h2{
-    font-size:clamp(36px, 6vw, 80px);font-weight:800;letter-spacing:-0.03em;line-height:1.05;
-    margin-bottom:18px;
+    font-size:clamp(28px, 4.5vw, 56px);font-weight:800;letter-spacing:-0.025em;line-height:1.05;
+    margin-bottom:12px;
     background:linear-gradient(180deg, #ffffff 0%, rgba(255,255,255,0.45) 100%);
     -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
-    filter:drop-shadow(0 10px 20px rgba(255,255,255,0.15));
+    filter:drop-shadow(0 8px 16px rgba(255,255,255,0.12));
   }
   .cta-wrapper p{
-    color:var(--fg-dim);font-size:clamp(15px, 2vw, 19px);line-height:1.55;
-    max-width:540px;margin:0 auto 36px;font-weight:400;
+    color:var(--fg-dim);font-size:clamp(13px, 1.5vw, 16px);line-height:1.5;
+    max-width:480px;margin:0 auto 24px;font-weight:400;
   }
-  .cta-buttons{display:flex;flex-wrap:wrap;gap:16px;justify-content:center}
+  .cta-buttons{display:flex;flex-wrap:wrap;gap:12px;justify-content:center}
 
   /* Tactile buttons (light + dark) */
   .btn-tactile{
-    display:inline-flex;align-items:center;gap:12px;
-    padding:14px 28px;border-radius:18px;
+    display:inline-flex;align-items:center;gap:10px;
+    padding:11px 22px;border-radius:14px;
     font-family:inherit;text-decoration:none;cursor:pointer;border:none;
     transition:all 0.4s cubic-bezier(0.25,1,0.5,1);
   }
@@ -142,10 +142,10 @@
     transform:translateY(-3px);
     background:linear-gradient(180deg, #3f3f46 0%, #27272a 100%);
   }
-  .btn-tactile svg{width:24px;height:24px;flex-shrink:0}
+  .btn-tactile svg{width:18px;height:18px;flex-shrink:0}
   .btn-tactile .meta{display:flex;flex-direction:column;align-items:flex-start;gap:0px;line-height:1.1}
-  .btn-tactile .meta .small{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;opacity:0.6}
-  .btn-tactile .meta .big{font-size:18px;font-weight:800;letter-spacing:-0.02em}
+  .btn-tactile .meta .small{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;opacity:0.6}
+  .btn-tactile .meta .big{font-size:14px;font-weight:800;letter-spacing:-0.015em}
 
   /* === Premium depth card =========================================== */
   .main-card-stage{
@@ -176,50 +176,51 @@
   }
 
   .card-grid{
-    position:relative;width:100%;height:100%;max-width:1400px;margin:0 auto;
-    padding:24px;display:flex;flex-direction:column;justify-content:space-evenly;align-items:center;gap:8px;
+    position:relative;width:100%;height:100%;max-width:1200px;margin:0 auto;
+    padding:18px;display:flex;flex-direction:column;justify-content:space-evenly;align-items:center;gap:6px;
     z-index:10;
   }
   @media(min-width:1024px){
-    .card-grid{padding:0 48px;display:grid;grid-template-columns:1fr 1fr 1fr;align-items:center;gap:32px}
+    .card-grid{padding:0 36px;display:grid;grid-template-columns:1fr 1fr 1fr;align-items:center;gap:24px}
   }
 
   .card-left-text{order:3;text-align:center;visibility:hidden}
   .card-right-text{order:1;display:flex;justify-content:center;visibility:hidden}
-  .mockup-scroll-wrapper{order:2;position:relative;width:100%;height:380px;display:flex;align-items:center;justify-content:center;perspective:1000px;visibility:hidden}
+  .mockup-scroll-wrapper{order:2;position:relative;width:100%;height:340px;display:flex;align-items:center;justify-content:center;perspective:1000px;visibility:hidden}
   @media(min-width:1024px){
     .card-left-text{order:1;text-align:left}
     .card-right-text{order:3;justify-content:flex-end}
-    .mockup-scroll-wrapper{order:2;height:600px}
+    .mockup-scroll-wrapper{order:2;height:520px}
   }
 
   .card-left-text h3{
-    color:#fff;font-size:clamp(20px, 2.5vw, 36px);font-weight:700;
-    letter-spacing:-0.02em;margin-bottom:10px;line-height:1.2;
+    color:#fff;font-size:clamp(18px, 2vw, 28px);font-weight:700;
+    letter-spacing:-0.02em;margin-bottom:8px;line-height:1.2;
   }
   .card-left-text p{
-    color:rgba(199,210,254,0.7);font-size:clamp(13px, 1.4vw, 17px);line-height:1.55;
-    font-weight:400;
+    color:rgba(199,210,254,0.7);font-size:clamp(12px, 1.1vw, 14px);line-height:1.55;
+    font-weight:400;max-width:340px;
   }
+  @media(min-width:1024px){.card-left-text p{margin:0}}
   @media(max-width:768px){.card-left-text p{display:none}}
 
   .brand-name{
-    font-size:clamp(56px, 9vw, 130px);font-weight:900;
-    letter-spacing:-0.05em;text-transform:uppercase;line-height:0.9;
+    font-size:clamp(38px, 6vw, 84px);font-weight:900;
+    letter-spacing:-0.045em;text-transform:uppercase;line-height:0.92;
     background:linear-gradient(180deg, #ffffff 0%, #a1a1aa 100%);
     -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
     transform:translateZ(0);
-    filter:drop-shadow(0 12px 24px rgba(0,0,0,0.8)) drop-shadow(0 4px 8px rgba(0,0,0,0.6));
+    filter:drop-shadow(0 10px 20px rgba(0,0,0,0.8)) drop-shadow(0 3px 6px rgba(0,0,0,0.5));
   }
 
   /* iPhone mockup */
   .mockup-inner{
     position:relative;width:100%;height:100%;display:flex;align-items:center;justify-content:center;
-    transform:scale(0.65);
+    transform:scale(0.6);
   }
-  @media(min-width:1024px){.mockup-inner{transform:scale(1)}}
+  @media(min-width:1024px){.mockup-inner{transform:scale(0.88)}}
   .iphone{
-    position:relative;width:280px;height:580px;border-radius:48px;
+    position:relative;width:260px;height:540px;border-radius:46px;
     background:#111;
     box-shadow:
       inset 0 0 0 2px #52525B,
