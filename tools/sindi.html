@@ -162,6 +162,9 @@
   .toggle-pill.active.search{background:rgba(30,174,219,0.15);border-color:#1EAEDB;color:#1EAEDB}
   .toggle-pill.active.think{background:rgba(139,92,246,0.15);border-color:#8B5CF6;color:#8B5CF6}
   .toggle-pill.active.canvas{background:rgba(249,115,22,0.15);border-color:#F97316;color:#F97316}
+  .toggle-pill.active.persona-juridico{background:rgba(99,102,241,0.18);border-color:#6366f1;color:#a5b4fc}
+  .toggle-pill.active.persona-engenharia{background:rgba(20,184,166,0.18);border-color:#14b8a6;color:#5eead4}
+  .toggle-pill.active.persona-diretor{background:rgba(236,72,153,0.18);border-color:#ec4899;color:#f9a8d4}
   .toggle-pill.active .label{max-width:80px;opacity:1}
   .toggle-pill.active svg{transform:rotate(360deg) scale(1.1)}
 
@@ -461,6 +464,202 @@
     .ruixen-quick{gap:8px;margin-top:18px}
     .ruixen-chip{padding:7px 12px;font-size:11px}
   }
+
+  /* ===================================================================
+     SINDICOMPANY OS — Command Palette · Profile · OS sections · Conf
+     =================================================================== */
+
+  /* Command palette (slash menu) */
+  .cmd-palette{
+    position:fixed;display:none;flex-direction:column;gap:2px;
+    background:rgba(15,16,19,0.96);
+    border:1px solid rgba(255,255,255,0.1);
+    border-radius:12px;padding:6px;
+    box-shadow:0 24px 60px -12px rgba(0,0,0,0.7);
+    backdrop-filter:blur(20px);z-index:300;
+    width:min(440px, 92vw);max-height:60vh;overflow-y:auto;
+  }
+  .cmd-palette.is-open{display:flex}
+  .cmd-palette .cmd-header{
+    font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;
+    color:#9ca3af;padding:8px 10px 4px;
+  }
+  .cmd-item{
+    display:flex;flex-direction:column;align-items:flex-start;gap:2px;
+    padding:9px 11px;border-radius:8px;border:none;
+    background:transparent;color:#fafafa;cursor:pointer;text-align:left;
+    font-family:inherit;transition:background 0.12s;
+  }
+  .cmd-item:hover, .cmd-item.is-active{background:rgba(99,102,241,0.18)}
+  .cmd-item strong{font-size:12.5px;font-weight:700;letter-spacing:0.04em;color:#a5b4fc}
+  .cmd-item span{font-size:11.5px;color:#9ca3af;font-weight:400}
+
+  /* Profile modal */
+  .profile-backdrop{
+    position:fixed;inset:0;z-index:250;
+    background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);
+    opacity:0;visibility:hidden;transition:opacity 0.25s, visibility 0.25s;
+  }
+  .profile-backdrop.is-open{opacity:1;visibility:visible}
+  .profile-modal{
+    position:fixed;top:0;right:0;bottom:0;z-index:251;
+    width:min(440px, 96vw);
+    background:rgba(15,16,19,0.98);
+    border-left:1px solid rgba(255,255,255,0.08);
+    box-shadow:-12px 0 40px rgba(0,0,0,0.6);
+    display:flex;flex-direction:column;
+    transform:translateX(100%);
+    transition:transform 0.35s cubic-bezier(0.2,0.8,0.2,1);
+  }
+  .profile-modal.is-open{transform:translateX(0)}
+  .profile-modal header{
+    padding:22px 22px 18px;position:relative;
+    border-bottom:1px solid rgba(255,255,255,0.06);
+  }
+  .profile-modal h2{font-size:18px;font-weight:700;margin:0 0 4px;color:#fff}
+  .profile-modal header p{font-size:13px;color:#9ca3af;margin:0;line-height:1.45}
+  .profile-close{
+    position:absolute;top:18px;right:18px;
+    width:30px;height:30px;border-radius:8px;
+    background:transparent;border:1px solid rgba(255,255,255,0.1);color:#cfd0d4;
+    cursor:pointer;font-size:14px;
+  }
+  .profile-close:hover{background:rgba(255,255,255,0.04)}
+  .profile-form{
+    flex:1;overflow-y:auto;padding:18px 22px;
+    display:flex;flex-direction:column;gap:14px;
+  }
+  .profile-form label{display:flex;flex-direction:column;gap:6px}
+  .profile-form label span{font-size:12px;font-weight:600;color:#cfd0d4}
+  .profile-form input, .profile-form textarea{
+    width:100%;padding:10px 12px;border-radius:8px;
+    background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);
+    color:#fff;font-family:inherit;font-size:14px;line-height:1.4;
+    resize:vertical;
+  }
+  .profile-form input:focus, .profile-form textarea:focus{
+    outline:none;border-color:#6366f1;background:rgba(99,102,241,0.08);
+  }
+  .profile-modal footer{
+    padding:16px 22px;border-top:1px solid rgba(255,255,255,0.06);
+    display:flex;gap:10px;justify-content:space-between;
+  }
+  .profile-btn-secondary, .profile-btn-primary{
+    padding:10px 16px;border-radius:8px;font-family:inherit;font-size:13px;font-weight:600;
+    cursor:pointer;border:none;transition:all 0.15s;
+  }
+  .profile-btn-secondary{background:transparent;color:#9ca3af;border:1px solid rgba(255,255,255,0.12)}
+  .profile-btn-secondary:hover{color:#f87171;border-color:#f87171}
+  .profile-btn-primary{background:#6366f1;color:#fff}
+  .profile-btn-primary:hover{background:#4f46e5}
+
+  /* Sidebar footer (perfil + quota) */
+  .sidebar-foot{
+    padding:8px 10px;border-top:1px solid rgba(255,255,255,0.06);
+    display:flex;align-items:center;gap:8px;flex-shrink:0;
+  }
+  .sidebar-foot-btn{
+    flex:1;display:flex;align-items:center;gap:6px;padding:7px 10px;
+    border-radius:8px;background:transparent;border:1px solid rgba(255,255,255,0.08);
+    color:#cfd0d4;font-family:inherit;font-size:12px;cursor:pointer;
+    transition:all 0.15s;
+  }
+  .sidebar-foot-btn:hover{background:rgba(255,255,255,0.05);color:#fff}
+  .sidebar-foot-btn.has-profile{
+    border-color:rgba(99,102,241,0.5);
+    background:rgba(99,102,241,0.12);
+    color:#a5b4fc;
+  }
+  .sidebar-quota{
+    font-size:10.5px;color:#9ca3af;font-variant-numeric:tabular-nums;
+    padding:6px 9px;border-radius:8px;
+    background:rgba(255,255,255,0.04);
+  }
+  .sidebar-quota.warn{background:rgba(245,158,11,0.18);color:#fcd34d}
+  .sidebar-quota.crit{background:rgba(239,68,68,0.2);color:#fca5a5}
+
+  /* ===== OS SECTIONS rendering (estilo dos blocos da resposta) ===== */
+  .os-section{
+    margin-top:14px;padding:12px 14px;border-radius:10px;
+    background:rgba(255,255,255,0.04);
+    border-left:3px solid var(--os-accent, #6366f1);
+  }
+  .os-section:first-child{margin-top:0}
+  .os-section .os-section-title{
+    display:flex;align-items:center;gap:8px;margin-bottom:8px;
+    font-size:10.5px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;
+    color:var(--os-accent, #6366f1);
+  }
+  .os-section .os-section-title svg{width:13px;height:13px;flex-shrink:0}
+  .os-section .os-section-body{font-size:13.5px;line-height:1.55;color:#fafafa}
+  .os-section .os-section-body p{margin:0 0 6px}
+  .os-section .os-section-body p:last-child{margin-bottom:0}
+  .os-section .os-section-body ol, .os-section .os-section-body ul{margin:4px 0 6px 18px}
+  .os-section .os-section-body li{margin-bottom:3px}
+
+  /* Cores por seção */
+  .os-section.os-area      {--os-accent:#a5b4fc} /* indigo claro */
+  .os-section.os-diagnostico{--os-accent:#60a5fa} /* azul */
+  .os-section.os-procedimento{--os-accent:#34d399} /* verde */
+  .os-section.os-riscos    {--os-accent:#fca5a5} /* vermelho claro */
+  .os-section.os-escalonamento{--os-accent:#f59e0b}
+  .os-section.os-melhor-pratica{--os-accent:#5eead4}
+  .os-section.os-melhorias {--os-accent:#c084fc}
+  .os-section.os-modelo    {--os-accent:#cbd5e1}
+  .os-section.os-checklist {--os-accent:#fcd34d}
+  .os-section.os-recomendacao{--os-accent:#a5b4fc}
+  .os-section.os-alternativa-c{--os-accent:#34d399}
+  .os-section.os-alternativa-a{--os-accent:#fca5a5}
+  .os-section.os-final     {--os-accent:#ec4899}
+
+  /* Confidence badge */
+  .conf-badge{
+    display:inline-flex;align-items:center;gap:6px;
+    margin-top:10px;padding:5px 10px;border-radius:100px;
+    font-size:11px;font-weight:600;letter-spacing:0.04em;
+    background:rgba(255,255,255,0.06);
+    border:1px solid rgba(255,255,255,0.1);
+    color:#cfd0d4;
+  }
+  .conf-badge .conf-dot{width:7px;height:7px;border-radius:50%}
+  .conf-badge.high  {background:rgba(16,185,129,0.15);border-color:rgba(16,185,129,0.4);color:#6ee7b7}
+  .conf-badge.high .conf-dot{background:#10b981;box-shadow:0 0 6px #10b981}
+  .conf-badge.med   {background:rgba(245,158,11,0.15);border-color:rgba(245,158,11,0.4);color:#fcd34d}
+  .conf-badge.med .conf-dot{background:#f59e0b;box-shadow:0 0 6px #f59e0b}
+  .conf-badge.low   {background:rgba(239,68,68,0.15);border-color:rgba(239,68,68,0.4);color:#fca5a5}
+  .conf-badge.low .conf-dot{background:#ef4444;box-shadow:0 0 6px #ef4444}
+  .conf-motive{font-weight:400;opacity:0.85}
+
+  /* Message footer (export + copy) */
+  .msg-actions{
+    display:flex;gap:6px;margin-top:8px;opacity:0;transition:opacity 0.2s;
+  }
+  .msg.bot:hover .msg-actions{opacity:1}
+  .msg-action{
+    padding:4px 9px;border-radius:6px;font-size:11px;font-weight:500;
+    background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);
+    color:#9ca3af;cursor:pointer;font-family:inherit;
+    transition:all 0.15s;display:inline-flex;align-items:center;gap:4px;
+  }
+  .msg-action:hover{background:rgba(255,255,255,0.1);color:#fff}
+  .msg-action svg{width:12px;height:12px}
+
+  /* Knowledge used badges */
+  .msg-kb{
+    display:flex;flex-wrap:wrap;gap:5px;margin-top:8px;
+  }
+  .msg-kb-chip{
+    padding:3px 8px;border-radius:100px;font-size:10px;font-weight:500;
+    background:rgba(99,102,241,0.12);border:1px solid rgba(99,102,241,0.3);
+    color:#a5b4fc;
+  }
+  .msg-kb-chip::before{content:'📖 '}
+
+  @media (max-width:640px){
+    .profile-modal{width:100vw}
+    .cmd-palette{width:calc(100vw - 24px)}
+    .os-section{padding:10px 12px;font-size:13px}
+  }
 </style>
 </head>
 <body>
@@ -547,6 +746,15 @@
         </button>
       </div>
       <div class="conv-list" id="convList"></div>
+      <div class="sidebar-foot">
+        <button class="sidebar-foot-btn" id="profileBtn" title="Perfil do usuário">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M3 21v-2a4 4 0 014-4h10a4 4 0 014 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          <span id="profileBtnLabel">Perfil</span>
+        </button>
+        <div class="sidebar-quota" id="quotaIndicator" title="Quota de hoje">
+          <span id="quotaText">— / 1500</span>
+        </div>
+      </div>
     </aside>
 
     <div class="chat-shell">
@@ -611,6 +819,19 @@
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="14" rx="2"/><path d="M3 17l4-4 4 4 6-6 4 4"/></svg>
             <span class="label">Canvas</span>
           </button>
+          <div class="toggle-divider"></div>
+          <button class="toggle-pill persona persona-juridico" data-persona="JURÍDICO" type="button" title="Responda como Jurídico">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m16 16 3-8 3 8c-2 1-4 1-6 0M2 16l3-8 3 8c-2 1-4 1-6 0M7 21h10M12 3v18M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"/></svg>
+            <span class="label">Jurídico</span>
+          </button>
+          <button class="toggle-pill persona persona-engenharia" data-persona="ENGENHARIA" type="button" title="Responda como Engenharia">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+            <span class="label">Engenharia</span>
+          </button>
+          <button class="toggle-pill persona persona-diretor" data-persona="DIRETOR" type="button" title="Responda como Diretor">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21v-2a4 4 0 014-4h10a4 4 0 014 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            <span class="label">Diretor</span>
+          </button>
         </div>
         <button class="send-btn idle" id="sendBtn" title="Enviar" type="button">
           <svg id="sendIcon" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 19V5M5 12l7-7 7 7"/></svg>
@@ -625,6 +846,73 @@
   </div>
 </div>
 <div id="app-footer"></div>
+
+<!-- ===== Command Palette (aparece quando digita "/" no input) ===== -->
+<div id="cmdPalette" class="cmd-palette" role="listbox" aria-label="Comandos">
+  <div class="cmd-header">Comandos do Sindicompany OS</div>
+  <button class="cmd-item" data-cmd="GERAR PROTOCOLO: " data-tail="">
+    <strong>GERAR PROTOCOLO</strong><span>POP completo (objetivo, fluxo, escalonamento, checklist)</span>
+  </button>
+  <button class="cmd-item" data-cmd="AUDITE ISSO: " data-tail="">
+    <strong>AUDITE ISSO</strong><span>Auditoria crítica · riscos · falhas · plano corretivo</span>
+  </button>
+  <button class="cmd-item" data-cmd="COMO AGIR: " data-tail="">
+    <strong>COMO AGIR</strong><span>Orientação operacional passo a passo</span>
+  </button>
+  <button class="cmd-item" data-cmd="SIMULE: " data-tail="">
+    <strong>SIMULE</strong><span>Simular cenário e desdobrar consequências</span>
+  </button>
+  <button class="cmd-item" data-cmd="MONTE CHECKLIST: " data-tail="">
+    <strong>MONTE CHECKLIST</strong><span>Checklist completo do tema</span>
+  </button>
+  <button class="cmd-item" data-cmd="ANALISE RISCO: " data-tail="">
+    <strong>ANALISE RISCO</strong><span>Matriz de risco · probabilidade × impacto</span>
+  </button>
+  <button class="cmd-item" data-cmd="RESPONDA COMO JURÍDICO: " data-tail="">
+    <strong>RESPONDA COMO JURÍDICO</strong><span>Voz exclusiva do agente jurídico</span>
+  </button>
+  <button class="cmd-item" data-cmd="RESPONDA COMO ENGENHARIA: " data-tail="">
+    <strong>RESPONDA COMO ENGENHARIA</strong><span>Voz exclusiva da engenharia predial</span>
+  </button>
+  <button class="cmd-item" data-cmd="RESPONDA COMO DIRETOR: " data-tail="">
+    <strong>RESPONDA COMO DIRETOR</strong><span>Visão estratégica de diretoria</span>
+  </button>
+  <button class="cmd-item" data-cmd="O que você faria? " data-tail="">
+    <strong>MODO DECISÃO</strong><span>Recomendação técnica + alternativas + recomendação final</span>
+  </button>
+</div>
+
+<!-- ===== Profile Modal ===== -->
+<div id="profileBackdrop" class="profile-backdrop" aria-hidden="true"></div>
+<aside id="profileModal" class="profile-modal" role="dialog" aria-label="Perfil" aria-hidden="true">
+  <header>
+    <h2>Seu perfil</h2>
+    <p>A Sindi vai usar essas informações pra adaptar as respostas a você.</p>
+    <button class="profile-close" id="profileClose" aria-label="Fechar">✕</button>
+  </header>
+  <div class="profile-form">
+    <label>
+      <span>Nome</span>
+      <input type="text" id="profName" placeholder="Como você quer ser chamado">
+    </label>
+    <label>
+      <span>Função / cargo</span>
+      <input type="text" id="profRole" placeholder="Síndico profissional, Backoffice, Jurídico, Diretoria…">
+    </label>
+    <label>
+      <span>Condomínios sob gestão</span>
+      <input type="text" id="profCondos" placeholder="Ex: Edifício X (SP), Residencial Y (Campinas)">
+    </label>
+    <label>
+      <span>Contexto adicional</span>
+      <textarea id="profContext" rows="3" placeholder="Ex: foco em condomínios de alto padrão, especializado em LGPD, etc."></textarea>
+    </label>
+  </div>
+  <footer>
+    <button class="profile-btn-secondary" id="profileClear">Limpar perfil</button>
+    <button class="profile-btn-primary" id="profileSave">Salvar</button>
+  </footer>
+</aside>
 
 <script src="/assets/shared.js"></script>
 <script>
@@ -720,6 +1008,9 @@ async function persistChatState() {
 }
 
 function newConversation() {
+  // Antes de trocar, salva resumo da conversa atual se tiver substância
+  saveCurrentConvAsMemory().catch(() => {});
+
   const id = 'c_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7);
   const conv = { id, title: 'Nova conversa', messages: [], createdAt: Date.now(), updatedAt: Date.now() };
   chatState.conversations.unshift(conv);
@@ -730,6 +1021,30 @@ function newConversation() {
   resetChatUI();
   renderConvList();
   return conv;
+}
+
+// Resume a conversa atual em ~600 chars e salva no KV de memória
+async function saveCurrentConvAsMemory() {
+  if (!Array.isArray(messages) || messages.length < 4) return; // só vale a pena se ≥2 trocas
+  const last = messages.slice(-8);
+  // Constrói um resumo bruto pra mandar pro endpoint (quem decide o que salvar)
+  const userQs = last.filter(m => m.role === 'user').map(m => {
+    // Remove anexos longos
+    let t = m.content.replace(/\[Documento anexado[\s\S]*?--- FIM DO DOCUMENTO ---\n\nPergunta:\s*/g, '');
+    return t.slice(0, 200);
+  });
+  const lastBot = [...last].reverse().find(m => m.role === 'assistant');
+  const lastBotShort = lastBot ? lastBot.content.replace(/\[CONFIANÇA:[^\]]+\]/, '').slice(0, 400) : '';
+  const summary =
+    `Tópicos: ${userQs.slice(-3).join(' | ').slice(0, 300)}\n\n` +
+    `Última conclusão: ${lastBotShort}`;
+
+  try {
+    await fetch('/api/sindi-os', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'memory', convId: activeConvId, summary }),
+    });
+  } catch (e) {}
 }
 
 function loadConversation(id) {
@@ -743,12 +1058,17 @@ function loadConversation(id) {
   // re-renderiza mensagens
   for (const m of messages) {
     let displayContent = m.content;
-    // Remove o prefixo de documento anexado da exibição (mas mantém na mensagem)
     if (m.role === 'user') {
       const docMatch = m.content.match(/^\[Documento anexado:[^\]]*\][\s\S]*?--- FIM DO DOCUMENTO ---\n\nPergunta:\s*(.*)/);
       if (docMatch) displayContent = docMatch[1];
+      // Tira prefixo de persona pra ficar mais limpo na re-renderização
+      displayContent = displayContent.replace(/^RESPONDA COMO (JURÍDICO|ENGENHARIA|DIRETOR):\s*/i, '');
+      renderMessage('user', displayContent);
+    } else if (m.role === 'assistant') {
+      // Aplica rich render (OS sections + conf badge) em mensagens persistidas
+      const wrap = renderMessage('bot', '', true);
+      renderAssistantMessage(wrap, m.content, null);
     }
-    renderMessage(m.role === 'assistant' ? 'bot' : m.role, displayContent);
   }
   renderConvList();
 }
@@ -950,24 +1270,41 @@ input.addEventListener('blur',  () => document.getElementById('promptBox').class
 // Botão de anexar (substitui o label antigo)
 document.getElementById('attachBtn').addEventListener('click', () => docInput.click());
 
-// Toggles Search / Think / Canvas (mutuamente exclusivos: máx 1 ativo)
-let activeMode = null; // 'search' | 'think' | 'canvas' | null
+// Toggles Search / Think / Canvas — modos mutuamente exclusivos (máx 1)
+let activeMode = null;
+let activePersona = null; // 'JURÍDICO' | 'ENGENHARIA' | 'DIRETOR'
+
 document.querySelectorAll('.toggle-pill').forEach(pill => {
   pill.addEventListener('click', () => {
-    const mode = pill.dataset.mode;
-    if (activeMode === mode) {
-      activeMode = null;
-      pill.classList.remove('active');
-    } else {
-      document.querySelectorAll('.toggle-pill').forEach(p => p.classList.remove('active'));
-      pill.classList.add('active');
-      activeMode = mode;
+    if (pill.dataset.persona) {
+      // Persona pills (independentes dos modes — mutuamente exclusivos entre si)
+      const persona = pill.dataset.persona;
+      if (activePersona === persona) {
+        activePersona = null;
+        pill.classList.remove('active');
+      } else {
+        document.querySelectorAll('.toggle-pill.persona').forEach(p => p.classList.remove('active'));
+        pill.classList.add('active');
+        activePersona = persona;
+      }
+    } else if (pill.dataset.mode) {
+      const mode = pill.dataset.mode;
+      if (activeMode === mode) {
+        activeMode = null;
+        pill.classList.remove('active');
+      } else {
+        document.querySelectorAll('.toggle-pill[data-mode]').forEach(p => p.classList.remove('active'));
+        pill.classList.add('active');
+        activeMode = mode;
+      }
     }
     // Atualiza placeholder
-    if (activeMode === 'search') input.placeholder = 'Buscar na web…';
-    else if (activeMode === 'think') input.placeholder = 'Pensar profundamente…';
-    else if (activeMode === 'canvas') input.placeholder = 'Criar conteúdo longo…';
-    else input.placeholder = 'Pergunte algo à Sindi…';
+    let ph = 'Pergunte algo à Sindi…';
+    if (activeMode === 'search') ph = 'Buscar na web…';
+    else if (activeMode === 'think') ph = 'Pensar profundamente…';
+    else if (activeMode === 'canvas') ph = 'Criar conteúdo longo…';
+    if (activePersona) ph = `Modo ${activePersona} — ${ph.toLowerCase()}`;
+    input.placeholder = ph;
   });
 });
 
@@ -978,7 +1315,10 @@ function updateSendBtnState() {
   sendBtn.classList.toggle('idle', !hasContent);
 }
 input.addEventListener('keydown', e => {
-  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
+  // Enter envia, exceto se cmd palette estiver aberta (tratado em outro listener)
+  if (e.key === 'Enter' && !e.shiftKey && !cmdPalette.classList.contains('is-open')) {
+    e.preventDefault(); send();
+  }
 });
 
 document.querySelectorAll('.quick-prompts button').forEach(b => {
@@ -1062,8 +1402,15 @@ function formatMd(text) {
 }
 
 async function send() {
-  const text = input.value.trim();
-  if (!text) return;
+  const rawText = input.value.trim();
+  if (!rawText) return;
+
+  // Aplica persona se ativa (prefixo de comando)
+  let text = rawText;
+  if (activePersona && !/^RESPONDA COMO/i.test(rawText)) {
+    text = `RESPONDA COMO ${activePersona}: ${rawText}`;
+  }
+
   input.value = '';
   input.style.height = 'auto';
   sendBtn.disabled = true;
@@ -1075,7 +1422,7 @@ async function send() {
   }
 
   messages.push({ role: 'user', content: userContent });
-  renderMessage('user', text);
+  renderMessage('user', rawText);
   const typingMsg = renderMessage('bot', '', true);
 
   try {
@@ -1089,16 +1436,17 @@ async function send() {
     if (!res.ok) {
       typingMsg.querySelector('.msg-bubble').innerHTML = `<p style="color:var(--danger)">⚠️ ${data.error || 'Erro ao chamar a Sindi'}</p>`;
       if (data.configured === false) document.getElementById('configWarn').style.display = 'block';
-      messages.pop(); // remove última msg do user que falhou
+      messages.pop();
       return;
     }
 
     const reply = data.reply || '(sem resposta)';
     messages.push({ role: 'assistant', content: reply });
-    typingMsg.querySelector('.msg-bubble').innerHTML = formatMd(reply);
+    renderAssistantMessage(typingMsg, reply, data);
     msgsEl.scrollTop = msgsEl.scrollHeight;
     trackUsage('sindi');
-    persistCurrent(); // salva conversa após cada exchange completo
+    persistCurrent();
+    refreshQuotaIndicator();
   } catch (err) {
     typingMsg.querySelector('.msg-bubble').innerHTML = `<p style="color:var(--danger)">⚠️ Falha de conexão: ${err.message}</p>`;
     messages.pop();
@@ -1106,6 +1454,319 @@ async function send() {
     sendBtn.disabled = false;
   }
 }
+
+// ============================================================
+// SINDICOMPANY OS — render, parse, badges, actions
+// ============================================================
+function renderAssistantMessage(wrap, reply, meta) {
+  const bubble = wrap.querySelector('.msg-bubble');
+  bubble.innerHTML = '';
+
+  // Extrai score de confiança no fim
+  const confMatch = reply.match(/\[CONFIANÇA:\s*(\d+)%[^·\]]*·?\s*MOTIVO:\s*([^\]]+)\]/i);
+  let confidence = null, confMotive = null;
+  let cleanReply = reply;
+  if (confMatch) {
+    confidence = parseInt(confMatch[1]);
+    confMotive = confMatch[2].trim();
+    cleanReply = reply.replace(confMatch[0], '').trim();
+  } else if (meta?.confidence != null) {
+    confidence = meta.confidence;
+  }
+
+  // Tenta parsear seções OS; se não há, fallback markdown comum
+  const sections = parseOSSections(cleanReply);
+  if (sections.length >= 2) {
+    sections.forEach(s => {
+      const div = document.createElement('div');
+      div.className = 'os-section ' + s.cssClass;
+      div.innerHTML =
+        `<div class="os-section-title">${s.iconSvg}<span>${s.title}</span></div>` +
+        `<div class="os-section-body">${formatMd(s.body)}</div>`;
+      bubble.appendChild(div);
+    });
+  } else {
+    // resposta curta/direta — markdown puro
+    const div = document.createElement('div');
+    div.innerHTML = formatMd(cleanReply);
+    bubble.appendChild(div);
+  }
+
+  // Badge de confiança
+  if (confidence != null) {
+    const badge = document.createElement('div');
+    const tier = confidence >= 80 ? 'high' : confidence >= 60 ? 'med' : 'low';
+    badge.className = `conf-badge ${tier}`;
+    badge.innerHTML =
+      `<span class="conf-dot"></span>` +
+      `<span>CONFIANÇA ${confidence}%</span>` +
+      (confMotive ? `<span class="conf-motive">· ${escapeHtml(confMotive)}</span>` : '');
+    bubble.appendChild(badge);
+  }
+
+  // KB chips
+  if (meta?.knowledgeUsed?.length) {
+    const wrapKb = document.createElement('div');
+    wrapKb.className = 'msg-kb';
+    wrapKb.innerHTML = meta.knowledgeUsed
+      .map(k => `<span class="msg-kb-chip" title="${escapeHtml(k.id)}">${escapeHtml(k.title)}</span>`)
+      .join('');
+    bubble.appendChild(wrapKb);
+  }
+
+  // Actions: copiar / exportar
+  const actions = document.createElement('div');
+  actions.className = 'msg-actions';
+  actions.innerHTML = `
+    <button class="msg-action" data-action="copy">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+      Copiar
+    </button>
+    <button class="msg-action" data-action="export-md">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
+      Exportar .md
+    </button>
+  `;
+  actions.querySelector('[data-action="copy"]').addEventListener('click', () => {
+    navigator.clipboard.writeText(cleanReply).then(() => {
+      const btn = actions.querySelector('[data-action="copy"]');
+      const orig = btn.innerHTML;
+      btn.innerHTML = '✓ Copiado';
+      setTimeout(() => { btn.innerHTML = orig; }, 1500);
+    });
+  });
+  actions.querySelector('[data-action="export-md"]').addEventListener('click', () => {
+    const blob = new Blob([cleanReply], { type: 'text/markdown' });
+    const fname = `sindi-${new Date().toISOString().slice(0,10)}-${Date.now().toString().slice(-4)}.md`;
+    downloadBlob(blob, fname);
+  });
+  bubble.appendChild(actions);
+}
+
+// Parser do FORMATO PADRÃO Sindicompany — pega blocos **TÍTULO** ... próximo **TÍTULO**
+const OS_SECTIONS_MAP = {
+  'área responsável':       { cssClass: 'os-area',          icon: 'target' },
+  'area responsavel':       { cssClass: 'os-area',          icon: 'target' },
+  'diagnóstico':            { cssClass: 'os-diagnostico',   icon: 'scan' },
+  'diagnostico':            { cssClass: 'os-diagnostico',   icon: 'scan' },
+  'procedimento sindicompany':{cssClass:'os-procedimento',  icon: 'play' },
+  'procedimento':           { cssClass: 'os-procedimento',  icon: 'play' },
+  'riscos':                 { cssClass: 'os-riscos',        icon: 'warn' },
+  'escalonamento':          { cssClass: 'os-escalonamento', icon: 'up' },
+  'melhor prática recomendada':{cssClass:'os-melhor-pratica',icon: 'star' },
+  'melhor prática':         { cssClass: 'os-melhor-pratica',icon: 'star' },
+  'melhor pratica':         { cssClass: 'os-melhor-pratica',icon: 'star' },
+  'melhorias possíveis':    { cssClass: 'os-melhorias',     icon: 'sparkle' },
+  'melhorias':              { cssClass: 'os-melhorias',     icon: 'sparkle' },
+  'modelo de comunicação':  { cssClass: 'os-modelo',        icon: 'mail' },
+  'modelo de comunicacao':  { cssClass: 'os-modelo',        icon: 'mail' },
+  'checklist':              { cssClass: 'os-checklist',     icon: 'check' },
+  'minha recomendação técnica':{cssClass:'os-recomendacao', icon: 'star' },
+  'minha recomendacao tecnica':{cssClass:'os-recomendacao', icon: 'star' },
+  'alternativa conservadora':{cssClass:'os-alternativa-c',  icon: 'shield' },
+  'alternativa agressiva':  { cssClass: 'os-alternativa-a', icon: 'flame' },
+  'riscos de cada cenário': { cssClass: 'os-riscos',        icon: 'warn' },
+  'recomendação final':     { cssClass: 'os-final',         icon: 'flag' },
+  'recomendacao final':     { cssClass: 'os-final',         icon: 'flag' },
+};
+const OS_ICONS = {
+  target: '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>',
+  scan:   '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7V5a2 2 0 012-2h2M17 3h2a2 2 0 012 2v2M21 17v2a2 2 0 01-2 2h-2M7 21H5a2 2 0 01-2-2v-2"/><line x1="7" y1="12" x2="17" y2="12"/></svg>',
+  play:   '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>',
+  warn:   '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86 1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
+  up:     '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>',
+  star:   '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>',
+  sparkle:'<svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3z"/></svg>',
+  mail:   '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>',
+  check:  '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>',
+  shield: '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>',
+  flame:  '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0011 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 11-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 002.5 2.5z"/></svg>',
+  flag:   '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>',
+};
+
+function parseOSSections(text) {
+  // Header pattern: linha que começa com **TÍTULO** (possivelmente com (...) depois)
+  const lines = text.split('\n');
+  const sections = [];
+  let current = null;
+
+  for (const ln of lines) {
+    const headerMatch = ln.match(/^\s*\*\*([^*]+)\*\*\s*(.*)$/);
+    if (headerMatch) {
+      const rawTitle = headerMatch[1].trim();
+      const titleNorm = rawTitle.toLowerCase()
+        .normalize('NFD').replace(/[̀-ͯ]/g, '');
+      const map = OS_SECTIONS_MAP[titleNorm] || OS_SECTIONS_MAP[Object.keys(OS_SECTIONS_MAP).find(k => titleNorm.includes(k))];
+      if (map) {
+        if (current) sections.push(current);
+        current = {
+          title: rawTitle.toUpperCase(),
+          cssClass: map.cssClass,
+          iconSvg: OS_ICONS[map.icon] || OS_ICONS.target,
+          body: headerMatch[2] ? headerMatch[2].trim() : '',
+        };
+        continue;
+      }
+    }
+    if (current) {
+      current.body += (current.body ? '\n' : '') + ln;
+    }
+  }
+  if (current) sections.push(current);
+  // Limpa body
+  sections.forEach(s => s.body = s.body.trim());
+  return sections.filter(s => s.body || s.title);
+}
+
+// ============================================================
+// PROFILE MODAL
+// ============================================================
+const profileBackdrop = document.getElementById('profileBackdrop');
+const profileModal = document.getElementById('profileModal');
+const profileBtn = document.getElementById('profileBtn');
+const profileBtnLabel = document.getElementById('profileBtnLabel');
+let cachedProfile = null;
+
+async function loadProfile() {
+  try {
+    const res = await fetch('/api/sindi-os?action=profile');
+    if (!res.ok) return;
+    const data = await res.json();
+    cachedProfile = data.profile;
+    if (cachedProfile?.name || cachedProfile?.role) {
+      profileBtn.classList.add('has-profile');
+      profileBtnLabel.textContent = cachedProfile.name || cachedProfile.role || 'Perfil';
+    }
+  } catch (e) {}
+}
+
+function openProfile() {
+  document.getElementById('profName').value = cachedProfile?.name || '';
+  document.getElementById('profRole').value = cachedProfile?.role || '';
+  document.getElementById('profCondos').value = cachedProfile?.condos || '';
+  document.getElementById('profContext').value = cachedProfile?.context || '';
+  profileBackdrop.classList.add('is-open');
+  profileModal.classList.add('is-open');
+  profileBackdrop.setAttribute('aria-hidden', 'false');
+  profileModal.setAttribute('aria-hidden', 'false');
+}
+function closeProfile() {
+  profileBackdrop.classList.remove('is-open');
+  profileModal.classList.remove('is-open');
+  profileBackdrop.setAttribute('aria-hidden', 'true');
+  profileModal.setAttribute('aria-hidden', 'true');
+}
+async function saveProfile() {
+  const data = {
+    name: document.getElementById('profName').value.trim(),
+    role: document.getElementById('profRole').value.trim(),
+    condos: document.getElementById('profCondos').value.trim(),
+    context: document.getElementById('profContext').value.trim(),
+  };
+  const res = await fetch('/api/sindi-os', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'profile', data }),
+  });
+  if (res.ok) {
+    const r = await res.json();
+    cachedProfile = r.profile;
+    if (cachedProfile.name || cachedProfile.role) {
+      profileBtn.classList.add('has-profile');
+      profileBtnLabel.textContent = cachedProfile.name || cachedProfile.role || 'Perfil';
+    }
+    closeProfile();
+  }
+}
+async function clearProfile() {
+  if (!confirm('Limpar perfil?')) return;
+  await fetch('/api/sindi-os', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'profile-clear' }),
+  });
+  cachedProfile = null;
+  profileBtn.classList.remove('has-profile');
+  profileBtnLabel.textContent = 'Perfil';
+  closeProfile();
+}
+
+profileBtn?.addEventListener('click', openProfile);
+document.getElementById('profileClose')?.addEventListener('click', closeProfile);
+profileBackdrop?.addEventListener('click', closeProfile);
+document.getElementById('profileSave')?.addEventListener('click', saveProfile);
+document.getElementById('profileClear')?.addEventListener('click', clearProfile);
+
+// ============================================================
+// QUOTA INDICATOR
+// ============================================================
+async function refreshQuotaIndicator() {
+  const txt = document.getElementById('quotaText');
+  const wrap = document.getElementById('quotaIndicator');
+  if (!txt || !wrap) return;
+  try {
+    const res = await fetch('/api/sindi-os?action=quota');
+    if (!res.ok) return;
+    const d = await res.json();
+    const limit = d.dailyLimit || 1500;
+    txt.textContent = `${d.global || 0} / ${limit}`;
+    wrap.title = `Hoje: você ${d.user || 0}, total da empresa ${d.global || 0} de ${limit}`;
+    wrap.classList.toggle('warn', d.global / limit >= 0.7);
+    wrap.classList.toggle('crit', d.global / limit >= 0.9);
+  } catch (e) {}
+}
+
+// ============================================================
+// COMMAND PALETTE (slash menu)
+// ============================================================
+const cmdPalette = document.getElementById('cmdPalette');
+const cmdItems = () => cmdPalette.querySelectorAll('.cmd-item');
+let cmdSelectedIdx = 0;
+
+function openCmdPalette() {
+  // Posiciona acima do input
+  const r = input.getBoundingClientRect();
+  cmdPalette.style.left = r.left + 'px';
+  cmdPalette.style.bottom = (window.innerHeight - r.top + 8) + 'px';
+  cmdPalette.classList.add('is-open');
+  cmdSelectedIdx = 0;
+  highlightCmd();
+}
+function closeCmdPalette() {
+  cmdPalette.classList.remove('is-open');
+}
+function highlightCmd() {
+  cmdItems().forEach((el, i) => el.classList.toggle('is-active', i === cmdSelectedIdx));
+}
+function applyCmd(item) {
+  input.value = item.dataset.cmd + (input.value.replace(/^\/\s*/, ''));
+  closeCmdPalette();
+  input.focus();
+  updateSendBtnState();
+}
+
+cmdItems().forEach(item => {
+  item.addEventListener('click', () => applyCmd(item));
+});
+
+input.addEventListener('input', () => {
+  if (input.value.trim() === '/') openCmdPalette();
+  else if (cmdPalette.classList.contains('is-open') && !input.value.startsWith('/')) closeCmdPalette();
+});
+input.addEventListener('keydown', e => {
+  if (cmdPalette.classList.contains('is-open')) {
+    const items = cmdItems();
+    if (e.key === 'ArrowDown') { e.preventDefault(); cmdSelectedIdx = Math.min(cmdSelectedIdx + 1, items.length - 1); highlightCmd(); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); cmdSelectedIdx = Math.max(cmdSelectedIdx - 1, 0); highlightCmd(); }
+    else if (e.key === 'Enter') { e.preventDefault(); applyCmd(items[cmdSelectedIdx]); }
+    else if (e.key === 'Escape') { e.preventDefault(); closeCmdPalette(); }
+  }
+});
+document.addEventListener('click', e => {
+  if (!cmdPalette.contains(e.target) && e.target !== input) closeCmdPalette();
+});
+
+// Init
+loadProfile();
+refreshQuotaIndicator();
 
 sendBtn.addEventListener('click', send);
 

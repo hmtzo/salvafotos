@@ -11,7 +11,22 @@
 // - 1M tokens de contexto
 // =====================================================================
 
+import { retrieveKnowledge } from './_kb.js';
+import { loadOSContext, logAudit, incrementQuota } from './sindi-os.js';
+
 export const config = { runtime: 'edge' };
+
+function getUserFromCookie(request) {
+  const cookies = request.headers.get('cookie') || '';
+  const match = cookies.match(/(?:^|;\s*)sf_auth=([^;]+)/);
+  if (!match) return null;
+  try {
+    const decoded = atob(match[1]);
+    const idx = decoded.indexOf(':');
+    if (idx > 0) return decoded.slice(0, idx).toLowerCase();
+  } catch (e) {}
+  return null;
+}
 
 const SYSTEM_PROMPT = `Você é o SINDICOMPANY OS.
 
@@ -190,7 +205,22 @@ Aprenda continuamente com procedimentos aprovados, decisões recorrentes, padrõ
 
 Você é o cérebro operacional da Sindicompany. Atue como consultor interno de elite, auditor, diretor e guardião do método Sindicompany.
 
-Sempre entregue respostas no padrão Sindicompany.`;
+Sempre entregue respostas no padrão Sindicompany.
+
+================================================================
+SCORE DE CONFIANÇA — OBRIGATÓRIO AO FIM DA RESPOSTA
+================================================================
+Sempre termine sua resposta com uma linha exatamente neste formato (em uma linha só):
+
+[CONFIANÇA: XX% · MOTIVO: <texto curto>]
+
+Onde XX é um número de 0-100 representando a confiança técnica na resposta:
+- 90-100: jurisprudência consolidada / norma técnica clara / procedimento Sindicompany validado
+- 70-89: prática consolidada mas com variações regionais ou pontuais
+- 50-69: análise depende de detalhes específicos não fornecidos
+- 0-49: tema controverso / fora do core / requer escalonamento humano
+
+Se confiança < 70, indique claramente "ESCALONAR" no campo ESCALONAMENTO.`;
 
 // Modelos disponíveis
 const MODEL_FAST = 'gemini-2.5-flash';
@@ -239,8 +269,55 @@ export default async function handler(request) {
     parts: [{ text: m.content }],
   }));
 
+  // ===== Contexto extra: perfil do usuário, memória de conversas e KB =====
+  const user = getUserFromCookie(request);
+  const lastUserMsg = [...messages].reverse().find(m => m.role === 'user')?.content || '';
+
+  let osContext = { profile: null, memory: [] };
+  let kbHits = [];
+  try {
+    [osContext, kbHits] = await Promise.all([
+      user ? loadOSContext(user) : Promise.resolve({ profile: null, memory: [] }),
+      Promise.resolve(retrieveKnowledge(lastUserMsg, 3)),
+    ]);
+  } catch (e) { console.warn('OS context load failed', e); }
+
+  // Constrói bloco de contexto pra anexar ao system prompt
+  const contextBlocks = [];
+  if (osContext.profile && (osContext.profile.name || osContext.profile.role)) {
+    const p = osContext.profile;
+    contextBlocks.push(
+      `=== PERFIL DO USUÁRIO ATUAL ===\n` +
+      (p.name ? `Nome: ${p.name}\n` : '') +
+      (p.role ? `Função: ${p.role}\n` : '') +
+      (p.condos ? `Condomínios sob gestão: ${p.condos}\n` : '') +
+      (p.context ? `Contexto adicional: ${p.context}\n` : '') +
+      `Adapte a resposta ao papel do usuário.`
+    );
+  }
+  if (osContext.memory && osContext.memory.length) {
+    const memTxt = osContext.memory
+      .slice(0, 3)
+      .map(m => `• ${m.summary}`)
+      .join('\n');
+    contextBlocks.push(
+      `=== MEMÓRIA OPERACIONAL (resumos de conversas anteriores) ===\n${memTxt}\n\nUse essas decisões/padrões anteriores como base. Não repita o que já foi dito sem necessidade; refine.`
+    );
+  }
+  if (kbHits.length) {
+    const kbTxt = kbHits.map(k =>
+      `[${k.id}] ${k.title}\n${k.content}`
+    ).join('\n\n---\n\n');
+    contextBlocks.push(
+      `=== BASE DE CONHECIMENTO SINDICOMPANY (recuperada por relevância) ===\n${kbTxt}\n\nUse essas peças como fonte primária. Cite o id [kb-xxx] quando aplicar uma delas.`
+    );
+  }
+
   // Ajusta system prompt e generation config conforme modo
   let systemText = SYSTEM_PROMPT;
+  if (contextBlocks.length) {
+    systemText += '\n\n' + contextBlocks.join('\n\n');
+  }
   let maxTokens = 2000;
   let temperature = 0.7;
   const tools = [];
@@ -310,11 +387,34 @@ export default async function handler(request) {
       }), { status: 200, headers: { 'Content-Type': 'application/json' } });
     }
 
+    // Extrai score de confiança se presente
+    const confMatch = text.match(/\[CONFIANÇA:\s*(\d+)%[^\]]*\]/i);
+    const confidence = confMatch ? parseInt(confMatch[1]) : null;
+
+    // Audit + quota (não bloqueia resposta)
+    if (user) {
+      Promise.all([
+        logAudit(user, {
+          mode: mode || null,
+          model,
+          q: lastUserMsg.slice(0, 200),
+          confidence,
+          tokens: data.usageMetadata?.totalTokenCount || null,
+          kb: kbHits.map(k => k.id),
+        }),
+        incrementQuota(user),
+      ]).catch(e => console.warn('audit/quota failed', e));
+    }
+
     return new Response(JSON.stringify({
       reply: text,
       usage: data.usageMetadata,
       model,
       mode: mode || null,
+      confidence,
+      knowledgeUsed: kbHits.map(k => ({ id: k.id, title: k.title })),
+      hasProfile: !!osContext.profile,
+      memoryCount: osContext.memory.length,
     }), { status: 200, headers: { 'Content-Type': 'application/json' } });
   } catch (err) {
     console.error('Sindi error:', err);
