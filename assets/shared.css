@@ -60,7 +60,7 @@ body::before{
 .nav-container{max-width:1180px;margin:0 auto;padding:0 24px;width:100%}
 
 .nav-logo{display:flex;align-items:center;gap:10px;color:var(--text);text-decoration:none;flex-shrink:0}
-.nav-logo .sindi-logo-img{height:26px;width:auto;display:block}
+.nav-logo .sindi-logo-img{height:22px;width:auto;display:block}
 
 /* Desktop */
 .nav-desktop{display:flex;align-items:center;justify-content:space-between;padding:12px 0;gap:24px}
@@ -333,7 +333,7 @@ footer.app-footer strong{color:var(--text-dim)}
   /* Navbar mobile compacta */
   .nav-header{margin-bottom:16px}
   .nav-container{padding:0 14px}
-  .nav-logo .sindi-logo-img{height:22px}
+  .nav-logo .sindi-logo-img{height:18px}
 
   /* Hero / titles compactos */
   h1{font-size:clamp(22px,7vw,28px)}
