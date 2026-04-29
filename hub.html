@@ -354,82 +354,126 @@
   }
 
   /* ========================================================================
-     DOCK (macOS-style) — fixo no rodapé com magnificação no hover
+     MESSAGE DOCK — pill que expande pra input com gradiente do item
      ======================================================================== */
-  /* ===== AppleDock — spring magnification ===== */
-  .dock-spacer{height:110px}
-  .dock-wrap{
-    position:fixed;bottom:18px;left:50%;transform:translateX(-50%);
-    z-index:100;pointer-events:none;
-    animation:dock-rise 0.6s cubic-bezier(0.2,0.8,0.2,1) 0.3s both;
+  .mdock-spacer{height:96px}
+  .mdock-wrap{
+    position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
+    z-index:100;
+    animation:mdock-rise 0.7s cubic-bezier(0.2,0.8,0.2,1) 0.2s both;
   }
-  @keyframes dock-rise{from{opacity:0;transform:translate(-50%, 80px)}to{opacity:1;transform:translate(-50%, 0)}}
-  .dock{
-    pointer-events:auto;
-    display:flex;align-items:center;justify-content:center;gap:8px;
-    height:58px;padding:8px;width:max-content;
-    background:rgba(0,0,0,0.45);
-    border:1px solid rgba(255,255,255,0.08);
-    border-radius:18px;
-    backdrop-filter:blur(20px) saturate(180%);
-    -webkit-backdrop-filter:blur(20px) saturate(180%);
+  @keyframes mdock-rise{
+    from{opacity:0;transform:translate(-50%, 80px) scale(0.85)}
+    to{opacity:1;transform:translate(-50%, 0) scale(1)}
+  }
+
+  .mdock{
+    display:flex;align-items:center;gap:8px;position:relative;
+    padding:8px 14px;
+    background:#ffffff;
+    border:1px solid rgba(0,0,0,0.08);
+    border-radius:9999px;
     box-shadow:
-      0 1px 0 rgba(255,255,255,0.06) inset,
-      0 16px 48px -12px rgba(0,0,0,0.7);
+      0 24px 60px -12px rgba(0,0,0,0.5),
+      0 8px 20px -6px rgba(0,0,0,0.3),
+      0 1px 0 rgba(255,255,255,0.6) inset;
+    transition:
+      width 0.45s cubic-bezier(0.34, 1.4, 0.5, 1),
+      background 0.25s ease;
+    width:266px;will-change:width, background;
   }
+  .mdock.expanded{width:min(440px, calc(100vw - 32px))}
 
-  .dock-item{
-    --w:40px;
-    width:var(--w);height:var(--w);
-    aspect-ratio:1;flex-shrink:0;
+  .mdock .sep{
+    width:1px;height:22px;background:rgba(0,0,0,0.18);
+    flex-shrink:0;transition:opacity 0.25s, transform 0.3s;
+    transform-origin:center;
+  }
+  .mdock.expanded .sep{opacity:0;transform:scaleY(0)}
+
+  .mdock-spark{
+    width:42px;height:42px;border-radius:50%;flex-shrink:0;
     display:flex;align-items:center;justify-content:center;
-    border-radius:50%;cursor:pointer;text-decoration:none;
-    position:relative;
-    will-change:width, height;
+    font-size:22px;background:transparent;border:none;cursor:pointer;
+    transition:opacity 0.3s, transform 0.4s cubic-bezier(0.4,1.4,0.5,1);
   }
-  .dock-item svg{
-    width:60%;height:60%;flex-shrink:0;
-    transition:transform 0.2s cubic-bezier(.4,1.4,.5,1);
+  .mdock-spark:hover{transform:translateY(-2px) scale(1.05)}
+  .mdock.expanded .mdock-spark{
+    opacity:0;transform:translateX(-20px) scale(0.8);pointer-events:none;
   }
-  .dock-item:active svg{transform:scale(0.88)}
 
-  /* Tints + colored icon (Apple-style: bg-X/10 + text-X) */
-  .dock-item.ai     {background:rgba(236,72,153,0.12);color:#f472b6}
-  .dock-item.doc    {background:rgba(59,130,246,0.12);color:#60a5fa}
-  .dock-item.pdf    {background:rgba(239,68,68,0.12);color:#f87171}
-  .dock-item.org    {background:rgba(245,158,11,0.12);color:#fbbf24}
-  .dock-item.calc   {background:rgba(20,184,166,0.12);color:#5eead4}
-  .dock-item.convert{background:rgba(99,102,241,0.12);color:#818cf8}
-  .dock-item.image  {background:rgba(168,85,247,0.12);color:#c084fc}
-  .dock-item.secure {background:rgba(16,185,129,0.12);color:#34d399}
-  .dock-item.dash   {background:rgba(148,163,184,0.12);color:#cbd5e1}
-
-  /* Tooltip */
-  .dock-item .dock-tip{
-    position:absolute;bottom:calc(100% + 12px);left:50%;
-    transform:translateX(-50%) translateY(6px);
-    background:rgba(0,0,0,0.9);color:#fafafa;
-    padding:5px 10px;border-radius:8px;font-size:11px;font-weight:600;
-    white-space:nowrap;pointer-events:none;
-    opacity:0;transition:opacity 0.2s, transform 0.2s;
-    backdrop-filter:blur(8px);
-    border:1px solid rgba(255,255,255,0.1);
+  .mdock-items{display:flex;align-items:center;gap:8px;flex-shrink:0;position:relative}
+  .mdock-item{
+    width:38px;height:38px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    font-size:18px;border:none;cursor:pointer;position:relative;flex-shrink:0;
+    transition:
+      transform 0.35s cubic-bezier(0.34, 1.4, 0.5, 1),
+      opacity 0.25s ease,
+      background 0.2s ease;
   }
-  .dock-item:hover .dock-tip{opacity:1;transform:translateX(-50%) translateY(0)}
+  .mdock-item:hover{transform:translateY(-3px) scale(1.05)}
+  .mdock-item:active{transform:scale(0.95)}
+  .mdock-item .online-dot{
+    position:absolute;bottom:0;right:0;width:10px;height:10px;
+    background:#22c55e;border:2px solid #fff;border-radius:50%;
+    transform:scale(0);transition:transform 0.35s cubic-bezier(0.34,1.4,0.5,1);
+  }
+  .mdock-item.online .online-dot{transform:scale(1)}
 
-  /* Mobile: dock estática (sem magnificação) e scroll horizontal */
-  @media (max-width: 768px){
-    .dock-spacer{height:80px}
-    .dock-wrap{bottom:10px;left:8px;right:8px;transform:none}
-    .dock{
-      height:56px;padding:8px;border-radius:16px;
-      overflow-x:auto;-webkit-overflow-scrolling:touch;
-      scroll-snap-type:x mandatory;
-      max-width:100%;width:auto;justify-content:flex-start;
-    }
-    .dock::-webkit-scrollbar{display:none}
-    .dock-item{--w:38px !important;scroll-snap-align:start}
-    .dock-item .dock-tip{display:none}
+  /* Itens não selecionados some pra baixo quando expandido */
+  .mdock.expanded .mdock-item:not(.selected){
+    opacity:0;transform:translateY(40px) scale(0.7);pointer-events:none;
+  }
+  .mdock.expanded .mdock-item.selected{
+    background:rgba(255,255,255,0.92) !important;
+    box-shadow:0 4px 12px rgba(0,0,0,0.1);
+  }
+  .mdock.expanded .mdock-item .online-dot{transform:scale(0)}
+
+  .mdock-input{
+    position:absolute;left:62px;right:62px;top:50%;transform:translateY(-50%);
+    background:transparent;border:none;outline:none;
+    font-family:inherit;font-size:14px;font-weight:500;
+    color:rgba(0,0,0,0.78);
+    opacity:0;pointer-events:none;
+    transition:opacity 0.25s ease 0.15s;
+  }
+  .mdock-input::placeholder{color:rgba(0,0,0,0.4)}
+  .mdock.expanded .mdock-input{opacity:1;pointer-events:auto}
+
+  .mdock-menu, .mdock-send{
+    width:42px;height:42px;border-radius:50%;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;
+    background:transparent;border:none;cursor:pointer;color:#374151;
+    transition:transform 0.4s cubic-bezier(0.4,1.4,0.5,1), opacity 0.25s, background 0.2s;
+  }
+  .mdock-menu:hover{transform:translateY(-2px)}
+
+  .mdock-send{
+    width:38px;height:38px;background:rgba(255,255,255,0.95);
+    box-shadow:0 4px 12px rgba(0,0,0,0.12);
+    opacity:0;transform:scale(0) rotate(-90deg);pointer-events:none;
+  }
+  .mdock.expanded .mdock-menu{
+    opacity:0;transform:scale(0) rotate(90deg);pointer-events:none;
+  }
+  .mdock.expanded .mdock-send{
+    opacity:1;transform:scale(1) rotate(0);pointer-events:auto;
+  }
+  .mdock-send:hover:not(:disabled){background:#fff;transform:scale(1.08)}
+  .mdock-send:disabled{opacity:0.45;cursor:not-allowed}
+
+  /* Mobile */
+  @media (max-width: 640px){
+    .mdock-spacer{height:80px}
+    .mdock-wrap{bottom:14px;left:50%;width:auto}
+    .mdock{padding:6px 10px;gap:6px;width:auto}
+    .mdock.expanded{width:calc(100vw - 28px)}
+    .mdock-spark{width:36px;height:36px;font-size:18px}
+    .mdock-item{width:34px;height:34px;font-size:16px}
+    .mdock-menu, .mdock-send{width:36px;height:36px}
+    .mdock-input{left:54px;right:54px;font-size:13px}
   }
 </style>
 </head>
@@ -518,11 +562,26 @@
     <div class="tools-grid" id="toolsGrid" style="margin-top:18px"></div>
   </div>
 
-  <div class="dock-spacer"></div>
+  <div class="mdock-spacer"></div>
 </div>
 
-<div class="dock-wrap" aria-label="Atalhos rápidos">
-  <div class="dock" id="hubDock"></div>
+<div class="mdock-wrap" aria-label="Atalhos rápidos">
+  <div class="mdock" id="hubDock">
+    <button class="mdock-spark" id="mdockSpark" type="button" aria-label="Sindi" title="Conversar com a Sindi">✨</button>
+    <div class="sep"></div>
+
+    <div class="mdock-items" id="mdockItems"></div>
+
+    <input type="text" class="mdock-input" id="mdockInput" placeholder="Pergunte algo…" />
+
+    <div class="sep"></div>
+    <button class="mdock-menu" id="mdockMenu" type="button" aria-label="Abrir ferramentas">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+    <button class="mdock-send" id="mdockSend" type="button" aria-label="Enviar" disabled>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4z"/><path d="M22 2 11 13"/></svg>
+    </button>
+  </div>
 </div>
 
 <div id="app-footer"></div>
@@ -731,95 +790,104 @@ document.querySelectorAll('.sindi-quick-chip').forEach(chip => {
   });
 });
 
-// ===== DockTabs: macOS-style dock com magnificação =====
-const DOCK_ITEMS = [
-  { slug: 'sindi',                cat: 'ai',     icon: 'bot',        label: 'Sindi (IA)' },
-  { slug: 'corretor-texto',       cat: 'ai',     icon: 'pencil',     label: 'Corretor' },
-  { slug: 'gerador-notificacao',  cat: 'doc',    icon: 'fileText',   label: 'Notificação' },
-  { slug: 'gerador-ata',          cat: 'doc',    icon: 'filePen',    label: 'Ata' },
-  { slug: 'gerador-contrato',     cat: 'doc',    icon: 'fileSign',   label: 'Contrato' },
-  { slug: 'calculadoras',         cat: 'calc',   icon: 'calculator', label: 'Calculadoras' },
-  { slug: 'editor-pdf',           cat: 'pdf',    icon: 'pdfEdit',    label: 'Editor PDF' },
-  { slug: 'comparar-pdf',         cat: 'pdf',    icon: 'scale',      label: 'Comparar' },
-  { slug: 'redigir-lgpd',         cat: 'secure', icon: 'shield',     label: 'LGPD' },
-  { slug: 'assinatura',           cat: 'secure', icon: 'signature',  label: 'Assinatura' },
-  { slug: '__dashboard',          cat: 'dash',   icon: 'sparkles',   label: 'Dashboard', href: '/dashboard.html' },
+// ===== MessageDock — pill que expande em input com gradiente do item =====
+const MDOCK_CHARACTERS = [
+  { emoji: '📋', name: 'Notificação',  slug: 'gerador-notificacao', online: true,
+    bg: '#fde68a', gradient: '#fde68a, #fef3c7', placeholder: 'Pedir uma notificação à Sindi…' },
+  { emoji: '📝', name: 'Ata',          slug: 'gerador-ata', online: true,
+    bg: '#bfdbfe', gradient: '#bfdbfe, #dbeafe', placeholder: 'Pedir uma ata à Sindi…' },
+  { emoji: '📄', name: 'Contrato',     slug: 'gerador-contrato', online: true,
+    bg: '#c7d2fe', gradient: '#c7d2fe, #e0e7ff', placeholder: 'Pedir um contrato à Sindi…' },
+  { emoji: '🔢', name: 'Cálculos',     slug: 'calculadoras', online: false,
+    bg: '#a7f3d0', gradient: '#a7f3d0, #d1fae5', placeholder: 'Calcular reajuste, multa, rateio…' },
+  { emoji: '🛡️', name: 'LGPD',         slug: 'redigir-lgpd', online: true,
+    bg: '#fbcfe8', gradient: '#fbcfe8, #fce7f3', placeholder: 'Tarjar dados pessoais num PDF…' },
 ];
 
-const hubDock = document.getElementById('hubDock');
-hubDock.innerHTML = DOCK_ITEMS.map(it => {
-  const href = it.href || `/tools/${it.slug}.html`;
-  return `<a href="${href}" class="dock-item ${it.cat}" data-slug="${it.slug}">
-    <span class="dock-tip">${it.label}</span>
-    ${svg(it.icon, 26)}
-  </a>`;
-}).join('');
+const mdockEl     = document.getElementById('hubDock');
+const mdockSpark  = document.getElementById('mdockSpark');
+const mdockItems  = document.getElementById('mdockItems');
+const mdockInput  = document.getElementById('mdockInput');
+const mdockMenu   = document.getElementById('mdockMenu');
+const mdockSend   = document.getElementById('mdockSend');
 
-// ===== AppleDock magnification: spring physics (mass 0.1, stiffness 150, damping 12)
-// Replica useSpring do Framer Motion. Cada item tem um simulador rodando em rAF.
-const isDesktop = () => window.matchMedia('(min-width: 769px) and (hover: hover)').matches;
-const SIZE = 40, MAGNIFICATION = 60, DISTANCE = 140;
-const SPRING = { mass: 0.1, stiffness: 150, damping: 12 };
-const dt = 1 / 60; // step fixo
+// Render dos botões dos personagens/atalhos
+mdockItems.innerHTML = MDOCK_CHARACTERS.map((c, i) => `
+  <button type="button" class="mdock-item ${c.online ? 'online' : ''}" data-idx="${i}"
+          style="background:${c.bg}" aria-label="${c.name}" title="${c.name}">
+    <span>${c.emoji}</span>
+    <span class="online-dot"></span>
+  </button>
+`).join('');
 
-const springStates = []; // { el, value, velocity, target }
-hubDock.querySelectorAll('.dock-item').forEach(el => {
-  springStates.push({ el, value: SIZE, velocity: 0, target: SIZE });
+let selectedIdx = null;
+
+function setExpanded(idx) {
+  selectedIdx = idx;
+  const isExpanded = idx !== null;
+  mdockEl.classList.toggle('expanded', isExpanded);
+
+  // Marca selecionado
+  mdockItems.querySelectorAll('.mdock-item').forEach(el => {
+    el.classList.toggle('selected', Number(el.dataset.idx) === idx);
+  });
+
+  if (isExpanded) {
+    const c = MDOCK_CHARACTERS[idx];
+    mdockEl.style.background = `linear-gradient(to right, ${c.gradient})`;
+    mdockInput.placeholder = c.placeholder;
+    mdockInput.value = '';
+    setTimeout(() => mdockInput.focus(), 250);
+    mdockSend.disabled = true;
+  } else {
+    mdockEl.style.background = '';
+    mdockInput.value = '';
+  }
+}
+
+mdockItems.addEventListener('click', e => {
+  const btn = e.target.closest('.mdock-item');
+  if (!btn) return;
+  const idx = Number(btn.dataset.idx);
+  setExpanded(selectedIdx === idx ? null : idx);
 });
 
-let mouseX = Infinity;
+mdockSpark.addEventListener('click', () => {
+  window.location.href = '/tools/sindi.html';
+});
 
-function computeTargets() {
-  springStates.forEach(s => {
-    const r = s.el.getBoundingClientRect();
-    const center = r.x + r.width / 2;
-    const offset = mouseX - center;
-    // Mapeia offset ∈ [-DISTANCE, 0, DISTANCE] → [SIZE, MAGNIFICATION, SIZE]
-    let scale;
-    if (Math.abs(offset) >= DISTANCE) scale = SIZE;
-    else {
-      const t = 1 - Math.abs(offset) / DISTANCE;
-      scale = SIZE + (MAGNIFICATION - SIZE) * t;
-    }
-    s.target = scale;
-  });
+mdockMenu.addEventListener('click', () => {
+  setPanelOpen(true);
+  // rolar pra ver o painel
+  toolsPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+});
+
+mdockInput.addEventListener('input', () => {
+  mdockSend.disabled = !mdockInput.value.trim();
+});
+
+function sendMessage() {
+  const text = mdockInput.value.trim();
+  if (!text || selectedIdx === null) return;
+  const c = MDOCK_CHARACTERS[selectedIdx];
+  // Encaminha pra Sindi com prompt contextualizado
+  const prompt = `[${c.name}] ${text}`;
+  try { sessionStorage.setItem('sindi_initial_prompt', prompt); } catch(e){}
+  window.location.href = '/tools/sindi.html';
 }
 
-function tick() {
-  let needs = false;
-  springStates.forEach(s => {
-    // F = -k(x - target) - c*v ; a = F/m
-    const force = -SPRING.stiffness * (s.value - s.target) - SPRING.damping * s.velocity;
-    const accel = force / SPRING.mass;
-    s.velocity += accel * dt;
-    s.value += s.velocity * dt;
-    if (Math.abs(s.velocity) > 0.05 || Math.abs(s.value - s.target) > 0.05) {
-      needs = true;
-    } else {
-      s.value = s.target;
-      s.velocity = 0;
-    }
-    s.el.style.setProperty('--w', s.value.toFixed(2) + 'px');
-  });
-  if (needs) requestAnimationFrame(tick);
-  else animating = false;
-}
+mdockSend.addEventListener('click', sendMessage);
+mdockInput.addEventListener('keydown', e => {
+  if (e.key === 'Enter') { e.preventDefault(); sendMessage(); }
+  if (e.key === 'Escape') { setExpanded(null); }
+});
 
-let animating = false;
-function kick() { if (!animating) { animating = true; requestAnimationFrame(tick); } }
-
-if (isDesktop()) {
-  hubDock.addEventListener('mousemove', e => {
-    mouseX = e.pageX;
-    computeTargets();
-    kick();
-  });
-  hubDock.addEventListener('mouseleave', () => {
-    mouseX = Infinity;
-    computeTargets();
-    kick();
-  });
-}
+// Click outside fecha
+document.addEventListener('mousedown', e => {
+  if (selectedIdx !== null && !mdockEl.contains(e.target)) {
+    setExpanded(null);
+  }
+});
 </script>
 </body>
 </html>
