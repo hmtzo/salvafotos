@@ -193,3 +193,63 @@ footer.app-footer{
   text-align:center;color:var(--text-muted);font-size:12px;
 }
 footer.app-footer strong{color:var(--text-dim)}
+
+/* ========================================================================
+   MOBILE OPTIMIZATIONS
+   ======================================================================== */
+@media (max-width: 640px){
+  body{font-size:14px}
+  .container{padding:0 14px}
+
+  /* Navbar mobile compacta */
+  nav.app-nav{padding:10px 0;margin-bottom:16px}
+  nav.app-nav .nav-inner{padding:0 14px;gap:6px}
+  .logo svg, .logo .sindi-logo-img{height:22px}
+  .nav-actions{gap:4px}
+  .nav-actions .btn-icon{padding:6px 9px;font-size:11px}
+  .nav-actions .badge{padding:5px 8px;font-size:10px}
+  .nav-actions .badge svg{width:11px;height:11px}
+
+  /* Hero / titles compactos */
+  h1{font-size:clamp(22px,7vw,28px)}
+  h2{font-size:18px}
+  h3{font-size:14px}
+  .tool-hero{padding:4px 0 18px}
+  .tool-hero .eyebrow{font-size:10px;padding:4px 10px}
+  .tool-hero p{font-size:13px}
+
+  /* Cards mais finos */
+  .card{padding:16px 14px;border-radius:14px;margin-bottom:12px}
+
+  /* Drop zones */
+  .drop-zone{padding:24px 14px}
+  .drop-icon{width:42px;height:42px}
+  .drop-icon svg{width:20px;height:20px}
+  .drop-title{font-size:14px}
+  .drop-sub{font-size:12px}
+
+  /* Form inputs: 16px evita zoom iOS */
+  .field input[type=text],
+  .field input[type=number],
+  .field input[type=password],
+  .field select{
+    font-size:16px;padding:11px 12px;
+  }
+  .field-row{grid-template-columns:1fr;gap:8px}
+
+  /* Botões touch-friendly */
+  .btn-primary{padding:13px;font-size:14px;margin-top:14px}
+  .btn-primary svg{width:14px;height:14px}
+
+  /* File list itens */
+  .file-item{padding:8px 10px;gap:8px}
+  .file-item .file-icon{width:28px;height:28px;font-size:10px}
+  .file-item .file-name{font-size:12px}
+  .file-item .file-meta{font-size:10px}
+
+  /* Status / progress */
+  .status{padding:10px 12px;font-size:12px}
+
+  /* Footer */
+  footer.app-footer{margin-top:32px;padding:16px 0;font-size:11px}
+}

@@ -2,7 +2,9 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0a0a0c">
+<meta name="apple-mobile-web-app-capable" content="yes">
 <title>Sindi (IA) — Sindicompany Hub</title>
 <meta name="robots" content="noindex, nofollow">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -15,7 +17,36 @@
   .sindi-layout{
     display:grid;grid-template-columns:280px 1fr;gap:14px;height:calc(100vh - 220px);min-height:500px;
   }
-  @media(max-width:900px){.sindi-layout{grid-template-columns:1fr;height:auto}.sidebar{max-height:240px}}
+  @media(max-width:900px){.sindi-layout{grid-template-columns:1fr;height:auto;gap:10px}.sidebar{max-height:200px}}
+  @media(max-width:640px){
+    .sindi-layout{height:auto}
+    .sidebar{max-height:160px;border-radius:12px}
+    .sidebar-head{padding:10px 12px}
+    .sidebar-head h3{font-size:11px}
+    .new-chat-btn{padding:5px 10px;font-size:11px}
+    .conv-item{padding:8px 10px}
+    .conv-item .conv-title{font-size:12px}
+    .conv-item .conv-meta{font-size:10px}
+
+    .chat-shell{border-radius:14px;height:calc(100vh - 300px);min-height:400px}
+    .quick-prompts{padding:10px 12px;gap:6px}
+    .quick-prompts button{padding:5px 10px;font-size:11px}
+    .chat-msgs{padding:14px;gap:10px}
+    .msg{max-width:92%}
+    .msg-avatar{width:28px;height:28px;font-size:12px}
+    .msg-bubble{font-size:13px;padding:10px 12px}
+
+    .chat-input{margin:8px;border-radius:18px}
+    .chat-input textarea{font-size:16px;padding:6px 10px;min-height:36px}
+    .toggle-pill{padding:4px 8px;font-size:11px;height:28px}
+    .toggle-pill svg{width:13px;height:13px}
+    .toggle-pill .label{font-size:10px}
+    .toggle-divider{height:14px;margin:0 1px}
+    .prompt-btn{width:28px;height:28px}
+    .prompt-btn svg{width:16px;height:16px}
+    .send-btn{width:30px;height:30px}
+    .send-btn svg{width:14px;height:14px}
+  }
 
   .sidebar{
     background:var(--card);border:1px solid var(--border);border-radius:var(--radius-lg);

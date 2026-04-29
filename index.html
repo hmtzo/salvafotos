@@ -2,7 +2,10 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0a0a0c">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>Sindicompany Hub</title>
 <meta name="description" content="Hub interno de ferramentas Sindicompany — 26 ferramentas, IA integrada, processado no navegador.">
 <meta name="robots" content="noindex, nofollow">
@@ -281,6 +284,45 @@
   .top-btn:hover{color:var(--fg)}
   .top-btn svg{width:18px;height:18px;transition:transform 0.3s}
   .top-btn:hover svg{transform:translateY(-3px)}
+
+  /* ====== MOBILE OPTIMIZATIONS ============================================ */
+  @media (max-width: 768px){
+    .land-nav{padding:10px 14px}
+    .land-nav .logo img{height:22px}
+    .land-nav .cta-btn{padding:6px 12px;font-size:11px}
+
+    .hero{padding:80px 18px 80px;min-height:100vh}
+    .hero-eyebrow{font-size:10px;padding:6px 12px;margin-bottom:20px;letter-spacing:0.1em}
+    .hero h1{font-size:42px;line-height:1.02;margin-bottom:14px}
+    .hero p.sub{font-size:13px;margin-bottom:26px;max-width:340px}
+    .scroll-hint{font-size:9px}
+    .scroll-hint .line{height:50px}
+
+    .marquee-bar{top:38px;padding:10px 0}
+    .marquee-track{font-size:10px;letter-spacing:0.18em}
+    .marquee-item{gap:24px;padding:0 12px}
+
+    .center-stack{margin-top:60px;padding:0 18px}
+    .center-stack h2{font-size:36px;margin-bottom:24px}
+    .pill-primary{padding:14px 26px;font-size:14px;width:100%;justify-content:center;max-width:300px}
+    .pill-row{flex-direction:column;align-items:center}
+
+    .giant-bg-text{font-size:42vw;bottom:-2vh}
+
+    .footer-aurora{width:120vw;height:50vh}
+
+    .bottom-bar{padding:14px 18px 22px;gap:12px}
+    .copyright{font-size:9px;letter-spacing:0.15em}
+    .crafted-pill{padding:8px 14px}
+    .crafted-pill .label{font-size:9px}
+    .crafted-pill .brand{font-size:11px}
+    .top-btn{width:40px;height:40px}
+  }
+
+  /* Disable expensive effects on mobile */
+  @media (max-width: 768px), (prefers-reduced-motion: reduce){
+    .footer-aurora{animation:none}
+  }
 </style>
 </head>
 <body>
@@ -367,49 +409,59 @@
 <script>
 gsap.registerPlugin(ScrollTrigger);
 
-// === Magnetic buttons ===
-document.querySelectorAll('.magnetic').forEach(el => {
-  el.addEventListener('mousemove', e => {
-    const r = el.getBoundingClientRect();
-    const x = e.clientX - r.left - r.width / 2;
-    const y = e.clientY - r.top - r.height / 2;
-    gsap.to(el, {
-      x: x * 0.3,
-      y: y * 0.3,
-      rotationX: -y * 0.1,
-      rotationY: x * 0.1,
-      scale: 1.04,
-      ease: 'power2.out',
-      duration: 0.4,
-      transformPerspective: 800,
+const isMobile = window.innerWidth < 768 || ('ontouchstart' in window && window.innerWidth < 1024);
+
+// === Magnetic buttons (apenas desktop com mouse) ===
+if (!isMobile) {
+  document.querySelectorAll('.magnetic').forEach(el => {
+    el.addEventListener('mousemove', e => {
+      const r = el.getBoundingClientRect();
+      const x = e.clientX - r.left - r.width / 2;
+      const y = e.clientY - r.top - r.height / 2;
+      gsap.to(el, {
+        x: x * 0.3, y: y * 0.3,
+        rotationX: -y * 0.1, rotationY: x * 0.1,
+        scale: 1.04, ease: 'power2.out',
+        duration: 0.4, transformPerspective: 800,
+      });
+    });
+    el.addEventListener('mouseleave', () => {
+      gsap.to(el, {
+        x: 0, y: 0, rotationX: 0, rotationY: 0, scale: 1,
+        ease: 'elastic.out(1, 0.4)', duration: 1.2,
+      });
     });
   });
-  el.addEventListener('mouseleave', () => {
-    gsap.to(el, {
-      x: 0, y: 0, rotationX: 0, rotationY: 0, scale: 1,
-      ease: 'elastic.out(1, 0.4)', duration: 1.2,
-    });
-  });
-});
+}
 
 // === Scroll-trigger animations ===
-gsap.fromTo('#giantText',
-  { y: '10vh', scale: 0.85, opacity: 0 },
-  {
-    y: '0vh', scale: 1, opacity: 1, ease: 'power1.out',
-    scrollTrigger: { trigger: '.reveal-wrap', start: 'top 80%', end: 'bottom bottom', scrub: 1 },
-  }
-);
+// Scroll-trigger animations (mobile usa versao mais leve sem scrub)
+if (isMobile) {
+  // Mobile: reveals com trigger simples, sem scrub continuo (muito pesado)
+  gsap.fromTo('#giantText',
+    { y: 40, scale: 0.9, opacity: 0 },
+    { y: 0, scale: 1, opacity: 1, duration: 1, ease: 'power2.out',
+      scrollTrigger: { trigger: '.reveal-wrap', start: 'top 80%', toggleActions: 'play none none reverse' } }
+  );
+  gsap.fromTo(['#heading', '#links'],
+    { y: 30, opacity: 0 },
+    { y: 0, opacity: 1, stagger: 0.15, duration: 0.8, ease: 'power3.out',
+      scrollTrigger: { trigger: '.reveal-wrap', start: 'top 60%', toggleActions: 'play none none reverse' } }
+  );
+} else {
+  gsap.fromTo('#giantText',
+    { y: '10vh', scale: 0.85, opacity: 0 },
+    { y: '0vh', scale: 1, opacity: 1, ease: 'power1.out',
+      scrollTrigger: { trigger: '.reveal-wrap', start: 'top 80%', end: 'bottom bottom', scrub: 1 } }
+  );
+  gsap.fromTo(['#heading', '#links'],
+    { y: 60, opacity: 0 },
+    { y: 0, opacity: 1, stagger: 0.15, ease: 'power3.out',
+      scrollTrigger: { trigger: '.reveal-wrap', start: 'top 50%', end: 'bottom bottom', scrub: 1 } }
+  );
+}
 
-gsap.fromTo(['#heading', '#links'],
-  { y: 60, opacity: 0 },
-  {
-    y: 0, opacity: 1, stagger: 0.15, ease: 'power3.out',
-    scrollTrigger: { trigger: '.reveal-wrap', start: 'top 50%', end: 'bottom bottom', scrub: 1 },
-  }
-);
-
-// Hero entrance
+// Hero entrance (em todos)
 gsap.fromTo('.hero h1, .hero p.sub, .hero-eyebrow, .scroll-hint',
   { y: 30, opacity: 0 },
   { y: 0, opacity: 1, stagger: 0.12, ease: 'expo.out', duration: 1, delay: 0.2 }
