@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0a0a0c">
+<title>Painel Admin — Sindicompany</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="icon" href="/logo.svg">
+<link rel="stylesheet" href="/assets/shared.css">
+<style>
+  .admin-hero{padding:18px 0 28px;text-align:left}
+  .admin-hero .eyebrow{
+    display:inline-flex;align-items:center;gap:6px;
+    padding:5px 12px;border-radius:100px;
+    background:rgba(245,158,11,0.15);border:1px solid rgba(245,158,11,0.4);
+    font-size:11px;font-weight:700;color:#fcd34d;text-transform:uppercase;letter-spacing:0.08em;
+    margin-bottom:12px;
+  }
+  .admin-hero h1{font-size:32px;font-weight:800;letter-spacing:-0.02em;margin-bottom:6px}
+  .admin-hero p{color:var(--text-dim);font-size:14px}
+
+  .stats-grid{
+    display:grid;grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));
+    gap:12px;margin-bottom:24px;
+  }
+  .stat-card{
+    background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px;
+  }
+  .stat-card .stat-label{font-size:11px;font-weight:600;color:var(--text-muted);
+    text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px}
+  .stat-card .stat-value{font-size:28px;font-weight:800;letter-spacing:-0.02em;color:var(--text);line-height:1}
+  .stat-card .stat-sub{font-size:11px;color:var(--text-dim);margin-top:6px}
+  .stat-card.warn{border-color:rgba(245,158,11,0.4);background:rgba(245,158,11,0.06)}
+  .stat-card.warn .stat-value{color:#fcd34d}
+
+  .panel{
+    background:var(--card);border:1px solid var(--border);border-radius:16px;
+    padding:22px;margin-bottom:18px;
+  }
+  .panel h2{
+    font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;
+    color:var(--text-dim);margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;
+  }
+  .panel h2 .meta{font-size:11px;color:var(--text-muted);font-weight:500;letter-spacing:0;text-transform:none}
+
+  /* Tabela auditoria */
+  .table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th{
+    text-align:left;padding:10px 12px;background:var(--bg-elev);
+    font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;
+    color:var(--text-muted);border-bottom:1px solid var(--border);
+  }
+  td{padding:10px 12px;border-bottom:1px solid var(--border)}
+  tr:hover td{background:rgba(99,102,241,0.06)}
+  td.mono{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-dim)}
+  td.user{font-weight:600;color:#a5b4fc}
+  td.q{max-width:340px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-dim)}
+  .conf-pill{
+    display:inline-block;padding:2px 7px;border-radius:100px;font-size:10px;font-weight:700;
+  }
+  .conf-pill.high{background:rgba(16,185,129,0.18);color:#6ee7b7}
+  .conf-pill.med{background:rgba(245,158,11,0.18);color:#fcd34d}
+  .conf-pill.low{background:rgba(239,68,68,0.18);color:#fca5a5}
+  .mode-pill{
+    display:inline-block;padding:2px 7px;border-radius:100px;font-size:10px;font-weight:600;
+    background:rgba(255,255,255,0.06);color:var(--text-dim);text-transform:uppercase;letter-spacing:0.04em;
+  }
+
+  /* User cards grid */
+  .users-grid{
+    display:grid;grid-template-columns:repeat(auto-fill, minmax(260px, 1fr));gap:12px;
+  }
+  .user-card{
+    background:var(--bg-elev);border:1px solid var(--border);border-radius:12px;padding:16px;
+    display:flex;flex-direction:column;gap:6px;
+  }
+  .user-card.online{border-color:rgba(16,185,129,0.4)}
+  .user-card .u-email{font-size:13px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .user-card .u-meta{font-size:11px;color:var(--text-muted)}
+  .user-card .u-stats{display:flex;gap:14px;margin-top:8px;font-size:11px;color:var(--text-dim)}
+  .user-card .u-stats strong{color:var(--text);font-weight:700}
+  .user-card .u-name{font-size:11px;color:#a5b4fc;font-weight:600}
+  .user-card .u-status{
+    display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:600;
+    text-transform:uppercase;letter-spacing:0.05em;color:var(--text-muted);margin-top:2px;
+  }
+  .user-card.online .u-status{color:#6ee7b7}
+  .user-card.online .u-status::before{
+    content:'';display:inline-block;width:6px;height:6px;border-radius:50%;
+    background:#10b981;box-shadow:0 0 6px #10b981;
+  }
+
+  /* KB list */
+  .kb-list{display:flex;flex-direction:column;gap:8px}
+  .kb-item{
+    padding:12px 14px;background:var(--bg-elev);border-radius:10px;border:1px solid var(--border);
+  }
+  .kb-item .kb-title{font-size:13px;font-weight:600;margin-bottom:4px;color:var(--text)}
+  .kb-item .kb-id{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-muted)}
+  .kb-item .kb-tags{margin-top:6px;display:flex;gap:4px;flex-wrap:wrap}
+  .kb-tag{
+    padding:2px 7px;border-radius:100px;font-size:10px;
+    background:rgba(99,102,241,0.12);color:#a5b4fc;
+  }
+  .kb-item .kb-actions{display:flex;gap:6px;margin-top:8px}
+  .kb-item .kb-action{
+    padding:4px 10px;border-radius:6px;font-size:11px;
+    background:transparent;border:1px solid var(--border);color:var(--text-dim);cursor:pointer;
+  }
+  .kb-item .kb-action:hover{color:#fff;border-color:#fff}
+  .kb-item .kb-action.danger:hover{color:#fca5a5;border-color:#fca5a5}
+  .kb-item.custom{border-left:3px solid #a5b4fc}
+
+  /* Add KB form */
+  .kb-form{display:none;padding:16px;background:rgba(99,102,241,0.06);border-radius:10px;margin-bottom:14px}
+  .kb-form.open{display:block}
+  .kb-form input, .kb-form textarea{
+    width:100%;padding:8px 10px;margin-top:6px;
+    background:var(--bg-elev);border:1px solid var(--border);border-radius:6px;
+    color:var(--text);font-family:inherit;font-size:13px;
+  }
+  .kb-form label{display:block;margin-bottom:10px;font-size:11px;font-weight:600;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.05em}
+  .kb-form .btn-row{display:flex;gap:8px;margin-top:6px}
+
+  .btn-pri, .btn-sec{
+    padding:8px 14px;border-radius:8px;font-size:12px;font-weight:600;
+    cursor:pointer;border:none;transition:all 0.15s;font-family:inherit;
+  }
+  .btn-pri{background:var(--accent);color:#fff}
+  .btn-pri:hover{background:var(--accent-bright)}
+  .btn-sec{background:transparent;color:var(--text-dim);border:1px solid var(--border)}
+  .btn-sec:hover{color:var(--text);border-color:var(--text-dim)}
+
+  /* Mini sparkline */
+  .sparkline{display:flex;align-items:flex-end;gap:4px;height:48px;margin-top:8px}
+  .sparkline .bar{
+    flex:1;background:linear-gradient(180deg, #6366f1, #4f46e5);
+    border-radius:3px 3px 0 0;min-height:4px;position:relative;
+  }
+  .sparkline .bar::after{
+    content:attr(data-count);position:absolute;top:-16px;left:50%;
+    transform:translateX(-50%);font-size:10px;color:var(--text-muted);font-weight:600;
+  }
+
+  .forbidden{
+    text-align:center;padding:60px 20px;
+  }
+  .forbidden h2{color:#fca5a5;margin-bottom:8px}
+  .forbidden p{color:var(--text-dim);margin-bottom:20px}
+</style>
+</head>
+<body>
+<div id="app-nav"></div>
+<div class="container">
+
+  <div id="forbidden" class="forbidden" hidden>
+    <h2>🔒 Acesso restrito</h2>
+    <p>Este painel é apenas para administradores.</p>
+    <a href="/hub.html" class="btn-pri" style="text-decoration:none">Voltar ao Hub</a>
+  </div>
+
+  <div id="adminContent" hidden>
+    <section class="admin-hero">
+      <span class="eyebrow">⚡ Admin</span>
+      <h1>Sindicompany OS · Painel</h1>
+      <p>Auditoria, usuários, base de conhecimento e quota da Sindi.</p>
+    </section>
+
+    <!-- Visão geral -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">Queries Hoje</div>
+        <div class="stat-value" id="statToday">—</div>
+        <div class="stat-sub" id="statTodayPct">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Últimos 7 dias</div>
+        <div class="stat-value" id="statWeek">—</div>
+        <div class="stat-sub">total acumulado</div>
+        <div class="sparkline" id="sparkline"></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Usuários ativos 24h</div>
+        <div class="stat-value" id="statActive">—</div>
+        <div class="stat-sub" id="statActiveSub">de — total</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Perfis preenchidos</div>
+        <div class="stat-value" id="statProfiles">—</div>
+        <div class="stat-sub">com nome ou função</div>
+      </div>
+      <div class="stat-card warn">
+        <div class="stat-label">Quota Gemini</div>
+        <div class="stat-value" id="statQuota">—</div>
+        <div class="stat-sub">de 1500/dia</div>
+      </div>
+    </div>
+
+    <!-- Usuários -->
+    <section class="panel">
+      <h2>Usuários <span class="meta" id="usersCount">—</span></h2>
+      <div class="users-grid" id="usersGrid"></div>
+    </section>
+
+    <!-- Auditoria -->
+    <section class="panel">
+      <h2>Trilha de auditoria <span class="meta" id="auditCount">— últimas interações</span></h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Quando</th>
+              <th>Usuário</th>
+              <th>Pergunta</th>
+              <th>Modo</th>
+              <th>Conf.</th>
+              <th>KB</th>
+              <th>Tokens</th>
+            </tr>
+          </thead>
+          <tbody id="auditBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Knowledge Base -->
+    <section class="panel">
+      <h2>
+        Base de conhecimento custom
+        <button class="btn-pri" id="addKbBtn" style="font-size:11px;padding:6px 12px">+ Nova peça</button>
+      </h2>
+      <div class="kb-form" id="kbForm">
+        <label>Título<input type="text" id="kbTitle" placeholder="Ex: Protocolo Falta de Energia"></label>
+        <label>Tags (separadas por vírgula)<input type="text" id="kbTags" placeholder="Ex: energia, blackout, gerador, ENEL"></label>
+        <label>Conteúdo (markdown permitido)<textarea id="kbContent" rows="8" placeholder="Procedimento padrão..."></textarea></label>
+        <div class="btn-row">
+          <button class="btn-pri" id="saveKb">Salvar peça</button>
+          <button class="btn-sec" id="cancelKb">Cancelar</button>
+        </div>
+      </div>
+      <div class="kb-list" id="kbCustomList"></div>
+      <h2 style="margin-top:24px;border-top:1px solid var(--border);padding-top:18px">Base hardcoded (read-only)</h2>
+      <div class="kb-list" id="kbHardList"></div>
+    </section>
+  </div>
+</div>
+<div id="app-footer"></div>
+
+<script src="/assets/shared.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+
+function fmtTs(ts) {
+  if (!ts) return '—';
+  const d = new Date(ts);
+  return d.toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' });
+}
+function fmtRel(ts) {
+  if (!ts) return 'nunca';
+  const diff = Date.now() - ts;
+  const sec = Math.floor(diff/1000);
+  if (sec < 60) return 'agora';
+  if (sec < 3600) return Math.floor(sec/60)+'min';
+  if (sec < 86400) return Math.floor(sec/3600)+'h';
+  return Math.floor(sec/86400)+'d';
+}
+function escapeHtml(s) {
+  return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
+}
+
+async function loadAll() {
+  // Verifica acesso
+  const meRes = await fetch('/api/sindi-os?action=me-stats');
+  if (!meRes.ok) { showForbidden(); return; }
+  const me = await meRes.json();
+  if (!me.isAdmin) { showForbidden(); return; }
+
+  $('adminContent').hidden = false;
+
+  const [overviewRes, auditRes, kbRes] = await Promise.all([
+    fetch('/api/sindi-os?action=admin-overview'),
+    fetch('/api/sindi-os?action=admin-audit&limit=200'),
+    fetch('/api/sindi-os?action=kb-list'),
+  ]);
+
+  if (overviewRes.ok) renderOverview(await overviewRes.json());
+  if (auditRes.ok) renderAudit((await auditRes.json()).entries || []);
+  if (kbRes.ok) renderKb((await kbRes.json()).custom || []);
+  renderHardcodedKbHints();
+}
+
+function showForbidden() {
+  $('forbidden').hidden = false;
+}
+
+function renderOverview(d) {
+  $('statToday').textContent = d.today;
+  $('statTodayPct').textContent = `${Math.round((d.today / d.dailyLimit) * 100)}% da quota`;
+  $('statWeek').textContent = d.week7d;
+  $('statActive').textContent = d.activeUsers24h;
+  $('statActiveSub').textContent = `de ${d.totalUsers} total`;
+  $('statProfiles').textContent = d.profilesCount;
+  $('statQuota').textContent = `${d.today} / ${d.dailyLimit}`;
+
+  // Sparkline
+  const max = Math.max(1, ...d.dailyCounts.map(x => x.count));
+  $('sparkline').innerHTML = d.dailyCounts.map(x =>
+    `<div class="bar" style="height:${(x.count/max)*100}%" data-count="${x.count}" title="${x.date}: ${x.count}"></div>`
+  ).join('');
+
+  // Users grid
+  $('usersCount').textContent = `${d.users.length} cadastrados`;
+  $('usersGrid').innerHTML = d.users.map(u => {
+    const online = u.lastSeen && (Date.now() - u.lastSeen < 86400000);
+    return `
+      <div class="user-card ${online ? 'online' : ''}">
+        ${u.name ? `<div class="u-name">${escapeHtml(u.name)}${u.role ? ' · '+escapeHtml(u.role) : ''}</div>` : ''}
+        <div class="u-email">${escapeHtml(u.email)}</div>
+        <div class="u-meta">Último acesso: ${fmtRel(u.lastSeen)}</div>
+        <div class="u-stats">
+          <span><strong>${u.todayCount}</strong> hoje</span>
+          <span>${u.hasProfile ? '✓ perfil' : '— sem perfil'}</span>
+        </div>
+        <div class="u-status">${online ? 'Ativo' : 'Inativo'}</div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderAudit(entries) {
+  $('auditCount').textContent = `${entries.length} últimas interações`;
+  if (!entries.length) {
+    $('auditBody').innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--text-muted);padding:24px">Sem registros ainda.</td></tr>';
+    return;
+  }
+  $('auditBody').innerHTML = entries.map(e => {
+    const conf = e.confidence;
+    const tier = conf == null ? null : (conf >= 80 ? 'high' : conf >= 60 ? 'med' : 'low');
+    return `
+      <tr>
+        <td class="mono">${fmtTs(e.ts)}</td>
+        <td class="user">${escapeHtml((e.user || '').split('@')[0])}</td>
+        <td class="q" title="${escapeHtml(e.q || '')}">${escapeHtml(e.q || '')}</td>
+        <td>${e.mode ? `<span class="mode-pill">${e.mode}</span>` : '—'}</td>
+        <td>${tier ? `<span class="conf-pill ${tier}">${conf}%</span>` : '—'}</td>
+        <td class="mono">${(e.kb || []).length}</td>
+        <td class="mono">${e.tokens || '—'}</td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function renderKb(customList) {
+  if (!customList.length) {
+    $('kbCustomList').innerHTML = '<div style="padding:14px;text-align:center;color:var(--text-muted);font-size:13px">Nenhuma peça custom. Clique "+ Nova peça" pra adicionar conhecimento da Sindicompany.</div>';
+    return;
+  }
+  $('kbCustomList').innerHTML = customList.map(p => `
+    <div class="kb-item custom">
+      <div class="kb-id">${escapeHtml(p.id)}</div>
+      <div class="kb-title">${escapeHtml(p.title)}</div>
+      <div class="kb-tags">${(p.tags || []).map(t => `<span class="kb-tag">${escapeHtml(t)}</span>`).join('')}</div>
+      <div class="kb-actions">
+        <button class="kb-action" data-action="view" data-id="${escapeHtml(p.id)}">Ver conteúdo</button>
+        <button class="kb-action danger" data-action="del" data-id="${escapeHtml(p.id)}">Excluir</button>
+      </div>
+      <div class="kb-content" data-id="${escapeHtml(p.id)}" hidden style="margin-top:10px;padding:10px;background:rgba(0,0,0,0.2);border-radius:6px;font-size:12px;line-height:1.5;color:var(--text-dim);white-space:pre-wrap;font-family:'JetBrains Mono',monospace;">${escapeHtml(p.content)}</div>
+    </div>
+  `).join('');
+
+  $('kbCustomList').querySelectorAll('[data-action="view"]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.dataset.id;
+      const c = $('kbCustomList').querySelector(`.kb-content[data-id="${id}"]`);
+      c.hidden = !c.hidden;
+    });
+  });
+  $('kbCustomList').querySelectorAll('[data-action="del"]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('Excluir esta peça?')) return;
+      const id = btn.dataset.id;
+      await fetch('/api/sindi-os', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'kb-delete', id }),
+      });
+      loadAll();
+    });
+  });
+}
+
+function renderHardcodedKbHints() {
+  // Lista as 13 peças hardcoded só pelo título e id
+  const titles = [
+    ['kb-quorum', 'Quóruns de Assembleia — Código Civil'],
+    ['kb-multa', 'Aplicação de Multa — Devido Processo'],
+    ['kb-inadimplencia', 'Cobrança de Inadimplência'],
+    ['kb-lgpd', 'LGPD em Condomínios'],
+    ['kb-nbr16280', 'NBR 16.280 — Reformas em Edificações'],
+    ['kb-avcb', 'AVCB / CLCB — Bombeiros'],
+    ['kb-elevador', 'Manutenção de Elevadores'],
+    ['kb-falta-agua', 'Protocolo Falta de Água'],
+    ['kb-vazamento', 'Protocolo de Vazamento'],
+    ['kb-barulho', 'Protocolo Barulho / Perturbação'],
+    ['kb-assembleia', 'Convocação e Realização de Assembleia'],
+    ['kb-rateio', 'Rateio e Fração Ideal'],
+    ['kb-metodo-sindicompany', 'Método Sindicompany — Princípios'],
+  ];
+  $('kbHardList').innerHTML = titles.map(([id, title]) => `
+    <div class="kb-item">
+      <div class="kb-id">${id}</div>
+      <div class="kb-title">${title}</div>
+    </div>
+  `).join('');
+}
+
+// Add KB form
+$('addKbBtn').addEventListener('click', () => $('kbForm').classList.add('open'));
+$('cancelKb').addEventListener('click', () => $('kbForm').classList.remove('open'));
+$('saveKb').addEventListener('click', async () => {
+  const piece = {
+    title: $('kbTitle').value.trim(),
+    tags: $('kbTags').value,
+    content: $('kbContent').value.trim(),
+  };
+  if (!piece.title || !piece.content) { alert('Título e conteúdo obrigatórios'); return; }
+  const res = await fetch('/api/sindi-os', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'kb-add', piece }),
+  });
+  if (res.ok) {
+    $('kbTitle').value = '';
+    $('kbTags').value = '';
+    $('kbContent').value = '';
+    $('kbForm').classList.remove('open');
+    loadAll();
+  } else alert('Erro ao salvar peça');
+});
+
+loadAll();
+</script>
+</body>
+</html>

@@ -357,23 +357,25 @@ Erro comum: cobrar despesa extraordinária do inquilino em vez do proprietário 
 // =====================================================================
 // Recuperação por keyword (simples, sem embeddings)
 // =====================================================================
-// Retorna até `limit` peças mais relevantes pra query
-export function retrieveKnowledge(query, limit = 3) {
+// Retorna até `limit` peças mais relevantes pra query.
+// `customPieces` é opcional — quando fornecido, é mesclado com o array
+// hardcoded pra busca (peças custom adicionadas pelo admin via UI).
+export function retrieveKnowledge(query, limit = 3, customPieces = []) {
   if (!query || typeof query !== 'string') return [];
   const q = query.toLowerCase();
-  // remove acentos pra match mais flexível
   const normalize = s => s.toLowerCase()
     .normalize('NFD').replace(/[̀-ͯ]/g, '');
   const qNorm = normalize(q);
 
-  // Score: cada tag presente +2, cada palavra do título presente +1
-  const scored = KNOWLEDGE_BASE.map(kb => {
+  const all = [...KNOWLEDGE_BASE, ...(customPieces || [])];
+  const scored = all.map(kb => {
     let score = 0;
-    for (const tag of kb.tags) {
+    const tags = Array.isArray(kb.tags) ? kb.tags : [];
+    for (const tag of tags) {
       const tagNorm = normalize(tag);
-      if (qNorm.includes(tagNorm)) score += 2;
+      if (tagNorm && qNorm.includes(tagNorm)) score += 2;
     }
-    const titleWords = normalize(kb.title).split(/\s+/).filter(w => w.length > 3);
+    const titleWords = normalize(kb.title || '').split(/\s+/).filter(w => w.length > 3);
     for (const w of titleWords) {
       if (qNorm.includes(w)) score += 1;
     }

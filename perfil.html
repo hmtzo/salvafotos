@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0a0a0c">
+<title>Meu Perfil — Sindicompany Hub</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="icon" href="/logo.svg">
+<link rel="stylesheet" href="/assets/shared.css">
+<style>
+  .perfil-hero{
+    display:flex;align-items:center;gap:24px;padding:32px 28px;
+    background:linear-gradient(135deg, rgba(99,102,241,0.18), rgba(99,102,241,0.04));
+    border:1px solid rgba(99,102,241,0.25);border-radius:18px;margin-bottom:24px;
+  }
+  .perfil-avatar{
+    width:84px;height:84px;border-radius:22px;flex-shrink:0;
+    background:linear-gradient(135deg, #6366f1, #4f46e5);
+    display:flex;align-items:center;justify-content:center;
+    color:#fff;font-size:32px;font-weight:700;letter-spacing:-0.02em;
+    box-shadow:0 12px 32px -8px rgba(99,102,241,0.5);
+  }
+  .perfil-info h1{font-size:28px;font-weight:800;margin-bottom:4px;letter-spacing:-0.02em}
+  .perfil-info p{font-size:14px;color:var(--text-dim);margin:0}
+  .perfil-info .role-tag{
+    display:inline-flex;align-items:center;gap:6px;
+    margin-top:8px;padding:4px 10px;border-radius:100px;
+    background:rgba(99,102,241,0.18);border:1px solid rgba(99,102,241,0.4);
+    font-size:11px;font-weight:600;color:#a5b4fc;text-transform:uppercase;letter-spacing:0.06em;
+  }
+  @media (max-width:640px){
+    .perfil-hero{padding:20px 16px;gap:14px}
+    .perfil-avatar{width:60px;height:60px;font-size:24px;border-radius:16px}
+    .perfil-info h1{font-size:22px}
+  }
+
+  .stats-grid{
+    display:grid;grid-template-columns:repeat(auto-fit, minmax(170px, 1fr));
+    gap:12px;margin-bottom:24px;
+  }
+  .stat-card{
+    background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px;
+  }
+  .stat-card .stat-label{font-size:11px;font-weight:600;color:var(--text-muted);
+    text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px}
+  .stat-card .stat-value{font-size:28px;font-weight:800;letter-spacing:-0.02em;color:var(--text);line-height:1}
+  .stat-card .stat-sub{font-size:11px;color:var(--text-dim);margin-top:6px}
+  .stat-card.accent .stat-value{color:#a5b4fc}
+
+  .panel{
+    background:var(--card);border:1px solid var(--border);border-radius:16px;
+    padding:22px;margin-bottom:18px;
+  }
+  .panel h2{
+    font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;
+    color:var(--text-dim);margin-bottom:16px;
+  }
+  .panel-row{display:flex;justify-content:space-between;align-items:center;gap:12px}
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media (max-width:640px){.form-grid{grid-template-columns:1fr}}
+  .form-grid label, .full-field{display:flex;flex-direction:column;gap:6px}
+  .full-field{margin-top:14px}
+  .form-grid label span, .full-field span{font-size:12px;font-weight:600;color:var(--text-dim)}
+  .form-grid input, .form-grid textarea, .full-field input, .full-field textarea{
+    width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;
+    background:var(--bg-elev);color:var(--text);font-family:inherit;font-size:13.5px;
+  }
+  .form-grid input:focus, .full-field textarea:focus, .full-field input:focus{
+    outline:none;border-color:var(--accent);background:var(--accent-glow);
+  }
+  .btn-row{display:flex;gap:10px;margin-top:16px}
+  .btn-pri, .btn-sec, .btn-danger{
+    padding:10px 18px;border-radius:8px;font-family:inherit;font-size:13px;font-weight:600;
+    cursor:pointer;border:none;transition:all 0.15s;
+  }
+  .btn-pri{background:var(--accent);color:#fff}
+  .btn-pri:hover{background:var(--accent-bright)}
+  .btn-sec{background:transparent;color:var(--text-dim);border:1px solid var(--border)}
+  .btn-sec:hover{color:var(--text);border-color:var(--text-dim)}
+  .btn-danger{background:transparent;color:#fca5a5;border:1px solid rgba(239,68,68,0.4)}
+  .btn-danger:hover{background:rgba(239,68,68,0.1);color:#fca5a5}
+
+  .mem-list{display:flex;flex-direction:column;gap:8px}
+  .mem-item{
+    padding:12px 14px;background:var(--bg-elev);border-radius:10px;border:1px solid var(--border);
+    display:flex;justify-content:space-between;align-items:flex-start;gap:12px;
+  }
+  .mem-item .mem-text{font-size:13px;color:var(--text);line-height:1.45;flex:1;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  .mem-item .mem-time{font-size:10px;color:var(--text-muted);white-space:nowrap;flex-shrink:0}
+
+  .empty-state{
+    padding:24px;text-align:center;color:var(--text-muted);font-size:13px;
+    background:var(--bg-elev);border-radius:10px;
+  }
+
+  .ok-flash{
+    position:fixed;top:80px;right:24px;z-index:200;
+    padding:12px 18px;border-radius:10px;
+    background:rgba(16,185,129,0.15);border:1px solid rgba(16,185,129,0.4);
+    color:#6ee7b7;font-size:13px;font-weight:500;
+    transform:translateX(120%);transition:transform 0.3s cubic-bezier(0.2,0.8,0.2,1);
+  }
+  .ok-flash.show{transform:translateX(0)}
+</style>
+</head>
+<body>
+<div id="app-nav"></div>
+<div class="container">
+
+  <!-- Hero personalizado -->
+  <section class="perfil-hero">
+    <div class="perfil-avatar" id="avatar">?</div>
+    <div class="perfil-info">
+      <h1 id="greeting">Carregando…</h1>
+      <p id="userEmail"></p>
+      <span class="role-tag" id="roleTag" hidden></span>
+    </div>
+  </section>
+
+  <!-- Stats -->
+  <div class="stats-grid">
+    <div class="stat-card accent">
+      <div class="stat-label">Queries Hoje</div>
+      <div class="stat-value" id="statToday">—</div>
+      <div class="stat-sub">na Sindi</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Total acumulado</div>
+      <div class="stat-value" id="statTotal">—</div>
+      <div class="stat-sub">interações registradas</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Memórias salvas</div>
+      <div class="stat-value" id="statMemories">—</div>
+      <div class="stat-sub">resumos automáticos</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Conversas</div>
+      <div class="stat-value" id="statConvs">—</div>
+      <div class="stat-sub">no histórico Sindi</div>
+    </div>
+  </div>
+
+  <!-- Editar perfil -->
+  <section class="panel">
+    <h2>Meu perfil</h2>
+    <div class="form-grid">
+      <label><span>Nome</span><input type="text" id="profName" placeholder="Como você quer ser chamado"></label>
+      <label><span>Função / cargo</span><input type="text" id="profRole" placeholder="Síndico, backoffice, jurídico, diretoria…"></label>
+    </div>
+    <div class="full-field">
+      <span>Condomínios sob gestão</span>
+      <input type="text" id="profCondos" placeholder="Ex: Edifício X (SP), Residencial Y (Campinas)">
+    </div>
+    <div class="full-field">
+      <span>Contexto adicional</span>
+      <textarea id="profContext" rows="3" placeholder="Ex: foco em condomínios de alto padrão, especializado em LGPD…"></textarea>
+    </div>
+    <div class="btn-row">
+      <button class="btn-pri" id="saveProfile">Salvar perfil</button>
+      <button class="btn-sec" id="clearProfile">Limpar perfil</button>
+    </div>
+  </section>
+
+  <!-- Memórias -->
+  <section class="panel">
+    <div class="panel-row" style="margin-bottom:14px">
+      <h2 style="margin:0">Minhas memórias operacionais</h2>
+      <button class="btn-danger" id="clearMemories">Esquecer todas</button>
+    </div>
+    <div class="mem-list" id="memList">
+      <div class="empty-state">Carregando…</div>
+    </div>
+  </section>
+
+  <!-- Atalhos -->
+  <section class="panel">
+    <h2>Atalhos</h2>
+    <div class="btn-row" style="flex-wrap:wrap">
+      <a class="btn-sec" href="/tools/sindi.html">Abrir Sindi</a>
+      <a class="btn-sec" href="/dashboard.html">Dashboard de uso de ferramentas</a>
+      <a class="btn-sec" href="/hub.html">Voltar ao Hub</a>
+      <a class="btn-sec" id="adminLink" href="/admin.html" hidden>Painel admin</a>
+    </div>
+  </section>
+
+</div>
+<div id="app-footer"></div>
+
+<div class="ok-flash" id="flash">Salvo!</div>
+
+<script src="/assets/shared.js"></script>
+<script>
+const $ = id => document.getElementById(id);
+let cachedProfile = null;
+
+function getTimeGreeting() {
+  const offset = -3 * 60;
+  const local = new Date(Date.now() + (new Date().getTimezoneOffset() + offset) * 60000);
+  const h = local.getHours();
+  if (h >= 5 && h < 12) return 'Bom dia';
+  if (h >= 12 && h < 18) return 'Boa tarde';
+  return 'Boa noite';
+}
+function getInitials(name, fallback) {
+  if (!name) return (fallback || '?').slice(0, 2).toUpperCase();
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+function flash(msg) {
+  const el = $('flash');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2400);
+}
+function fmtRelative(ts) {
+  if (!ts) return '—';
+  const diff = Date.now() - ts;
+  const sec = Math.floor(diff/1000);
+  if (sec < 60) return 'agora';
+  if (sec < 3600) return Math.floor(sec/60) + 'min atrás';
+  if (sec < 86400) return Math.floor(sec/3600) + 'h atrás';
+  return Math.floor(sec/86400) + 'd atrás';
+}
+
+async function loadAll() {
+  try {
+    const [statsRes, memRes] = await Promise.all([
+      fetch('/api/sindi-os?action=me-stats'),
+      fetch('/api/sindi-os?action=memory'),
+    ]);
+    const stats = statsRes.ok ? await statsRes.json() : null;
+    const mem = memRes.ok ? await memRes.json() : { memory: [] };
+    if (stats) renderStats(stats);
+    renderMemories(mem.memory || []);
+  } catch (e) { console.error(e); }
+}
+
+function renderStats(s) {
+  cachedProfile = s.profile;
+  const firstName = s.profile?.name?.trim().split(/\s+/)[0];
+  const display = firstName || s.user.split('@')[0];
+  $('greeting').textContent = `${getTimeGreeting()}, ${display}.`;
+  $('userEmail').textContent = s.user;
+  $('avatar').textContent = getInitials(s.profile?.name, display);
+  if (s.profile?.role) {
+    const tag = $('roleTag');
+    tag.hidden = false;
+    tag.textContent = s.profile.role;
+  }
+  $('statToday').textContent = s.today;
+  $('statTotal').textContent = s.totalQueries;
+  $('statMemories').textContent = s.memoriesCount;
+  $('statConvs').textContent = s.conversationsCount;
+  if (s.isAdmin) $('adminLink').hidden = false;
+
+  // preenche form
+  $('profName').value = s.profile?.name || '';
+  $('profRole').value = s.profile?.role || '';
+  $('profCondos').value = s.profile?.condos || '';
+  $('profContext').value = s.profile?.context || '';
+}
+
+function renderMemories(list) {
+  const el = $('memList');
+  if (!list.length) {
+    el.innerHTML = '<div class="empty-state">Sem memórias salvas. Quando você abre uma nova conversa após ≥4 mensagens, a Sindi resume e guarda os tópicos aqui.</div>';
+    return;
+  }
+  el.innerHTML = list.map((m, i) => `
+    <div class="mem-item">
+      <div class="mem-text">${escapeHtml(m.summary || '').replace(/\n/g, ' ')}</div>
+      <div class="mem-time">${fmtRelative(m.ts)}</div>
+    </div>
+  `).join('');
+}
+
+function escapeHtml(s) {
+  return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
+}
+
+$('saveProfile').addEventListener('click', async () => {
+  const data = {
+    name: $('profName').value.trim(),
+    role: $('profRole').value.trim(),
+    condos: $('profCondos').value.trim(),
+    context: $('profContext').value.trim(),
+  };
+  const res = await fetch('/api/sindi-os', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'profile', data }),
+  });
+  if (res.ok) { flash('Perfil salvo!'); loadAll(); }
+  else flash('Erro ao salvar.');
+});
+
+$('clearProfile').addEventListener('click', async () => {
+  if (!confirm('Limpar todo o perfil?')) return;
+  await fetch('/api/sindi-os', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'profile-clear' }),
+  });
+  flash('Perfil limpo.');
+  loadAll();
+});
+
+$('clearMemories').addEventListener('click', async () => {
+  if (!confirm('Esquecer TODAS as memórias operacionais? Não desfaz.')) return;
+  await fetch('/api/sindi-os', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'memory-clear' }),
+  });
+  flash('Memórias apagadas.');
+  loadAll();
+});
+
+loadAll();
+</script>
+</body>
+</html>

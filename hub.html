@@ -60,6 +60,20 @@
     font-size:17px;color:var(--text-dim);max-width:600px;margin:0 auto;
     line-height:1.5;font-weight:400;
   }
+  .hub-mini{
+    display:inline-flex;align-items:center;justify-content:center;gap:10px;
+    margin-top:18px;padding:8px 18px;border-radius:100px;
+    background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);
+    font-size:12.5px;color:var(--text-dim);
+    backdrop-filter:blur(12px);
+  }
+  .hub-mini-item strong{color:var(--text);font-weight:700}
+  .hub-mini-sep{opacity:0.4}
+  .hub-mini-link{color:#a5b4fc;text-decoration:none;font-weight:600;margin-left:4px}
+  .hub-mini-link:hover{color:#fff}
+  @media (max-width:640px){
+    .hub-mini{font-size:11px;padding:7px 14px;flex-wrap:wrap;gap:6px}
+  }
 
   .search-wrap{max-width:520px;margin:24px auto 8px;position:relative}
   .search-wrap input{
@@ -478,12 +492,21 @@
 <div class="container">
 
   <section class="hub-hero">
-    <span class="hub-eyebrow">Sindicompany Hub · Uso interno</span>
-    <h1>
+    <span class="hub-eyebrow"><span id="hubEyebrowText">Sindicompany Hub · Uso interno</span></span>
+    <h1 id="hubHeadline">
       <span class="silver-matte">Ferramentas para o</span><br>
       <span class="highlight">dia a dia do escritório</span>
     </h1>
-    <p>Tudo num só lugar — processado direto no navegador.</p>
+    <p id="hubSubline">Tudo num só lugar — processado direto no navegador.</p>
+
+    <!-- Mini-stats da home (escondido por padrão; aparece quando perfil carrega) -->
+    <div class="hub-mini" id="hubMini" hidden>
+      <span class="hub-mini-item"><strong id="miniToday">0</strong> queries hoje</span>
+      <span class="hub-mini-sep">·</span>
+      <span class="hub-mini-item"><strong id="miniConvs">0</strong> conversas com a Sindi</span>
+      <span class="hub-mini-sep">·</span>
+      <a href="/perfil.html" class="hub-mini-link">Meu perfil</a>
+    </div>
 
     <div class="search-wrap">
       <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
@@ -634,6 +657,49 @@ function toolCard(t) {
 
 search.addEventListener('input', renderTools);
 renderTools();
+
+// ===== Saudação personalizada no hub =====
+function getTimeGreeting() {
+  const offset = -3 * 60;
+  const local = new Date(Date.now() + (new Date().getTimezoneOffset() + offset) * 60000);
+  const h = local.getHours();
+  if (h >= 5 && h < 12) return 'Bom dia';
+  if (h >= 12 && h < 18) return 'Boa tarde';
+  return 'Boa noite';
+}
+
+(async function personalizeHub() {
+  try {
+    const res = await fetch('/api/sindi-os?action=me-stats');
+    if (!res.ok) return;
+    const s = await res.json();
+    const firstName = s.profile?.name?.trim().split(/\s+/)[0];
+    const eyebrow = document.getElementById('hubEyebrowText');
+    const headline = document.getElementById('hubHeadline');
+    const subline = document.getElementById('hubSubline');
+    const mini = document.getElementById('hubMini');
+
+    if (firstName) {
+      // Personaliza headline
+      eyebrow.textContent = `${getTimeGreeting()}, ${firstName}`;
+      headline.innerHTML = `
+        <span class="silver-matte">O que vamos resolver</span><br>
+        <span class="highlight">hoje?</span>
+      `;
+      const condos = s.profile?.condos
+        ? `${s.profile.condos.length > 60 ? 'Suas operações' : s.profile.condos} ao alcance.`
+        : 'Tudo num só lugar.';
+      subline.textContent = condos + ' Use a busca, escolha uma ferramenta ou converse com a Sindi.';
+    } else {
+      eyebrow.textContent = `${getTimeGreeting()} · Sindicompany Hub`;
+    }
+
+    // Mini-stats
+    document.getElementById('miniToday').textContent = s.today || 0;
+    document.getElementById('miniConvs').textContent = s.conversationsCount || 0;
+    mini.hidden = false;
+  } catch (e) {}
+})();
 
 // Atalho "/" foca a busca
 document.addEventListener('keydown', e => {

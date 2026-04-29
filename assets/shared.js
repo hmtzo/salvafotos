@@ -113,7 +113,14 @@ function renderNav() {
             <ul class="nav-menu">${desktopMenu}</ul>
           </div>
           <div class="nav-right">
-            <span class="nav-badge">${NAV_ICONS.shield} Interno</span>
+            <a href="/perfil.html" class="nav-btn-outline" title="Meu perfil">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21v-2a4 4 0 014-4h10a4 4 0 014 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              Perfil
+            </a>
+            <a href="/admin.html" class="nav-btn-outline nav-admin-link" id="navAdminLink" hidden title="Admin">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+              Admin
+            </a>
             <a href="/api/logout" class="nav-btn-outline">${NAV_ICONS.logout} Sair</a>
           </div>
         </nav>
@@ -137,7 +144,14 @@ function renderNav() {
       <div class="nav-sheet-body">
         <div class="nav-acc">${mobileMenu}</div>
         <div class="nav-sheet-footer">
-          <span class="nav-badge">${NAV_ICONS.shield} Interno</span>
+          <a href="/perfil.html" class="nav-btn-outline">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21v-2a4 4 0 014-4h10a4 4 0 014 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            Meu perfil
+          </a>
+          <a href="/admin.html" class="nav-btn-outline nav-admin-link" hidden>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+            Painel Admin
+          </a>
           <a href="/api/logout" class="nav-btn-outline">${NAV_ICONS.logout} Sair</a>
         </div>
       </div>
@@ -146,6 +160,13 @@ function renderNav() {
 }
 
 function setupNavInteractions() {
+  // Detecta se é admin → mostra link Admin
+  fetch('/api/sindi-os?action=me-stats').then(r => r.ok ? r.json() : null).then(d => {
+    if (d?.isAdmin) {
+      document.querySelectorAll('.nav-admin-link').forEach(el => el.hidden = false);
+    }
+  }).catch(() => {});
+
   // Desktop dropdowns: hover + click
   document.querySelectorAll('.nav-menu-item.has-submenu').forEach(item => {
     const trigger = item.querySelector('.nav-trigger');

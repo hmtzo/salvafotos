@@ -275,11 +275,26 @@ export default async function handler(request) {
 
   let osContext = { profile: null, memory: [] };
   let kbHits = [];
+  let customKb = [];
   try {
-    [osContext, kbHits] = await Promise.all([
+    // Tenta carregar KB custom do KV (peças adicionadas pelo admin)
+    const kvUrl = process.env.KV_REST_API_URL;
+    const kvToken = process.env.KV_REST_API_TOKEN;
+    if (kvUrl && kvToken) {
+      try {
+        const r = await fetch(`${kvUrl}/get/${encodeURIComponent('sindi-kb:custom')}`, {
+          headers: { Authorization: `Bearer ${kvToken}` },
+        });
+        if (r.ok) {
+          const j = await r.json();
+          if (j.result) customKb = JSON.parse(j.result) || [];
+        }
+      } catch {}
+    }
+    [osContext] = await Promise.all([
       user ? loadOSContext(user) : Promise.resolve({ profile: null, memory: [] }),
-      Promise.resolve(retrieveKnowledge(lastUserMsg, 3)),
     ]);
+    kbHits = retrieveKnowledge(lastUserMsg, 3, customKb);
   } catch (e) { console.warn('OS context load failed', e); }
 
   // Constrói bloco de contexto pra anexar ao system prompt

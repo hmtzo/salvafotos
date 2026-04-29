@@ -14,6 +14,17 @@ export const config = { runtime: 'edge' };
 const KV_URL = () => process.env.KV_REST_API_URL;
 const KV_TOKEN = () => process.env.KV_REST_API_TOKEN;
 const ADMIN_USERS = ['hmtzo@icloud.com']; // emails que veem trilha auditoria
+const ALL_USERS = [
+  'luciane@sindicompany.com.br',
+  'juliana@sindicompany.com.br',
+  'raquel@sindicompany.com.br',
+  'mkt@sindicompany.com.br',
+  'junior@sindicompany.com.br',
+  'felipe.fernandes@sindicompany.com.br',
+  'comercial@sindicompany.com.br',
+  'orcamentos@sindicompany.com.br',
+  'hmtzo@icloud.com',
+];
 
 async function kv(method, path, body) {
   if (!KV_URL() || !KV_TOKEN()) return null;
@@ -186,9 +197,87 @@ export default async function handler(request) {
         const entries = list.map(s => { try { return JSON.parse(s); } catch { return null; } }).filter(Boolean);
         return ok({ entries });
       }
+      if (action === 'me-stats') {
+        const day = todayKey();
+        const [todayN, profile, memList, mineAudit, chats] = await Promise.all([
+          kvGet(`sindi-quota:${user}:${day}`),
+          kvGet(`sindi-profile:${user}`),
+          kvLRange(`sindi-memory:${user}`, 0, 9),
+          kvLRange(`sindi-audit:${user}`, 0, 199),
+          kvGet(`sindi-chats:${user}`),
+        ]);
+        return ok({
+          user,
+          isAdmin: ADMIN_USERS.includes(user),
+          today: Number(todayN) || 0,
+          totalQueries: (mineAudit || []).length,
+          profile: profile || null,
+          memoriesCount: (memList || []).length,
+          conversationsCount: chats?.conversations?.length || 0,
+        });
+      }
+      if (action === 'admin-overview') {
+        if (!ADMIN_USERS.includes(user)) return forbidden();
+        const day = todayKey();
+        // 7 dias agregados
+        const dates = [];
+        for (let i = 0; i < 7; i++) {
+          const d = new Date();
+          d.setUTCDate(d.getUTCDate() - i);
+          dates.push(`${d.getUTCFullYear()}${String(d.getUTCMonth()+1).padStart(2,'0')}${String(d.getUTCDate()).padStart(2,'0')}`);
+        }
+        const dailyCounts = await Promise.all(dates.map(d => kvGet(`sindi-quota:global:${d}`)));
+        const week7d = dailyCounts.reduce((a, n) => a + (Number(n) || 0), 0);
+
+        // Por usuário (perfil + último audit)
+        const userStats = await Promise.all(ALL_USERS.map(async u => {
+          const [profile, audit, todayN] = await Promise.all([
+            kvGet(`sindi-profile:${u}`),
+            kvLRange(`sindi-audit:${u}`, 0, 0),
+            kvGet(`sindi-quota:${u}:${day}`),
+          ]);
+          let lastSeen = null;
+          if (audit && audit.length) {
+            try { lastSeen = JSON.parse(audit[0]).ts; } catch {}
+          }
+          return {
+            email: u,
+            hasProfile: !!profile,
+            name: profile?.name || null,
+            role: profile?.role || null,
+            lastSeen,
+            todayCount: Number(todayN) || 0,
+          };
+        }));
+
+        const profilesCount = userStats.filter(u => u.hasProfile).length;
+        const activeUsers24h = userStats.filter(u => u.lastSeen && (Date.now() - u.lastSeen < 86400000)).length;
+
+        return ok({
+          today: Number(await kvGet(`sindi-quota:global:${day}`)) || 0,
+          week7d,
+          dailyCounts: dates.map((d, i) => ({ date: d, count: Number(dailyCounts[i]) || 0 })).reverse(),
+          dailyLimit: 1500,
+          users: userStats,
+          profilesCount,
+          activeUsers24h,
+          totalUsers: ALL_USERS.length,
+        });
+      }
+      if (action === 'admin-audit') {
+        if (!ADMIN_USERS.includes(user)) return forbidden();
+        const limit = Math.min(parseInt(url.searchParams.get('limit') || '100'), 500);
+        const list = await kvLRange('sindi-audit:global', 0, limit - 1);
+        const entries = list.map(s => { try { return JSON.parse(s); } catch { return null; } }).filter(Boolean);
+        return ok({ entries });
+      }
+      if (action === 'kb-list') {
+        const custom = await kvGet('sindi-kb:custom') || [];
+        return ok({ custom });
+      }
       return ok({
         ok: true,
-        actions: ['profile', 'memory', 'audit', 'audit-mine', 'quota'],
+        actions: ['profile', 'memory', 'audit', 'audit-mine', 'quota', 'me-stats', 'admin-overview', 'admin-audit', 'kb-list'],
       });
     }
 
@@ -215,6 +304,37 @@ export default async function handler(request) {
         await kvSet(`sindi-profile:${user}`, null);
         return ok({ cleared: true });
       }
+      if (a === 'memory-clear') {
+        await kv('POST', `/del/${encodeURIComponent('sindi-memory:' + user)}`);
+        return ok({ cleared: true });
+      }
+      if (a === 'kb-add') {
+        if (!ADMIN_USERS.includes(user)) return forbidden();
+        const piece = body.piece || {};
+        if (!piece.title || !piece.content) {
+          return new Response(JSON.stringify({ error: 'piece.title e piece.content obrigatórios' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+        }
+        const list = (await kvGet('sindi-kb:custom')) || [];
+        const newPiece = {
+          id: 'kb-custom-' + Date.now().toString(36),
+          tags: Array.isArray(piece.tags) ? piece.tags : String(piece.tags || '').split(',').map(t => t.trim()).filter(Boolean),
+          title: String(piece.title).slice(0, 200),
+          content: String(piece.content).slice(0, 4000),
+          createdAt: Date.now(),
+          createdBy: user,
+        };
+        list.unshift(newPiece);
+        await kvSet('sindi-kb:custom', list.slice(0, 100));
+        return ok({ added: newPiece });
+      }
+      if (a === 'kb-delete') {
+        if (!ADMIN_USERS.includes(user)) return forbidden();
+        const id = body.id;
+        const list = (await kvGet('sindi-kb:custom')) || [];
+        const filtered = list.filter(p => p.id !== id);
+        await kvSet('sindi-kb:custom', filtered);
+        return ok({ deleted: true, count: filtered.length });
+      }
       return new Response(JSON.stringify({ error: 'Ação inválida' }), {
         status: 400, headers: { 'Content-Type': 'application/json' },
       });
@@ -233,5 +353,10 @@ export default async function handler(request) {
 function ok(data) {
   return new Response(JSON.stringify(data), {
     status: 200, headers: { 'Content-Type': 'application/json' },
+  });
+}
+function forbidden() {
+  return new Response(JSON.stringify({ error: 'Acesso restrito a admin' }), {
+    status: 403, headers: { 'Content-Type': 'application/json' },
   });
 }
