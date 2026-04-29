@@ -45,7 +45,7 @@
   .hero-stage{
     position:relative;min-height:100vh;
     display:flex;align-items:center;justify-content:center;text-align:center;
-    overflow:hidden;
+    overflow:hidden;padding-top:48px;
   }
   .film-grain{
     position:fixed;inset:0;z-index:50;pointer-events:none;opacity:0.04;mix-blend-mode:overlay;
@@ -71,14 +71,14 @@
     position:relative;z-index:10;padding:0 16px;will-change:transform;
   }
   .text-track,.text-days{
-    font-size:clamp(32px, 5.6vw, 72px);
-    font-weight:800;letter-spacing:-0.035em;line-height:1.02;
+    font-size:clamp(26px, 4.4vw, 56px);
+    font-weight:800;letter-spacing:-0.03em;line-height:1.02;
     display:block;
   }
   .text-track{
     color:var(--fg);
-    text-shadow:0 8px 24px rgba(255,255,255,0.14), 0 2px 4px rgba(255,255,255,0.06);
-    margin-bottom:2px;
+    text-shadow:0 6px 20px rgba(255,255,255,0.12), 0 2px 4px rgba(255,255,255,0.05);
+    margin-bottom:0;
     visibility:hidden;
   }
   .text-days{
@@ -96,15 +96,15 @@
     padding:0 24px;will-change:transform,opacity,filter;
   }
   .cta-wrapper h2{
-    font-size:clamp(28px, 4.5vw, 56px);font-weight:800;letter-spacing:-0.025em;line-height:1.05;
-    margin-bottom:12px;
+    font-size:clamp(22px, 3.6vw, 42px);font-weight:800;letter-spacing:-0.02em;line-height:1.08;
+    margin-bottom:8px;
     background:linear-gradient(180deg, #ffffff 0%, rgba(255,255,255,0.45) 100%);
     -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
-    filter:drop-shadow(0 8px 16px rgba(255,255,255,0.12));
+    filter:drop-shadow(0 6px 14px rgba(255,255,255,0.1));
   }
   .cta-wrapper p{
-    color:var(--fg-dim);font-size:clamp(13px, 1.5vw, 16px);line-height:1.5;
-    max-width:480px;margin:0 auto 24px;font-weight:400;
+    color:var(--fg-dim);font-size:clamp(12px, 1.3vw, 14px);line-height:1.5;
+    max-width:420px;margin:0 auto 18px;font-weight:400;
   }
   .cta-buttons{display:flex;flex-wrap:wrap;gap:12px;justify-content:center}
 
@@ -186,41 +186,41 @@
 
   .card-left-text{order:3;text-align:center;visibility:hidden}
   .card-right-text{order:1;display:flex;justify-content:center;visibility:hidden}
-  .mockup-scroll-wrapper{order:2;position:relative;width:100%;height:340px;display:flex;align-items:center;justify-content:center;perspective:1000px;visibility:hidden}
+  .mockup-scroll-wrapper{order:2;position:relative;width:100%;height:280px;display:flex;align-items:center;justify-content:center;perspective:1000px;visibility:hidden}
   @media(min-width:1024px){
     .card-left-text{order:1;text-align:left}
     .card-right-text{order:3;justify-content:flex-end}
-    .mockup-scroll-wrapper{order:2;height:520px}
+    .mockup-scroll-wrapper{order:2;height:440px}
   }
 
   .card-left-text h3{
-    color:#fff;font-size:clamp(18px, 2vw, 28px);font-weight:700;
-    letter-spacing:-0.02em;margin-bottom:8px;line-height:1.2;
+    color:#fff;font-size:clamp(15px, 1.6vw, 22px);font-weight:700;
+    letter-spacing:-0.015em;margin-bottom:6px;line-height:1.2;
   }
   .card-left-text p{
-    color:rgba(199,210,254,0.7);font-size:clamp(12px, 1.1vw, 14px);line-height:1.55;
-    font-weight:400;max-width:340px;
+    color:rgba(199,210,254,0.7);font-size:clamp(11px, 1vw, 13px);line-height:1.5;
+    font-weight:400;max-width:300px;
   }
   @media(min-width:1024px){.card-left-text p{margin:0}}
   @media(max-width:768px){.card-left-text p{display:none}}
 
   .brand-name{
-    font-size:clamp(38px, 6vw, 84px);font-weight:900;
-    letter-spacing:-0.045em;text-transform:uppercase;line-height:0.92;
+    font-size:clamp(28px, 4.2vw, 60px);font-weight:900;
+    letter-spacing:-0.04em;text-transform:uppercase;line-height:0.95;
     background:linear-gradient(180deg, #ffffff 0%, #a1a1aa 100%);
     -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
     transform:translateZ(0);
-    filter:drop-shadow(0 10px 20px rgba(0,0,0,0.8)) drop-shadow(0 3px 6px rgba(0,0,0,0.5));
+    filter:drop-shadow(0 8px 16px rgba(0,0,0,0.8)) drop-shadow(0 3px 6px rgba(0,0,0,0.5));
   }
 
   /* iPhone mockup */
   .mockup-inner{
     position:relative;width:100%;height:100%;display:flex;align-items:center;justify-content:center;
-    transform:scale(0.6);
+    transform:scale(0.5);
   }
-  @media(min-width:1024px){.mockup-inner{transform:scale(0.88)}}
+  @media(min-width:1024px){.mockup-inner{transform:scale(0.75)}}
   .iphone{
-    position:relative;width:260px;height:540px;border-radius:46px;
+    position:relative;width:240px;height:500px;border-radius:42px;
     background:#111;
     box-shadow:
       inset 0 0 0 2px #52525B,
@@ -513,7 +513,7 @@ const scrollTl = gsap.timeline({
   scrollTrigger: {
     trigger: '#container',
     start: 'top top',
-    end: '+=6000',
+    end: '+=3500',
     pin: true,
     scrub: 1,
     anticipatePin: 1,
