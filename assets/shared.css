@@ -62,7 +62,7 @@ nav.app-nav .nav-inner{
   display:flex;align-items:center;justify-content:space-between;
 }
 .logo{display:flex;align-items:center;gap:12px;color:var(--text);text-decoration:none}
-.logo svg{height:30px;width:auto;display:block}
+.logo svg, .logo .sindi-logo-img{height:28px;width:auto;display:block}
 .logo svg path[fill="#1a1c29"]{fill:#fafafa}
 .nav-actions{display:flex;align-items:center;gap:8px;font-size:13px}
 .nav-actions a{color:var(--text-dim);text-decoration:none;transition:color 0.15s}
