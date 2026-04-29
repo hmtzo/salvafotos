@@ -69,33 +69,49 @@ export default async function handler(request) {
 
   try {
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent?key=${apiKey}`;
-    const upstream = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
-        contents: [{ role: 'user', parts: [{ text }] }],
-        generationConfig: {
-          temperature: 0.2, // baixo = correções mais conservadoras
-          maxOutputTokens: 8000,
-          topP: 0.9,
-          responseMimeType: 'application/json',
-        },
-        safetySettings: [
-          { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_ONLY_HIGH' },
-          { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_ONLY_HIGH' },
-          { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_ONLY_HIGH' },
-          { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_ONLY_HIGH' },
-        ],
-      }),
+    const reqBody = JSON.stringify({
+      systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
+      contents: [{ role: 'user', parts: [{ text }] }],
+      generationConfig: {
+        temperature: 0.2,
+        maxOutputTokens: 8000,
+        topP: 0.9,
+        responseMimeType: 'application/json',
+      },
+      safetySettings: [
+        { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_ONLY_HIGH' },
+        { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_ONLY_HIGH' },
+        { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_ONLY_HIGH' },
+        { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_ONLY_HIGH' },
+      ],
     });
+
+    // Retry com backoff em 503/500/429 (Gemini overload é frequente)
+    let upstream;
+    let attempt = 0;
+    const maxAttempts = 3;
+    while (attempt < maxAttempts) {
+      upstream = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: reqBody,
+      });
+      if (upstream.ok) break;
+      const isRetryable = [429, 500, 502, 503, 504].includes(upstream.status);
+      if (!isRetryable || attempt === maxAttempts - 1) break;
+      const wait = 600 * Math.pow(2, attempt) + Math.random() * 400;
+      await new Promise(r => setTimeout(r, wait));
+      attempt++;
+    }
 
     if (!upstream.ok) {
       const errText = await upstream.text();
-      console.error('Gemini error:', upstream.status, errText);
+      console.error('Gemini error after retry:', upstream.status, errText);
       let userMsg = `Erro na API (${upstream.status})`;
-      if (upstream.status === 429) userMsg = 'Limite atingido. Aguarde 1 minuto.';
-      return new Response(JSON.stringify({ error: userMsg }), {
+      if (upstream.status === 429) userMsg = '⚠️ Limite atingido. Aguarde 1 minuto.';
+      if (upstream.status === 503) userMsg = '⏳ Gemini sobrecarregado. Tentamos 3 vezes, sem sucesso. Tente novamente em 30s.';
+      if (upstream.status === 504) userMsg = '⏳ Timeout do Gemini. Texto muito longo? Divida em partes menores.';
+      return new Response(JSON.stringify({ error: userMsg, retried: attempt }), {
         status: 502, headers: { 'Content-Type': 'application/json' },
       });
     }

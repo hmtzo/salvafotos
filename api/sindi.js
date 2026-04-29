@@ -387,22 +387,37 @@ export default async function handler(request) {
     };
     if (tools.length) requestBody.tools = tools;
 
-    const upstream = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(requestBody),
-    });
+    // Retry com backoff em 503/500/429 (Gemini overload é frequente)
+    let upstream;
+    let attempt = 0;
+    const maxAttempts = 3;
+    while (attempt < maxAttempts) {
+      upstream = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestBody),
+      });
+      if (upstream.ok) break;
+      const isRetryable = [429, 500, 502, 503, 504].includes(upstream.status);
+      if (!isRetryable || attempt === maxAttempts - 1) break;
+      const wait = 600 * Math.pow(2, attempt) + Math.random() * 400; // 600/1200/2400ms + jitter
+      await new Promise(r => setTimeout(r, wait));
+      attempt++;
+    }
 
     if (!upstream.ok) {
       const errText = await upstream.text();
-      console.error('Gemini error:', upstream.status, errText);
+      console.error('Gemini error after retry:', upstream.status, errText);
       let userMsg = `Erro na API Gemini (${upstream.status})`;
-      if (upstream.status === 429) userMsg = 'Limite de requisições atingido. Aguarde 1 minuto e tente novamente.';
-      if (upstream.status === 400) userMsg = 'Mensagem rejeitada. Tente reformular.';
-      if (upstream.status === 403) userMsg = 'Chave da API inválida ou sem permissão. Avise o administrador.';
+      if (upstream.status === 429) userMsg = '⚠️ Limite de requisições atingido. Aguarde 1 minuto e tente novamente.';
+      if (upstream.status === 400) userMsg = '⚠️ Mensagem rejeitada. Tente reformular.';
+      if (upstream.status === 403) userMsg = '⚠️ Chave da API inválida ou sem permissão. Avise o administrador.';
+      if (upstream.status === 503) userMsg = '⏳ Gemini sobrecarregado no momento. Tentei 3 vezes, sem sucesso. Aguarde 30s e tente de novo — costuma normalizar rápido.';
+      if (upstream.status === 504) userMsg = '⏳ Timeout do Gemini. Tente reformular a pergunta de forma mais curta.';
       return new Response(JSON.stringify({
         error: userMsg,
         detail: errText.slice(0, 300),
+        retried: attempt,
       }), { status: 502, headers: { 'Content-Type': 'application/json' } });
     }
 
