@@ -270,36 +270,57 @@ export default async function handler(request) {
       requestBody.generationConfig.thinkingConfig = { thinkingBudget: 8192 };
     }
 
-    // Retry com backoff em 503/500/429 (Gemini overload é frequente)
-    // + Fallback de tools: se 400 com erro de tool, retenta sem code_execution, depois sem tools
+    // Retry inteligente: cada tentativa que falhar com 503/504 degrada algo.
+    // Sequência de degradação:
+    //   1. full tools (search+url+code) no modelo principal
+    //   2. drop code_execution (mais pesado) — search+url
+    //   3. só google_search
+    //   4. SEM tools
+    //   5. cai pra modelo mais leve (gemini-2.0-flash) sem tools
+    // 400 de tool incompatível pula direto pro próximo step de degradação.
+    const FALLBACK_MODEL = 'gemini-2.0-flash';
+    let currentUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
     let upstream;
+    const steps = [
+      () => { /* step 0: full — sem mudança */ },
+      () => { requestBody.tools = [{ google_search: {} }, { url_context: {} }]; },
+      () => { requestBody.tools = [{ google_search: {} }]; },
+      () => { delete requestBody.tools; },
+      () => {
+        delete requestBody.tools;
+        currentUrl = `https://generativelanguage.googleapis.com/v1beta/models/${FALLBACK_MODEL}:generateContent?key=${apiKey}`;
+      },
+    ];
+    let stepIdx = 0;
     let attempt = 0;
-    const maxAttempts = 3;
-    let toolFallbackTried = 0; // 0 = full, 1 = só search+url, 2 = sem tools
+    const maxAttempts = 5;
     while (attempt < maxAttempts) {
-      upstream = await fetch(url, {
+      upstream = await fetch(currentUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(requestBody),
       });
       if (upstream.ok) break;
-      // 400 com mensagem de tool incompatível → degrada o conjunto de tools e tenta de novo
-      if (upstream.status === 400 && toolFallbackTried < 2) {
+      // 400 com erro de tool: pula imediatamente pro próximo step (sem espera)
+      if (upstream.status === 400) {
         const errPeek = await upstream.clone().text();
-        if (/tool|function|code_execution|google_search|url_context/i.test(errPeek)) {
-          toolFallbackTried++;
-          if (toolFallbackTried === 1) {
-            requestBody.tools = [{ google_search: {} }, { url_context: {} }];
-          } else {
-            delete requestBody.tools;
-          }
-          continue; // re-roda no mesmo attempt
+        if (/tool|function|code_execution|google_search|url_context/i.test(errPeek) && stepIdx < steps.length - 1) {
+          stepIdx++;
+          steps[stepIdx]();
+          continue;
         }
       }
+      // 503/504/429/500/502: tenta de novo com backoff E degrada o próximo passo se overload persistir
       const isRetryable = [429, 500, 502, 503, 504].includes(upstream.status);
       if (!isRetryable || attempt === maxAttempts - 1) break;
-      const wait = 600 * Math.pow(2, attempt) + Math.random() * 400; // 600/1200/2400ms + jitter
+      // Backoff exponencial: 1s/2s/4s/8s + jitter
+      const wait = 1000 * Math.pow(2, attempt) + Math.random() * 500;
       await new Promise(r => setTimeout(r, wait));
+      // Degradação progressiva em overload (503/504): a cada falha, simplifica
+      if ([503, 504].includes(upstream.status) && stepIdx < steps.length - 1) {
+        stepIdx++;
+        steps[stepIdx]();
+      }
       attempt++;
     }
 
@@ -310,7 +331,7 @@ export default async function handler(request) {
       if (upstream.status === 429) userMsg = '⚠️ Limite de requisições atingido. Aguarde 1 minuto e tente novamente.';
       if (upstream.status === 400) userMsg = '⚠️ Mensagem rejeitada. Tente reformular.';
       if (upstream.status === 403) userMsg = '⚠️ Chave da API inválida ou sem permissão. Avise o administrador.';
-      if (upstream.status === 503) userMsg = '⏳ Gemini sobrecarregado no momento. Tentei 3 vezes, sem sucesso. Aguarde 30s e tente de novo — costuma normalizar rápido.';
+      if (upstream.status === 503) userMsg = '⏳ Gemini sobrecarregado. Tentei 5 vezes (com fallback de tools e modelo). Aguarde 30s-1min e tente de novo.';
       if (upstream.status === 504) userMsg = '⏳ Timeout do Gemini. Tente reformular a pergunta de forma mais curta.';
       return new Response(JSON.stringify({
         error: userMsg,
