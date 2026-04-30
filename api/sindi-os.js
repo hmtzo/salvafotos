@@ -269,35 +269,47 @@ export async function loadSharedInsights(limit = 80) {
 }
 
 // Extrai insight reutilizável de uma troca usando Gemini (background, não bloqueia user)
+// Generalista: aprende de QUALQUER tema, não só condomínios
 export async function extractInsightAsync({ question, answer, user, confidence, mode }) {
   const apiKey = process.env.GOOGLE_API_KEY;
   if (!apiKey) return null;
 
   // Heurísticas: só extrai se vale a pena
   if (!question || !answer) return null;
-  if (question.length < 20) return null; // pergunta muito curta = não vale
-  if (answer.length < 100) return null; // resposta trivial
-  if (confidence != null && confidence < 60) return null; // baixa confiança = não destila
-  if (/\[Documento anexado/i.test(question)) return null; // docs anexados podem ter dados sensíveis
+  if (question.length < 15) return null; // pergunta muito curta = não vale
+  if (answer.length < 80) return null; // resposta trivial
+  if (confidence != null && confidence < 50) return null; // baixa confiança = não destila
+
+  // Pra docs anexados: extrai a APRENDIZAGEM (regra/conclusão/método), não o conteúdo bruto do doc
+  const isDocAttachment = /\[Documento anexado/i.test(question);
+  // Sanitiza: tira o blob do documento, mantém só a pergunta real do usuário
+  const cleanQuestion = isDocAttachment
+    ? question.replace(/\[Documento anexado[^\]]*\][\s\S]*?--- FIM DO DOCUMENTO ---\n\nPergunta:\s*/i, '[contexto: doc anexado] ')
+    : question;
 
   try {
-    const prompt = `Você é um destilador de conhecimento operacional para a Sindicompany (administração condominial).
+    const prompt = `Você destila CONHECIMENTO REUTILIZÁVEL a partir de uma troca de pergunta+resposta.
 
-A partir da pergunta e resposta abaixo, extraia uma INSIGHT REUTILIZÁVEL que possa ajudar outros colegas no futuro.
+A Sindi é uma IA generalista (responde sobre qualquer tema). Insights úteis vão pro cérebro coletivo e ajudam o usuário e a equipe no futuro.
 
-Retorne APENAS um JSON válido (sem markdown, sem comentários) no formato:
+Critérios:
+- Vale a pena salvar? Só se a resposta tiver uma regra, método, fato útil, decisão ou aprendizado que se aplica em situação parecida no futuro.
+- Não salve: bate-papo casual, opinião subjetiva, dúvida muito específica e única, troca trivial.
+- Salve: regra técnica, procedimento, definição importante, padrão de decisão, número/dado de referência, lição extraída de doc.
+
+Retorne APENAS um JSON válido (sem markdown):
 {
-  "title": "título curto canônico (max 80 chars)",
-  "question": "pergunta canônica reformulada genericamente (max 200 chars, sem nomes/dados pessoais)",
-  "summary": "destilação dos pontos-chave da resposta (max 800 chars, em markdown leve, focado em direção/regra/procedimento)",
-  "tags": ["até 6 tags em lowercase"],
-  "category": "juridico" | "engenharia" | "financeiro" | "operacional" | "governanca" | "rh" | "atendimento" | "outros",
-  "shouldStore": true se a insight é genuinamente reutilizável; false se foi muito específica/pessoal/contextual
+  "title": "título curto e canônico (max 80 chars)",
+  "question": "pergunta canônica reformulada de forma genérica e reutilizável (max 200 chars, SEM nomes próprios, SEM dados pessoais)",
+  "summary": "destilação dos pontos-chave (max 800 chars, markdown leve, focado em regra/método/fato útil)",
+  "tags": ["até 6 tags em lowercase, em português"],
+  "category": "tecnologia" | "programacao" | "ciencia" | "negocios" | "financeiro" | "juridico" | "engenharia" | "saude" | "operacional" | "governanca" | "rh" | "atendimento" | "condominial" | "geral" | "outros",
+  "shouldStore": true se for genuinamente reutilizável; false se foi específico/pessoal/trivial
 }
 
 PERGUNTA:
 """
-${question.slice(0, 1500)}
+${cleanQuestion.slice(0, 1500)}
 """
 
 RESPOSTA:
