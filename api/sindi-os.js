@@ -30,8 +30,24 @@ const ALL_USERS = [
   'felipe.fernandes@sindicompany.com.br',
   'comercial@sindicompany.com.br',
   'orcamentos@sindicompany.com.br',
+  'engenharia@sindicompany.com.br',
   'hmtzo@icloud.com',
 ];
+
+// Perfis padrão — aplicados automaticamente se o usuário não preencheu o próprio perfil.
+// O usuário pode sobrescrever em /perfil.html.
+const DEFAULT_PROFILES = {
+  'juliana@sindicompany.com.br':           { name: 'Juliana',  role: 'CEO' },
+  'raquel@sindicompany.com.br':            { name: 'Raquel',   role: 'Head de Pessoas e Cultura' },
+  'luciane@sindicompany.com.br':           { name: 'Luciane',  role: 'Agilista' },
+  'junior@sindicompany.com.br':            { name: 'Junior',   role: 'Coordenador de Atendimento' },
+  'felipe.fernandes@sindicompany.com.br':  { name: 'Felipe',   role: 'Analista Financeiro' },
+  'orcamentos@sindicompany.com.br':        { name: 'Eduardo',  role: 'Orçamentos' },
+  'comercial@sindicompany.com.br':         { name: 'Hellen',   role: 'Comercial' },
+  'engenharia@sindicompany.com.br':        { name: 'Vitor',    role: 'Engenharia' },
+  'mkt@sindicompany.com.br':               { name: 'Marketing', role: 'Marketing' },
+  'hmtzo@icloud.com':                      { name: 'Heitor',   role: 'Admin' },
+};
 
 async function kv(method, path, body) {
   if (!KV_URL() || !KV_TOKEN()) return null;
@@ -106,8 +122,13 @@ export async function loadOSContext(user) {
   const memory = (memoryList || []).map(s => {
     try { return JSON.parse(s); } catch { return null; }
   }).filter(Boolean);
+  // Aplica perfil padrão (mesclado) se usuário não preencheu manualmente
+  const defaultProfile = DEFAULT_PROFILES[user] || null;
+  const mergedProfile = profile
+    ? { ...defaultProfile, ...profile } // KV sobrescreve default
+    : defaultProfile;
   return {
-    profile: profile || null,
+    profile: mergedProfile,
     memory,
     insights: insights || [],
     activeCondo: activeCondoObj?.condo || null,
@@ -523,18 +544,27 @@ export default async function handler(request) {
           if (audit && audit.length) {
             try { lastSeen = JSON.parse(audit[0]).ts; } catch {}
           }
+          const def = DEFAULT_PROFILES[u] || null;
+          const merged = profile ? { ...def, ...profile } : def;
+          const now = Date.now();
+          const onlineNow = lastSeen && (now - lastSeen < 5 * 60 * 1000); // 5min = ativo agora
+          const activeRecent = lastSeen && (now - lastSeen < 24 * 60 * 60 * 1000); // 24h
           return {
             email: u,
             hasProfile: !!profile,
-            name: profile?.name || null,
-            role: profile?.role || null,
+            usingDefault: !profile && !!def,
+            name: merged?.name || null,
+            role: merged?.role || null,
             lastSeen,
+            onlineNow,
+            activeRecent,
             todayCount: Number(todayN) || 0,
           };
         }));
 
-        const profilesCount = userStats.filter(u => u.hasProfile).length;
-        const activeUsers24h = userStats.filter(u => u.lastSeen && (Date.now() - u.lastSeen < 86400000)).length;
+        const profilesCount = userStats.filter(u => u.hasProfile || u.usingDefault).length;
+        const onlineNowCount = userStats.filter(u => u.onlineNow).length;
+        const activeUsers24h = userStats.filter(u => u.activeRecent).length;
 
         return ok({
           today: Number(await kvGet(`sindi-quota:global:${day}`)) || 0,
@@ -543,6 +573,7 @@ export default async function handler(request) {
           dailyLimit: 1500,
           users: userStats,
           profilesCount,
+          onlineNowCount,
           activeUsers24h,
           totalUsers: ALL_USERS.length,
         });

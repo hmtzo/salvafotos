@@ -79,7 +79,9 @@
     background:var(--bg-elev);border:1px solid var(--border);border-radius:12px;padding:16px;
     display:flex;flex-direction:column;gap:6px;
   }
-  .user-card.online{border-color:rgba(16,185,129,0.4)}
+  .user-card.online{border-color:rgba(16,185,129,0.5);box-shadow:0 0 0 1px rgba(16,185,129,0.2)}
+  .user-card.recent{border-color:rgba(250,204,21,0.35)}
+  .user-card.recent .u-status{color:#fde68a}
   .user-card .u-email{font-size:13px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .user-card .u-meta{font-size:11px;color:var(--text-muted)}
   .user-card .u-stats{display:flex;gap:14px;margin-top:8px;font-size:11px;color:var(--text-dim)}
@@ -512,20 +514,26 @@ function renderOverview(d) {
     `<div class="bar" style="height:${(x.count/max)*100}%" data-count="${x.count}" title="${x.date}: ${x.count}"></div>`
   ).join('');
 
-  // Users grid
-  $('usersCount').textContent = `${d.users.length} cadastrados`;
-  $('usersGrid').innerHTML = d.users.map(u => {
-    const online = u.lastSeen && (Date.now() - u.lastSeen < 86400000);
+  // Users grid — ordena: online agora → ativos 24h → resto
+  $('usersCount').textContent = `${d.users.length} cadastrados · ${d.onlineNowCount || 0} online agora`;
+  const sortedUsers = [...d.users].sort((a, b) => {
+    if (a.onlineNow !== b.onlineNow) return a.onlineNow ? -1 : 1;
+    return (b.lastSeen || 0) - (a.lastSeen || 0);
+  });
+  $('usersGrid').innerHTML = sortedUsers.map(u => {
+    const stateClass = u.onlineNow ? 'online' : (u.activeRecent ? 'recent' : '');
+    const stateLabel = u.onlineNow ? '🟢 Online agora' : (u.activeRecent ? '🟡 Ativo nas últimas 24h' : '⚫ Inativo');
+    const profileTag = u.hasProfile ? '✓ perfil' : (u.usingDefault ? '✓ perfil padrão' : '— sem perfil');
     return `
-      <div class="user-card ${online ? 'online' : ''}">
+      <div class="user-card ${stateClass}">
         ${u.name ? `<div class="u-name">${escapeHtml(u.name)}${u.role ? ' · '+escapeHtml(u.role) : ''}</div>` : ''}
         <div class="u-email">${escapeHtml(u.email)}</div>
         <div class="u-meta">Último acesso: ${fmtRel(u.lastSeen)}</div>
         <div class="u-stats">
           <span><strong>${u.todayCount}</strong> hoje</span>
-          <span>${u.hasProfile ? '✓ perfil' : '— sem perfil'}</span>
+          <span>${profileTag}</span>
         </div>
-        <div class="u-status">${online ? 'Ativo' : 'Inativo'}</div>
+        <div class="u-status">${stateLabel}</div>
       </div>
     `;
   }).join('');
