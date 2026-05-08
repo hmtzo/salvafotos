@@ -146,8 +146,10 @@
   }
   .prompt-btn:hover{background:rgba(80,80,80,0.3);color:#D1D5DB}
   .prompt-btn.recording{background:rgba(239,68,68,0.2);color:#fca5a5;animation:pulse 1.2s ease-in-out infinite}
+  .prompt-btn.processing{background:rgba(99,102,241,0.18);color:#a5b4fc;animation:spin 1s linear infinite}
   .prompt-btn.active{background:rgba(99,102,241,0.2);color:#a5b4fc}
   @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}
+  @keyframes spin{to{transform:rotate(360deg)}}
   .prompt-btn svg{width:18px;height:18px}
 
   .toggle-pill{
@@ -459,6 +461,7 @@
   }
   .ruixen-ghost-btn:hover{background:rgba(115,115,115,0.4)}
   .ruixen-ghost-btn.recording{background:rgba(239,68,68,0.2);color:#fca5a5;animation:ruixen-pulse 1.2s ease-in-out infinite}
+  .ruixen-ghost-btn.processing{background:rgba(99,102,241,0.2);color:#a5b4fc;animation:spin 1s linear infinite}
   .ruixen-ghost-btn.active{background:rgba(99,102,241,0.2);color:#a5b4fc}
   @keyframes ruixen-pulse{0%,100%{opacity:1}50%{opacity:0.55}}
   .ruixen-ghost-btn svg{width:16px;height:16px}
@@ -1968,64 +1971,226 @@ refreshQuotaIndicator();
 sendBtn.addEventListener('click', send);
 
 // =========================================================
-// VOICE INPUT (Web Speech API) — funciona em ruixenInput + input principal
+// VOICE INPUT — universal (Web Speech API com fallback MediaRecorder→Gemini)
+// Funciona em qualquer navegador que tenha mic + getUserMedia.
 // =========================================================
 (function setupVoice() {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-  // Pares (botão, textarea-target)
   const targets = [
     { btn: document.getElementById('ruixenMic'), input: document.getElementById('ruixenInput') },
     { btn: document.getElementById('micBtn'),    input: document.getElementById('input') },
   ].filter(t => t.btn && t.input);
   if (!targets.length) return;
-  if (!SR) {
-    // Browser não suporta — esconde os botões
-    targets.forEach(t => t.btn.style.display = 'none');
+
+  const hasGUM = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder);
+  if (!SR && !hasGUM) {
+    // Sem nenhuma das duas APIs (caso muito raro: contexto não-https, navegador antiquíssimo)
+    targets.forEach(t => {
+      t.btn.title = 'Microfone indisponível neste navegador';
+      t.btn.disabled = true;
+      t.btn.style.opacity = '0.4';
+    });
     return;
   }
-  let recognition = null;
+
+  // Estado compartilhado entre os 2 botões
+  let mode = null;          // 'sr' | 'rec'
   let listening = false;
+  let recognition = null;
+  let mediaRecorder = null;
+  let mediaStream = null;
+  let recChunks = [];
   let activeBtn = null;
   let activeInput = null;
+
+  function setRecordingUI(on) {
+    if (!activeBtn) return;
+    activeBtn.classList.toggle('recording', on);
+    activeBtn.title = on ? 'Clique para parar' : 'Falar (clique pra começar/parar)';
+  }
+  function setProcessingUI() {
+    if (!activeBtn) return;
+    activeBtn.classList.remove('recording');
+    activeBtn.classList.add('processing');
+    activeBtn.title = 'Transcrevendo…';
+  }
+  function clearUI() {
+    if (!activeBtn) return;
+    activeBtn.classList.remove('recording', 'processing');
+    activeBtn.title = 'Falar (clique pra começar/parar)';
+  }
+  function appendToInput(extra) {
+    if (!activeInput || !extra) return;
+    const cur = activeInput.value.trim();
+    activeInput.value = cur ? `${cur} ${extra}` : extra;
+    activeInput.dispatchEvent(new Event('input'));
+  }
+  function replaceInput(text) {
+    if (!activeInput) return;
+    activeInput.value = text;
+    activeInput.dispatchEvent(new Event('input'));
+  }
+
+  // ========== modo 1: Web Speech API (Chrome desktop, Edge, Safari macOS) ==========
+  function startSR() {
+    mode = 'sr';
+    recognition = new SR();
+    recognition.lang = 'pt-BR';
+    recognition.interimResults = true;
+    recognition.continuous = false;
+    let finalText = '';
+    recognition.onresult = e => {
+      let interim = '';
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        const t = e.results[i][0].transcript;
+        if (e.results[i].isFinal) finalText += t;
+        else interim += t;
+      }
+      replaceInput((finalText + interim).trim());
+    };
+    recognition.onerror = (ev) => {
+      console.warn('SR error', ev.error);
+      listening = false;
+      clearUI();
+      if (ev.error === 'not-allowed' || ev.error === 'service-not-allowed') {
+        alert('Permissão de microfone bloqueada. Habilite nas preferências do navegador.');
+      } else if (ev.error === 'audio-capture') {
+        alert('Microfone não detectado. Verifique se está conectado.');
+      } else if (ev.error === 'network' && hasGUM) {
+        // SR depende de servidor Google em alguns navegadores; cai pra MediaRecorder
+        startRec();
+      }
+    };
+    recognition.onend = () => {
+      listening = false;
+      clearUI();
+    };
+    try {
+      recognition.start();
+      listening = true;
+      setRecordingUI(true);
+    } catch (e) {
+      console.warn('SR start failed, fallback rec', e);
+      if (hasGUM) startRec();
+    }
+  }
+
+  // ========== modo 2: MediaRecorder → /api/transcribe (universal) ==========
+  async function startRec() {
+    mode = 'rec';
+    try {
+      mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch (e) {
+      console.warn('getUserMedia failed', e);
+      const name = e?.name || '';
+      if (name === 'NotAllowedError' || name === 'PermissionDeniedError') {
+        alert('Permissão de microfone negada. Libere nas configurações do navegador e tente de novo.');
+      } else if (name === 'NotFoundError' || name === 'DevicesNotFoundError') {
+        alert('Nenhum microfone encontrado.');
+      } else {
+        alert('Não consegui acessar o microfone: ' + (e.message || name));
+      }
+      clearUI();
+      listening = false;
+      return;
+    }
+    // Escolhe um mimeType que o navegador realmente suporta
+    const candidates = [
+      'audio/webm;codecs=opus',
+      'audio/webm',
+      'audio/ogg;codecs=opus',
+      'audio/mp4',
+      '',
+    ];
+    let chosen = '';
+    for (const c of candidates) {
+      if (!c || (window.MediaRecorder?.isTypeSupported?.(c))) { chosen = c; break; }
+    }
+    try {
+      mediaRecorder = chosen ? new MediaRecorder(mediaStream, { mimeType: chosen }) : new MediaRecorder(mediaStream);
+    } catch (e) {
+      console.warn('MediaRecorder create failed', e);
+      mediaRecorder = new MediaRecorder(mediaStream);
+    }
+    recChunks = [];
+    mediaRecorder.ondataavailable = ev => { if (ev.data && ev.data.size) recChunks.push(ev.data); };
+    mediaRecorder.onstop = async () => {
+      try {
+        mediaStream?.getTracks().forEach(t => t.stop());
+      } catch {}
+      const blob = new Blob(recChunks, { type: mediaRecorder.mimeType || 'audio/webm' });
+      recChunks = [];
+      if (!blob.size) { clearUI(); listening = false; return; }
+      // Limite ~1.5 min de áudio em opus (~1.5MB) — alerta se ficar muito grande
+      if (blob.size > 18 * 1024 * 1024) {
+        alert('Áudio muito longo. Grave por menos tempo.');
+        clearUI(); listening = false; return;
+      }
+      setProcessingUI();
+      try {
+        const b64 = await blobToBase64(blob);
+        const res = await fetch('/api/transcribe', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ audio: b64, mimeType: blob.type, lang: 'pt-BR' }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          console.warn('transcribe failed', data);
+          alert(data.error || 'Falha ao transcrever áudio.');
+        } else if (data.empty) {
+          // grava nada — não polui o input
+        } else if (data.text) {
+          appendToInput(data.text);
+        }
+      } catch (e) {
+        console.warn('transcribe network', e);
+        alert('Sem conexão para transcrever. Tente de novo.');
+      } finally {
+        clearUI();
+        listening = false;
+      }
+    };
+    try {
+      mediaRecorder.start();
+      listening = true;
+      setRecordingUI(true);
+    } catch (e) {
+      console.warn('rec start failed', e);
+      clearUI();
+      listening = false;
+    }
+  }
+
+  function stopActive() {
+    if (mode === 'sr') {
+      try { recognition?.stop(); } catch {}
+    } else if (mode === 'rec') {
+      try { mediaRecorder?.stop(); } catch {}
+    }
+  }
+
+  function blobToBase64(blob) {
+    return new Promise((resolve, reject) => {
+      const r = new FileReader();
+      r.onloadend = () => {
+        const s = String(r.result || '');
+        const idx = s.indexOf(',');
+        resolve(idx >= 0 ? s.slice(idx + 1) : s);
+      };
+      r.onerror = () => reject(r.error);
+      r.readAsDataURL(blob);
+    });
+  }
+
   targets.forEach(({ btn, input: targetInput }) => {
-    btn.addEventListener('click', () => {
-      if (listening) { recognition?.stop(); return; }
+    btn.addEventListener('click', async () => {
+      if (listening) { stopActive(); return; }
       activeBtn = btn;
       activeInput = targetInput;
-      recognition = new SR();
-      recognition.lang = 'pt-BR';
-      recognition.interimResults = true;
-      recognition.continuous = false;
-      let finalText = '';
-      recognition.onresult = e => {
-        let interim = '';
-        for (let i = e.resultIndex; i < e.results.length; i++) {
-          const t = e.results[i][0].transcript;
-          if (e.results[i].isFinal) finalText += t;
-          else interim += t;
-        }
-        activeInput.value = (finalText + interim).trim();
-        activeInput.dispatchEvent(new Event('input'));
-      };
-      recognition.onerror = (ev) => {
-        listening = false;
-        activeBtn?.classList.remove('recording');
-        if (ev.error === 'not-allowed') {
-          alert('Permissão de microfone bloqueada. Habilite nas preferências do navegador.');
-        }
-      };
-      recognition.onend = () => {
-        listening = false;
-        activeBtn?.classList.remove('recording');
-        if (finalText.trim()) activeInput?.dispatchEvent(new Event('input'));
-      };
-      try {
-        recognition.start();
-        listening = true;
-        activeBtn.classList.add('recording');
-      } catch (e) {
-        console.warn('mic start failed', e);
-      }
+      // Preferência: SR (rápido, sem custo de API). Fallback: MediaRecorder.
+      if (SR) startSR();
+      else if (hasGUM) await startRec();
     });
   });
 })();
