@@ -738,14 +738,48 @@ export default async function handler(request) {
       const a = body.action;
       if (a === 'profile') {
         const data = body.data || {};
+        // Normaliza WhatsApp (E.164 sem +) — preserva valor exibível também
+        const wppRaw = String(data.whatsapp || '').trim();
+        let wppNorm = wppRaw.replace(/\D/g, '');
+        if (wppNorm && wppNorm.length >= 10 && wppNorm.length <= 11 && !wppNorm.startsWith('55')) {
+          wppNorm = '55' + wppNorm;
+        }
         const safe = {
           name: String(data.name || '').slice(0, 80),
           role: String(data.role || '').slice(0, 60),
           condos: String(data.condos || '').slice(0, 200),
+          whatsapp: wppRaw.slice(0, 30),
+          whatsappNorm: wppNorm,
           context: String(data.context || '').slice(0, 500),
           updatedAt: Date.now(),
         };
+
+        // Salva o perfil
         await kvSet(`sindi-profile:${user}`, safe);
+
+        // Mantém índices: phone → email + lista de usuários com whatsapp
+        const prevProfile = (await kvGet(`sindi-profile:${user}`).catch(() => null)) || {};
+        const oldPhone = prevProfile.whatsappNorm;
+        if (oldPhone && oldPhone !== wppNorm) {
+          await kv('POST', `/del/${encodeURIComponent('sindi-phone:' + oldPhone)}`);
+        }
+        if (wppNorm) {
+          await kvSet(`sindi-phone:${wppNorm}`, user);
+          // adiciona ao índice de usuários (Set via lista deduplicada)
+          const list = (await kvGet('sindi-wpp-users')) || [];
+          if (!list.includes(user)) {
+            list.push(user);
+            await kvSet('sindi-wpp-users', list);
+          }
+        } else {
+          // Removeu o whatsapp — tira do índice
+          const list = (await kvGet('sindi-wpp-users')) || [];
+          const filtered = list.filter(u => u !== user);
+          if (filtered.length !== list.length) {
+            await kvSet('sindi-wpp-users', filtered);
+          }
+        }
+
         return ok({ saved: true, profile: safe });
       }
       if (a === 'memory') {
@@ -753,7 +787,17 @@ export default async function handler(request) {
         return ok({ saved: true });
       }
       if (a === 'profile-clear') {
+        const prev = await kvGet(`sindi-profile:${user}`);
         await kvSet(`sindi-profile:${user}`, null);
+        // Limpa índices de WhatsApp
+        if (prev?.whatsappNorm) {
+          await kv('POST', `/del/${encodeURIComponent('sindi-phone:' + prev.whatsappNorm)}`);
+          const list = (await kvGet('sindi-wpp-users')) || [];
+          const filtered = list.filter(u => u !== user);
+          if (filtered.length !== list.length) {
+            await kvSet('sindi-wpp-users', filtered);
+          }
+        }
         return ok({ cleared: true });
       }
       if (a === 'memory-clear') {

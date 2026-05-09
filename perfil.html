@@ -158,6 +158,11 @@
       <input type="text" id="profCondos" placeholder="Ex: Edifício X (SP), Residencial Y (Campinas)">
     </div>
     <div class="full-field">
+      <span>WhatsApp · pra receber bom dia diário e conversar com a Sindi</span>
+      <input type="tel" id="profWhatsapp" placeholder="(11) 99999-9999" inputmode="tel" autocomplete="tel">
+      <small style="font-size:11px;color:var(--text-muted);margin-top:-2px">Toda manhã chega uma frase motivacional. Pode responder direto pra falar com a Sindi.</small>
+    </div>
+    <div class="full-field">
       <span>Contexto adicional</span>
       <textarea id="profContext" rows="3" placeholder="Ex: foco em condomínios de alto padrão, especializado em LGPD…"></textarea>
     </div>
@@ -265,8 +270,27 @@ function renderStats(s) {
   $('profName').value = s.profile?.name || '';
   $('profRole').value = s.profile?.role || '';
   $('profCondos').value = s.profile?.condos || '';
+  $('profWhatsapp').value = s.profile?.whatsapp || '';
   $('profContext').value = s.profile?.context || '';
 }
+
+function maskPhoneBR(v) {
+  v = String(v || '').replace(/\D/g, '').slice(0, 13); // limit (55 + DDD + 9 dígitos)
+  // Aceita já com 55 ou só DDD+número
+  let s = v;
+  if (s.length <= 11) {
+    if (s.length > 6)      s = s.replace(/^(\d{2})(\d{5})(\d{0,4})/, '($1) $2-$3').replace(/-$/, '');
+    else if (s.length > 2) s = s.replace(/^(\d{2})(\d{0,5})/, '($1) $2');
+  } else {
+    s = s.replace(/^(\d{2})(\d{2})(\d{5})(\d{0,4})/, '+$1 ($2) $3-$4').replace(/-$/, '');
+  }
+  return s.trim();
+}
+$('profWhatsapp').addEventListener('input', e => {
+  const cur = e.target.selectionStart;
+  e.target.value = maskPhoneBR(e.target.value);
+  // mantém cursor no fim (suficiente pra maioria dos casos)
+});
 
 function renderMemories(list) {
   const el = $('memList');
@@ -291,6 +315,7 @@ $('saveProfile').addEventListener('click', async () => {
     name: $('profName').value.trim(),
     role: $('profRole').value.trim(),
     condos: $('profCondos').value.trim(),
+    whatsapp: $('profWhatsapp').value.trim(),
     context: $('profContext').value.trim(),
   };
   const res = await fetch('/api/sindi-os', {
