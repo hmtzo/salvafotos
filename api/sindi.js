@@ -307,6 +307,7 @@ export default async function handler(request) {
     ];
     let stepIdx = 0;
     let attempt = 0;
+    let triedLegacyOn403 = false;
     const maxAttempts = 5;
     while (attempt < maxAttempts) {
       upstream = await fetch(currentUrl, {
@@ -323,6 +324,16 @@ export default async function handler(request) {
           steps[stepIdx]();
           continue;
         }
+      }
+      // 403: a chave pode não ter permissão pro modelo 2.5 (acontece com algumas
+      // chaves antigas / contas free). Tenta uma vez direto no gemini-2.0-flash
+      // sem tools antes de desistir. Se ainda 403, é a chave em si.
+      if (upstream.status === 403 && !triedLegacyOn403) {
+        triedLegacyOn403 = true;
+        delete requestBody.tools;
+        if (requestBody.generationConfig) delete requestBody.generationConfig.thinkingConfig;
+        currentUrl = `https://generativelanguage.googleapis.com/v1beta/models/${FALLBACK_MODEL}:generateContent?key=${apiKey}`;
+        continue;
       }
       // 503/504/429/500/502: tenta de novo com backoff E degrada o próximo passo se overload persistir
       const isRetryable = [429, 500, 502, 503, 504].includes(upstream.status);
@@ -344,7 +355,15 @@ export default async function handler(request) {
       let userMsg = `Erro na API Gemini (${upstream.status})`;
       if (upstream.status === 429) userMsg = '⚠️ Limite de requisições atingido. Aguarde 1 minuto e tente novamente.';
       if (upstream.status === 400) userMsg = '⚠️ Mensagem rejeitada. Tente reformular.';
-      if (upstream.status === 403) userMsg = '⚠️ Chave da API inválida ou sem permissão. Avise o administrador.';
+      if (upstream.status === 403) {
+        // detalhe do Google geralmente vem em errText.error.message
+        let hint = 'A chave pode estar revogada, com restrição de IP/referrer, ou sem acesso aos modelos Gemini 2.x.';
+        try {
+          const j = JSON.parse(errText);
+          if (j?.error?.message) hint = j.error.message;
+        } catch {}
+        userMsg = `⚠️ Gemini recusou (403): ${hint}`;
+      }
       if (upstream.status === 503) userMsg = '⏳ Gemini sobrecarregado. Tentei 5 vezes (com fallback de tools e modelo). Aguarde 30s-1min e tente de novo.';
       if (upstream.status === 504) userMsg = '⏳ Timeout do Gemini. Tente reformular a pergunta de forma mais curta.';
       return new Response(JSON.stringify({
