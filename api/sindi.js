@@ -309,7 +309,6 @@ export default async function handler(request) {
   }
 
   try {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
     const requestBody = {
       systemInstruction: { parts: [{ text: systemText }] },
       contents,
@@ -332,25 +331,26 @@ export default async function handler(request) {
       requestBody.generationConfig.thinkingConfig = { thinkingBudget: 8192 };
     }
 
-    // Retry inteligente: cada tentativa que falhar com 503/504 degrada algo.
-    // Sequência de degradação:
-    //   1. full tools (search+url+code) no modelo principal
-    //   2. drop code_execution (mais pesado) — search+url
-    //   3. só google_search
-    //   4. SEM tools
-    //   5. cai pra modelo mais leve (gemini-2.0-flash) sem tools
-    // 400 de tool incompatível pula direto pro próximo step de degradação.
+    // ============================================================
+    // STREAMING SSE — texto aparece tempo real no front
+    // ============================================================
+    // Endpoint :streamGenerateContent?alt=sse devolve SSE padrão.
+    // Mantém o mesmo retry/fallback de antes; quando upstream OK,
+    // pipe pro client com TransformStream que também acumula pra audit.
     const FALLBACK_MODEL = 'gemini-2.0-flash';
-    let currentUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+    const streamUrl = (m) => `https://generativelanguage.googleapis.com/v1beta/models/${m}:streamGenerateContent?alt=sse&key=${apiKey}`;
+    let currentModel = model;
+    let currentUrl = streamUrl(currentModel);
     let upstream;
     const steps = [
-      () => { /* step 0: full — sem mudança */ },
+      () => { /* step 0: full */ },
       () => { requestBody.tools = [{ google_search: {} }, { url_context: {} }]; },
       () => { requestBody.tools = [{ google_search: {} }]; },
       () => { delete requestBody.tools; },
       () => {
         delete requestBody.tools;
-        currentUrl = `https://generativelanguage.googleapis.com/v1beta/models/${FALLBACK_MODEL}:generateContent?key=${apiKey}`;
+        currentModel = FALLBACK_MODEL;
+        currentUrl = streamUrl(currentModel);
       },
     ];
     let stepIdx = 0;
@@ -364,35 +364,26 @@ export default async function handler(request) {
         body: JSON.stringify(requestBody),
       });
       if (upstream.ok) break;
-      // 400 com erro de tool: pula imediatamente pro próximo step (sem espera)
       if (upstream.status === 400) {
         const errPeek = await upstream.clone().text();
         if (/tool|function|code_execution|google_search|url_context/i.test(errPeek) && stepIdx < steps.length - 1) {
-          stepIdx++;
-          steps[stepIdx]();
-          continue;
+          stepIdx++; steps[stepIdx](); continue;
         }
       }
-      // 403: a chave pode não ter permissão pro modelo 2.5 (acontece com algumas
-      // chaves antigas / contas free). Tenta uma vez direto no gemini-2.0-flash
-      // sem tools antes de desistir. Se ainda 403, é a chave em si.
       if (upstream.status === 403 && !triedLegacyOn403) {
         triedLegacyOn403 = true;
         delete requestBody.tools;
         if (requestBody.generationConfig) delete requestBody.generationConfig.thinkingConfig;
-        currentUrl = `https://generativelanguage.googleapis.com/v1beta/models/${FALLBACK_MODEL}:generateContent?key=${apiKey}`;
+        currentModel = FALLBACK_MODEL;
+        currentUrl = streamUrl(currentModel);
         continue;
       }
-      // 503/504/429/500/502: tenta de novo com backoff E degrada o próximo passo se overload persistir
       const isRetryable = [429, 500, 502, 503, 504].includes(upstream.status);
       if (!isRetryable || attempt === maxAttempts - 1) break;
-      // Backoff exponencial: 1s/2s/4s/8s + jitter
       const wait = 1000 * Math.pow(2, attempt) + Math.random() * 500;
       await new Promise(r => setTimeout(r, wait));
-      // Degradação progressiva em overload (503/504): a cada falha, simplifica
       if ([503, 504].includes(upstream.status) && stepIdx < steps.length - 1) {
-        stepIdx++;
-        steps[stepIdx]();
+        stepIdx++; steps[stepIdx]();
       }
       attempt++;
     }
@@ -404,7 +395,6 @@ export default async function handler(request) {
       if (upstream.status === 429) userMsg = '⚠️ Limite de requisições atingido. Aguarde 1 minuto e tente novamente.';
       if (upstream.status === 400) userMsg = '⚠️ Mensagem rejeitada. Tente reformular.';
       if (upstream.status === 403) {
-        // detalhe do Google geralmente vem em errText.error.message
         let hint = 'A chave pode estar revogada, com restrição de IP/referrer, ou sem acesso aos modelos Gemini 2.x.';
         try {
           const j = JSON.parse(errText);
@@ -412,7 +402,7 @@ export default async function handler(request) {
         } catch {}
         userMsg = `⚠️ Gemini recusou (403): ${hint}`;
       }
-      if (upstream.status === 503) userMsg = '⏳ Gemini sobrecarregado. Tentei 5 vezes (com fallback de tools e modelo). Aguarde 30s-1min e tente de novo.';
+      if (upstream.status === 503) userMsg = '⏳ Gemini sobrecarregado. Tentei 5 vezes. Aguarde 30s-1min e tente de novo.';
       if (upstream.status === 504) userMsg = '⏳ Timeout do Gemini. Tente reformular a pergunta de forma mais curta.';
       return new Response(JSON.stringify({
         error: userMsg,
@@ -421,92 +411,116 @@ export default async function handler(request) {
       }), { status: 502, headers: { 'Content-Type': 'application/json' } });
     }
 
-    const data = await upstream.json();
-    const candidate = data.candidates?.[0];
-    // Junta todas as parts de texto (Gemini pode retornar text + executable_code + code_execution_result)
-    const parts = candidate?.content?.parts || [];
-    let text = '';
+    // === Pipe streaming + acumulação paralela pra audit ===
+    let fullText = '';
     const codeBlocks = [];
-    for (const p of parts) {
-      if (p.text) text += p.text;
-      if (p.executableCode) {
-        const lang = p.executableCode.language?.toLowerCase() || 'python';
-        codeBlocks.push(`\n\n\`\`\`${lang}\n${p.executableCode.code}\n\`\`\``);
-      }
-      if (p.codeExecutionResult) {
-        const out = p.codeExecutionResult.output || '';
-        if (out.trim()) codeBlocks.push(`\n\n_Saída:_\n\`\`\`\n${out}\n\`\`\``);
-      }
-    }
-    if (codeBlocks.length && !text.includes('```')) text += codeBlocks.join('');
+    let groundingMeta = null;
+    let usageMetadata = null;
+    let blockReason = null;
+    let buf = '';
+    const td = new TextDecoder();
+    const te = new TextEncoder();
 
-    // Extrai citações de pesquisa (groundingMetadata) pra UI poder renderizar fontes
-    const groundingMeta = candidate?.groundingMetadata;
-    const citations = (groundingMeta?.groundingChunks || []).map((c, i) => ({
-      n: i + 1,
-      title: c.web?.title || c.retrievedContext?.title || null,
-      uri: c.web?.uri || c.retrievedContext?.uri || null,
-    })).filter(c => c.uri);
-    const searchQueries = groundingMeta?.webSearchQueries || [];
-    if (citations.length) {
-      const sourcesBlock = '\n\n---\n**Fontes:**\n' + citations.map(c => `${c.n}. [${c.title || c.uri}](${c.uri})`).join('\n');
-      if (!text.includes('Fontes:')) text += sourcesBlock;
-    }
-
-    if (!text) {
-      // Pode ter sido bloqueado por safety
-      const blockReason = candidate?.finishReason || data.promptFeedback?.blockReason;
-      return new Response(JSON.stringify({
-        reply: blockReason
-          ? `Não consegui responder por questão de segurança automática (${blockReason}). Tente reformular a pergunta.`
-          : '(sem resposta da IA)',
-        usage: data.usageMetadata,
-      }), { status: 200, headers: { 'Content-Type': 'application/json' } });
-    }
-
-    // Extrai score de confiança se presente
-    const confMatch = text.match(/\[CONFIANÇA:\s*(\d+)%[^\]]*\]/i);
-    const confidence = confMatch ? parseInt(confMatch[1]) : null;
-
-    // Audit + quota + insight extraction (background, não bloqueia resposta)
-    if (user) {
-      Promise.all([
-        logAudit(user, {
-          mode: mode || null,
-          model,
-          q: lastUserMsg.slice(0, 200),
-          confidence,
-          tokens: data.usageMetadata?.totalTokenCount || null,
-          kb: kbHits.map(k => k.id),
-        }),
-        incrementQuota(user),
-        // Cérebro coletivo: extrai insight reutilizável (só se confiança alta)
-        extractInsightAsync({
-          question: lastUserMsg,
-          answer: text,
-          user,
-          confidence,
-          mode: mode || null,
-        }),
-      ]).catch(e => console.warn('audit/quota/insight failed', e));
-    }
-
-    return new Response(JSON.stringify({
-      reply: text,
-      usage: data.usageMetadata,
-      model,
-      mode: mode || null,
-      confidence,
-      knowledgeUsed: kbHits.map(k => ({ id: k.id, title: k.title, source: k._source || 'core' })),
-      hasProfile: !!osContext.profile,
-      memoryCount: osContext.memory.length,
-      citations,
-      searchQueries,
-      toolsUsed: {
-        codeExecution: codeBlocks.length > 0,
-        webSearch: citations.length > 0 || searchQueries.length > 0,
+    const transform = new TransformStream({
+      transform(chunk, controller) {
+        // Encaminha chunk verbatim pro cliente
+        controller.enqueue(chunk);
+        // Acumula em paralelo pra audit/insight
+        buf += td.decode(chunk, { stream: true });
+        const events = buf.split('\n\n');
+        buf = events.pop() || '';
+        for (const ev of events) {
+          for (const line of ev.split('\n')) {
+            if (!line.startsWith('data: ')) continue;
+            const dataStr = line.slice(6).trim();
+            if (!dataStr || dataStr === '[DONE]') continue;
+            try {
+              const json = JSON.parse(dataStr);
+              const cand = json.candidates?.[0];
+              for (const part of cand?.content?.parts || []) {
+                if (part.text) fullText += part.text;
+                if (part.executableCode) {
+                  const lang = part.executableCode.language?.toLowerCase() || 'python';
+                  codeBlocks.push(`\n\n\`\`\`${lang}\n${part.executableCode.code}\n\`\`\``);
+                }
+                if (part.codeExecutionResult) {
+                  const out = part.codeExecutionResult.output || '';
+                  if (out.trim()) codeBlocks.push(`\n\n_Saída:_\n\`\`\`\n${out}\n\`\`\``);
+                }
+              }
+              if (cand?.groundingMetadata) groundingMeta = cand.groundingMetadata;
+              if (cand?.finishReason && cand.finishReason !== 'STOP') blockReason = cand.finishReason;
+              if (json.usageMetadata) usageMetadata = json.usageMetadata;
+            } catch {}
+          }
+        }
       },
-    }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+      flush(controller) {
+        // Emite evento final 'meta' com tudo que o front precisa
+        // (citações, KB, perfil, confiança) — separado do stream principal
+        if (codeBlocks.length && !fullText.includes('```')) {
+          fullText += codeBlocks.join('');
+        }
+        const citations = (groundingMeta?.groundingChunks || []).map((c, i) => ({
+          n: i + 1,
+          title: c.web?.title || c.retrievedContext?.title || null,
+          uri: c.web?.uri || c.retrievedContext?.uri || null,
+        })).filter(c => c.uri);
+
+        const confMatch = fullText.match(/\[CONFIANÇA:\s*(\d+)%[^\]]*\]/i);
+        const confidence = confMatch ? parseInt(confMatch[1]) : null;
+
+        const meta = {
+          model: currentModel,
+          mode: mode || null,
+          confidence,
+          knowledgeUsed: kbHits.map(k => ({ id: k.id, title: k.title, source: k._source || 'core' })),
+          hasProfile: !!osContext.profile,
+          memoryCount: osContext.memory?.length || 0,
+          citations,
+          searchQueries: groundingMeta?.webSearchQueries || [],
+          usage: usageMetadata,
+          blockReason: blockReason || null,
+          toolsUsed: {
+            codeExecution: codeBlocks.length > 0,
+            webSearch: citations.length > 0 || (groundingMeta?.webSearchQueries?.length > 0),
+          },
+        };
+        controller.enqueue(te.encode(`event: meta\ndata: ${JSON.stringify(meta)}\n\n`));
+
+        // Audit + quota + insight em background (fire and forget)
+        if (user) {
+          Promise.all([
+            logAudit(user, {
+              mode: mode || null,
+              model: currentModel,
+              q: lastUserMsg.slice(0, 200),
+              confidence,
+              tokens: usageMetadata?.totalTokenCount || null,
+              kb: kbHits.map(k => k.id),
+            }),
+            incrementQuota(user),
+            extractInsightAsync({
+              question: lastUserMsg,
+              answer: fullText,
+              user,
+              confidence,
+              mode: mode || null,
+            }),
+          ]).catch(e => console.warn('audit/quota/insight failed', e));
+        }
+      },
+    });
+
+    return new Response(upstream.body.pipeThrough(transform), {
+      status: 200,
+      headers: {
+        'Content-Type': 'text/event-stream; charset=utf-8',
+        'Cache-Control': 'no-cache, no-transform',
+        'X-Accel-Buffering': 'no',
+        'Connection': 'keep-alive',
+      },
+    });
   } catch (err) {
     console.error('Sindi error:', err);
     return new Response(JSON.stringify({ error: 'Falha ao chamar API: ' + (err.message || err) }), {

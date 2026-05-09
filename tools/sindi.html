@@ -150,6 +150,14 @@
   .prompt-btn.active{background:rgba(99,102,241,0.2);color:#a5b4fc}
   @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}
   @keyframes spin{to{transform:rotate(360deg)}}
+
+  /* Streaming live cursor: piscando no fim da .live-stream enquanto Sindi está escrevendo */
+  .msg.streaming .live-stream::after{
+    content:'▍';display:inline-block;margin-left:2px;
+    color:#a5b4fc;animation:caret-blink 1s steps(2) infinite;font-weight:700;
+    transform:translateY(-1px);
+  }
+  @keyframes caret-blink{0%,100%{opacity:1}50%{opacity:0}}
   .prompt-btn svg{width:18px;height:18px}
 
   .toggle-pill{
@@ -1506,24 +1514,91 @@ async function send() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ messages, mode: activeMode }),
     });
-    const data = await res.json();
 
-    if (!res.ok) {
+    // Erro: backend devolve JSON com {error}; sucesso devolve SSE
+    const ctype = res.headers.get('Content-Type') || '';
+    if (!res.ok || !ctype.includes('text/event-stream')) {
+      const data = await res.json().catch(() => ({}));
       typingMsg.querySelector('.msg-bubble').innerHTML = `<p style="color:var(--danger)">⚠️ ${data.error || 'Erro ao chamar a Sindi'}</p>`;
       if (data.configured === false) document.getElementById('configWarn').style.display = 'block';
       messages.pop();
       return;
     }
 
-    const reply = data.reply || '(sem resposta)';
-    messages.push({ role: 'assistant', content: reply });
-    renderAssistantMessage(typingMsg, reply, data);
+    // === Streaming SSE: texto aparece tempo real ===
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let sseBuf = '';
+    let fullText = '';
+    let metaData = null;
+
+    const bubble = typingMsg.querySelector('.msg-bubble');
+    bubble.innerHTML = '';
+    const liveDiv = document.createElement('div');
+    liveDiv.className = 'live-stream';
+    bubble.appendChild(liveDiv);
+    // cursor pulsante no fim do texto durante stream
+    typingMsg.classList.add('streaming');
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      sseBuf += decoder.decode(value, { stream: true });
+      const events = sseBuf.split('\n\n');
+      sseBuf = events.pop() || '';
+
+      for (const ev of events) {
+        const lines = ev.split('\n');
+        let eventType = 'message';
+        let dataStr = '';
+        for (const line of lines) {
+          if (line.startsWith('event: ')) eventType = line.slice(7).trim();
+          else if (line.startsWith('data: ')) dataStr += line.slice(6);
+        }
+        if (!dataStr) continue;
+        if (dataStr.trim() === '[DONE]') continue;
+
+        try {
+          const json = JSON.parse(dataStr);
+          if (eventType === 'meta') {
+            metaData = json;
+            continue;
+          }
+          // Default: chunk Gemini (candidates[].content.parts[])
+          const cand = json.candidates?.[0];
+          for (const part of cand?.content?.parts || []) {
+            if (part.text) {
+              fullText += part.text;
+            }
+            if (part.executableCode) {
+              const lang = (part.executableCode.language || 'python').toLowerCase();
+              fullText += `\n\n\`\`\`${lang}\n${part.executableCode.code}\n\`\`\``;
+            }
+            if (part.codeExecutionResult) {
+              const out = part.codeExecutionResult.output || '';
+              if (out.trim()) fullText += `\n\n_Saída:_\n\`\`\`\n${out}\n\`\`\``;
+            }
+          }
+          // Atualiza UI live (markdown puro durante stream; estrutura final no fim)
+          liveDiv.innerHTML = formatMd(fullText);
+        } catch {}
+      }
+      msgsEl.scrollTop = msgsEl.scrollHeight;
+    }
+
+    typingMsg.classList.remove('streaming');
+
+    if (!fullText) fullText = '(sem resposta)';
+    messages.push({ role: 'assistant', content: fullText });
+    // Re-renderiza com cards/badges/citações via renderAssistantMessage
+    renderAssistantMessage(typingMsg, fullText, metaData || {});
     msgsEl.scrollTop = msgsEl.scrollHeight;
     trackUsage('sindi');
     persistCurrent();
     refreshQuotaIndicator();
   } catch (err) {
     typingMsg.querySelector('.msg-bubble').innerHTML = `<p style="color:var(--danger)">⚠️ Falha de conexão: ${err.message}</p>`;
+    typingMsg.classList.remove('streaming');
     messages.pop();
   } finally {
     sendBtn.disabled = false;
