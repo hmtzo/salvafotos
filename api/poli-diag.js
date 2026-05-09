@@ -35,14 +35,14 @@ export default async function handler(request) {
 
   // Endpoints pra tentar (GET — só leitura)
   const candidates = [
-    { name: 'me',                 url: `https://app.poli.digital/api/v1/me` },
-    { name: 'user-current',       url: `https://app.poli.digital/api/v1/user` },
-    { name: 'customer',           url: `https://app.poli.digital/api/v1/customers/${customer}` },
-    { name: 'customer-channels',  url: `https://app.poli.digital/api/v1/customers/${customer}/channels` },
-    { name: 'customer-contacts',  url: `https://app.poli.digital/api/v1/customers/${customer}/contacts?per_page=1` },
-    { name: 'whatsapp-channels',  url: `https://app.poli.digital/api/v1/customers/${customer}/whatsapp/channels` },
-    { name: 'channel-info',       url: `https://app.poli.digital/api/v1/customers/${customer}/channels/${channel}` },
-    { name: 'users',              url: `https://app.poli.digital/api/v1/customers/${customer}/users` },
+    { name: 'me',                 url: `https://app.polichat.com.br/api/v1/me` },
+    { name: 'user-current',       url: `https://app.polichat.com.br/api/v1/user` },
+    { name: 'customer',           url: `https://app.polichat.com.br/api/v1/customers/${customer}` },
+    { name: 'customer-channels',  url: `https://app.polichat.com.br/api/v1/customers/${customer}/channels` },
+    { name: 'customer-contacts',  url: `https://app.polichat.com.br/api/v1/customers/${customer}/contacts?per_page=1` },
+    { name: 'whatsapp-channels',  url: `https://app.polichat.com.br/api/v1/customers/${customer}/whatsapp/channels` },
+    { name: 'channel-info',       url: `https://app.polichat.com.br/api/v1/customers/${customer}/channels/${channel}` },
+    { name: 'users',              url: `https://app.polichat.com.br/api/v1/customers/${customer}/users` },
   ];
 
   const results = [];
@@ -64,7 +64,7 @@ export default async function handler(request) {
 
   // Bateria de variantes de auth/url pra testar em endpoint que sabemos existir
   // (channel-info devolve 405 com Bearer, então sabemos que a rota existe)
-  const targetUrl = `https://app.poli.digital/api/v1/customers/${customer}/channels`;
+  const targetUrl = `https://app.polichat.com.br/api/v1/customers/${customer}/channels`;
   const variants = [
     { name: 'Bearer-default',      hdr: { Authorization: `Bearer ${token}` } },
     { name: 'Token-prefix',        hdr: { Authorization: `Token ${token}` } },

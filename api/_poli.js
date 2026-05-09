@@ -16,7 +16,11 @@
 //   POLI_USER_ID       — ID do user "atendente" que dispara (bot)
 // =====================================================================
 
-const BASE = 'https://app.poli.digital/api/v1';
+// IMPORTANTE: a doc PT em ajuda.poli.digital indica app.poli.digital, mas o Swagger
+// oficial (cs.poli.digital/api-cliente/openapi.yaml) mostra app.polichat.com.br.
+// Em testes, .poli.digital responde 401 em todos endpoints reais; .polichat.com.br
+// responde JSON real → este é o domínio correto da API.
+const BASE = 'https://app.polichat.com.br/api/v1';
 
 function env(key) {
   const v = process.env[key];
