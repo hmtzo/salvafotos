@@ -62,20 +62,67 @@ export default async function handler(request) {
     }
   }
 
-  // Também testa com prefixo "Token" em vez de "Bearer" (algumas APIs usam)
-  const headersToken = { Authorization: `Token ${token}`, Accept: 'application/json' };
-  let altAuth = null;
-  try {
-    const r = await fetch(`https://app.poli.digital/api/v1/customers/${customer}`, { headers: headersToken });
-    altAuth = { status: r.status, ok: r.ok, body: (await r.text()).slice(0, 200) };
-  } catch (e) {
-    altAuth = { error: e.message };
+  // Bateria de variantes de auth/url pra testar em endpoint que sabemos existir
+  // (channel-info devolve 405 com Bearer, então sabemos que a rota existe)
+  const targetUrl = `https://app.poli.digital/api/v1/customers/${customer}/channels`;
+  const variants = [
+    { name: 'Bearer-default',      hdr: { Authorization: `Bearer ${token}` } },
+    { name: 'Token-prefix',        hdr: { Authorization: `Token ${token}` } },
+    { name: 'X-API-Key',           hdr: { 'X-API-Key': token } },
+    { name: 'X-Auth-Token',        hdr: { 'X-Auth-Token': token } },
+    { name: 'apikey-header',       hdr: { apikey: token } },
+    { name: 'Bearer-with-Accept',  hdr: { Authorization: `Bearer ${token}`, Accept: 'application/json' } },
+    { name: 'query-token',         hdr: {}, qs: `?api_token=${encodeURIComponent(token)}` },
+    { name: 'query-access_token',  hdr: {}, qs: `?access_token=${encodeURIComponent(token)}` },
+    { name: 'query-token-name',    hdr: {}, qs: `?token=${encodeURIComponent(token)}` },
+  ];
+
+  const variantResults = [];
+  for (const v of variants) {
+    try {
+      const url = targetUrl + (v.qs || '');
+      const r = await fetch(url, { headers: { ...v.hdr, Accept: 'application/json' } });
+      const txt = await r.text();
+      variantResults.push({
+        name: v.name,
+        status: r.status,
+        ok: r.ok,
+        bodySnippet: txt.slice(0, 150),
+        looksHtml: txt.startsWith('<!DOCTYPE'),
+      });
+    } catch (e) {
+      variantResults.push({ name: v.name, error: e.message });
+    }
+  }
+
+  // Também tenta uma URL base alternativa (alguns sistemas têm /api/external/)
+  const altBases = [
+    'https://app.poli.digital/api/external/v1',
+    'https://app.poli.digital/api/v2',
+    'https://api.poli.digital/v1',
+  ];
+  const altBaseResults = [];
+  for (const base of altBases) {
+    try {
+      const r = await fetch(`${base}/customers/${customer}/channels`, {
+        headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
+      });
+      const txt = await r.text();
+      altBaseResults.push({
+        base,
+        status: r.status,
+        bodySnippet: txt.slice(0, 100),
+      });
+    } catch (e) {
+      altBaseResults.push({ base, error: e.message });
+    }
   }
 
   return new Response(JSON.stringify({
     tokenInfo,
     bearerResults: results,
-    tokenPrefixTest: altAuth,
+    authVariants: variantResults,
+    altBases: altBaseResults,
   }, null, 2), {
     status: 200,
     headers: { 'Content-Type': 'application/json' },
