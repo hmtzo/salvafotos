@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0a0a0c">
+<title>Recortar PDF — Sindicompany</title>
+<meta name="description" content="Reduza margens de PDFs aplicando crop em todas as páginas.">
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="icon" type="image/png" href="/assets/brand/icon-color.png">
+<link rel="stylesheet" href="/assets/shared.css">
+<script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+<script src="/assets/shared.js"></script>
+<script src="/assets/tool-helpers.js"></script>
+<style>
+  .margins-grid{
+    display:grid;grid-template-columns:repeat(4, 1fr);gap:10px;margin-bottom:14px;
+  }
+  .margin-field{display:flex;flex-direction:column;gap:4px}
+  .margin-field label{font-size:10.5px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em}
+  .margin-field input{
+    background:rgba(255,255,255,0.04);border:1px solid var(--border);
+    border-radius:8px;padding:8px 10px;color:var(--text);
+    font-family:inherit;font-size:13px;outline:none;width:100%;
+    transition:border-color .15s;
+  }
+  .margin-field input:focus{border-color:var(--accent-bright)}
+  .preset-row{
+    display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap;
+  }
+  .preset-chip{
+    background:rgba(255,255,255,0.04);border:1px solid var(--border);
+    color:var(--text-dim);font-size:11.5px;font-weight:600;
+    padding:6px 12px;border-radius:100px;cursor:pointer;
+    transition:background .15s, border-color .15s, color .15s;font-family:inherit;
+  }
+  .preset-chip:hover{background:rgba(99,102,241,0.12);border-color:rgba(99,102,241,0.3);color:#a5b4fc}
+  @media (max-width:600px){
+    .margins-grid{grid-template-columns:repeat(2, 1fr)}
+  }
+</style>
+</head>
+<body>
+<div id="app-nav"></div>
+
+<main class="tool-container">
+  <header class="tool-hero">
+    <span class="tool-eyebrow"><span class="dot"></span> PDF · Layout</span>
+    <h1>Recortar PDF</h1>
+    <p>Remove margens em branco aplicando crop em todas as páginas. Útil pra digitalizações com sobra ou pra otimizar pra leitura em tablet.</p>
+  </header>
+
+  <label for="fileInput" id="dropZone" class="tool-drop-card">
+    <div class="tool-drop-icon">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M6 2v6a2 2 0 002 2h6m-8 0v10a2 2 0 002 2h10a2 2 0 002-2V8M6 2h10a2 2 0 012 2v4"/></svg>
+    </div>
+    <div class="tool-drop-title" id="dropTitle">Solte o PDF aqui</div>
+    <div class="tool-drop-sub">ou clique para selecionar</div>
+  </label>
+  <input type="file" id="fileInput" accept="application/pdf" hidden>
+
+  <section class="tool-config">
+    <div class="tool-config-head"><h2>Margens a remover (mm)</h2></div>
+
+    <div class="preset-row">
+      <button class="preset-chip" data-margin="0" type="button">Reset 0</button>
+      <button class="preset-chip" data-margin="5" type="button">Leve 5mm</button>
+      <button class="preset-chip" data-margin="10" type="button">Padrão 10mm</button>
+      <button class="preset-chip" data-margin="20" type="button">Forte 20mm</button>
+    </div>
+
+    <div class="margins-grid">
+      <div class="margin-field">
+        <label>Topo</label>
+        <input type="number" id="mTop" value="10" min="0" max="100" step="1">
+      </div>
+      <div class="margin-field">
+        <label>Direita</label>
+        <input type="number" id="mRight" value="10" min="0" max="100" step="1">
+      </div>
+      <div class="margin-field">
+        <label>Inferior</label>
+        <input type="number" id="mBottom" value="10" min="0" max="100" step="1">
+      </div>
+      <div class="margin-field">
+        <label>Esquerda</label>
+        <input type="number" id="mLeft" value="10" min="0" max="100" step="1">
+      </div>
+    </div>
+
+    <button class="tool-process" id="processBtn" disabled>
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 2v6a2 2 0 002 2h6m-8 0v10a2 2 0 002 2h10a2 2 0 002-2V8M6 2h10a2 2 0 012 2v4"/></svg>
+      <span id="btnText">Recortar e baixar</span>
+    </button>
+
+    <div class="tool-status" id="status">
+      <div class="tool-status-text" id="statusText">Aguardando…</div>
+      <div class="tool-progress"><div class="tool-progress-bar" id="progressBar"></div></div>
+    </div>
+
+    <div class="tool-stats" id="stats">
+      <div class="tool-stat"><div class="tool-stat-value" id="statPages">0</div><div class="tool-stat-label">Páginas</div></div>
+      <div class="tool-stat"><div class="tool-stat-value" id="statW">0</div><div class="tool-stat-label">Largura final (mm)</div></div>
+      <div class="tool-stat"><div class="tool-stat-value" id="statH">0</div><div class="tool-stat-label">Altura final (mm)</div></div>
+    </div>
+  </section>
+
+  <div class="tool-privacy">
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+    Tudo no navegador via pdf-lib.
+  </div>
+</main>
+
+<script>
+let selectedFile = null;
+ToolFile.setupDropZone({
+  accept: f => /pdf$/i.test(f.type) || /\.pdf$/i.test(f.name),
+  onFile: f => { selectedFile = f; ToolUI.setStatus('Pronto pra recortar', ''); },
+});
+
+document.querySelectorAll('.preset-chip').forEach(b => b.addEventListener('click', () => {
+  const v = b.dataset.margin;
+  ['mTop','mRight','mBottom','mLeft'].forEach(id => document.getElementById(id).value = v);
+}));
+
+const MM_TO_PT = 2.834645669; // 1 mm = 2.834645669 pt
+
+document.getElementById('processBtn').addEventListener('click', async () => {
+  if (!selectedFile) return;
+  const btn = document.getElementById('processBtn');
+  const btnText = document.getElementById('btnText');
+  btn.disabled = true; btnText.textContent = 'Recortando…';
+  document.getElementById('stats').classList.remove('show');
+  ToolUI.setProgress(15);
+  ToolUI.setStatus('Lendo PDF…');
+
+  try {
+    const bytes = await ToolFile.readPdfBytes(selectedFile);
+    const doc = await PDFLib.PDFDocument.load(bytes, { ignoreEncryption: true });
+    ToolUI.setProgress(40);
+
+    const top = parseFloat(document.getElementById('mTop').value) * MM_TO_PT;
+    const right = parseFloat(document.getElementById('mRight').value) * MM_TO_PT;
+    const bottom = parseFloat(document.getElementById('mBottom').value) * MM_TO_PT;
+    const left = parseFloat(document.getElementById('mLeft').value) * MM_TO_PT;
+
+    const pages = doc.getPages();
+    let lastW = 0, lastH = 0;
+    pages.forEach(p => {
+      const cur = p.getCropBox();
+      const newX = cur.x + left;
+      const newY = cur.y + bottom;
+      const newW = Math.max(10, cur.width - left - right);
+      const newH = Math.max(10, cur.height - top - bottom);
+      p.setCropBox(newX, newY, newW, newH);
+      p.setMediaBox(newX, newY, newW, newH);
+      lastW = newW; lastH = newH;
+    });
+    ToolUI.setProgress(80);
+
+    const out = await doc.save({ useObjectStreams: true });
+    document.getElementById('statPages').textContent = pages.length;
+    document.getElementById('statW').textContent = (lastW / MM_TO_PT).toFixed(0);
+    document.getElementById('statH').textContent = (lastH / MM_TO_PT).toFixed(0);
+    document.getElementById('stats').classList.add('show');
+
+    ToolUI.setProgress(100);
+    const name = selectedFile.name.replace(/\.pdf$/i, '') + '_recortado.pdf';
+    ToolFile.download(new Blob([out], { type: 'application/pdf' }), name);
+    ToolUI.setStatus('Pronto. PDF recortado baixado.', 'success');
+    if (window.trackUsage) trackUsage('recortar-pdf');
+  } catch (e) {
+    console.error(e);
+    ToolUI.setStatus('Erro: ' + e.message, 'error');
+    ToolUI.setProgress(0);
+  } finally {
+    btn.disabled = false; btnText.textContent = 'Recortar e baixar';
+  }
+});
+</script>
+</body>
+</html>

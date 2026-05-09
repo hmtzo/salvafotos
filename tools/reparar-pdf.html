@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0a0a0c">
+<title>Reparar PDF — Sindicompany</title>
+<meta name="description" content="Tenta reparar PDFs danificados ou com metadados corrompidos.">
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="icon" type="image/png" href="/assets/brand/icon-color.png">
+<link rel="stylesheet" href="/assets/shared.css">
+<script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+<script src="/assets/shared.js"></script>
+<script src="/assets/tool-helpers.js"></script>
+</head>
+<body>
+<div id="app-nav"></div>
+
+<main class="tool-container">
+  <header class="tool-hero">
+    <span class="tool-eyebrow"><span class="dot"></span> PDF · Recuperação</span>
+    <h1>Reparar PDF</h1>
+    <p>Tenta abrir e re-salvar o PDF, recriando o índice interno (XREF) e removendo metadados corrompidos. Funciona pra arquivos mal-fechados ou com erro de leitura.</p>
+  </header>
+
+  <label for="fileInput" id="dropZone" class="tool-drop-card">
+    <div class="tool-drop-icon">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.121 2.121 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
+    </div>
+    <div class="tool-drop-title" id="dropTitle">Solte o PDF danificado aqui</div>
+    <div class="tool-drop-sub">ou clique para selecionar &nbsp;·&nbsp; também aceita PDFs OK (otimiza)</div>
+  </label>
+  <input type="file" id="fileInput" accept="application/pdf" hidden>
+
+  <section class="tool-config">
+    <div class="tool-options">
+      <label class="tool-toggle">
+        <input type="checkbox" id="optStripMeta" checked>
+        <span class="tool-toggle-switch"></span>
+        <span class="tool-toggle-label"><strong>Limpar metadados</strong><span>autor, software, datas</span></span>
+      </label>
+      <label class="tool-toggle">
+        <input type="checkbox" id="optIgnoreEncryption">
+        <span class="tool-toggle-switch"></span>
+        <span class="tool-toggle-label"><strong>Ignorar encriptação</strong><span>se o PDF estiver protegido</span></span>
+      </label>
+    </div>
+
+    <button class="tool-process" id="processBtn" disabled>
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.121 2.121 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
+      <span id="btnText">Reparar e baixar</span>
+    </button>
+
+    <div class="tool-status" id="status">
+      <div class="tool-status-text" id="statusText">Aguardando…</div>
+      <div class="tool-progress"><div class="tool-progress-bar" id="progressBar"></div></div>
+    </div>
+
+    <div class="tool-stats" id="stats">
+      <div class="tool-stat"><div class="tool-stat-value" id="statPages">0</div><div class="tool-stat-label">Páginas</div></div>
+      <div class="tool-stat"><div class="tool-stat-value" id="statBefore">0</div><div class="tool-stat-label">Tamanho original</div></div>
+      <div class="tool-stat"><div class="tool-stat-value success" id="statAfter">0</div><div class="tool-stat-label">Após reparo</div></div>
+    </div>
+  </section>
+
+  <div class="tool-privacy">
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+    Reparo no navegador via pdf-lib. Nada sai do seu dispositivo.
+  </div>
+</main>
+
+<script>
+let selectedFile = null;
+ToolFile.setupDropZone({
+  accept: f => /pdf$/i.test(f.type) || /\.pdf$/i.test(f.name),
+  onFile: f => { selectedFile = f; ToolUI.setStatus('Pronto pra reparar', ''); },
+});
+
+function fmtBytes(n) {
+  if (n < 1024) return n + ' B';
+  if (n < 1024*1024) return (n/1024).toFixed(1) + ' KB';
+  return (n/1024/1024).toFixed(2) + ' MB';
+}
+
+document.getElementById('processBtn').addEventListener('click', async () => {
+  if (!selectedFile) return;
+  const btn = document.getElementById('processBtn');
+  const btnText = document.getElementById('btnText');
+  btn.disabled = true; btnText.textContent = 'Reparando…';
+  document.getElementById('stats').classList.remove('show');
+  ToolUI.setProgress(15);
+  ToolUI.setStatus('Lendo arquivo…');
+
+  try {
+    const bytes = await ToolFile.readPdfBytes(selectedFile);
+    ToolUI.setProgress(35);
+    ToolUI.setStatus('Reanalisando estrutura…');
+    const opts = {
+      ignoreEncryption: document.getElementById('optIgnoreEncryption').checked,
+      throwOnInvalidObject: false,
+      updateMetadata: true,
+    };
+    const doc = await PDFLib.PDFDocument.load(bytes, opts);
+    ToolUI.setProgress(60);
+
+    if (document.getElementById('optStripMeta').checked) {
+      doc.setTitle('');
+      doc.setAuthor('');
+      doc.setSubject('');
+      doc.setKeywords([]);
+      doc.setProducer('Sindicompany Hub');
+      doc.setCreator('Sindicompany Hub');
+    }
+
+    ToolUI.setProgress(80);
+    ToolUI.setStatus('Re-salvando…');
+    const out = await doc.save({ useObjectStreams: true });
+
+    document.getElementById('statPages').textContent = doc.getPageCount();
+    document.getElementById('statBefore').textContent = fmtBytes(bytes.byteLength);
+    document.getElementById('statAfter').textContent = fmtBytes(out.byteLength);
+    document.getElementById('stats').classList.add('show');
+
+    ToolUI.setProgress(100);
+    const name = selectedFile.name.replace(/\.pdf$/i, '') + '_reparado.pdf';
+    ToolFile.download(new Blob([out], { type: 'application/pdf' }), name);
+    ToolUI.setStatus('Pronto. PDF reparado baixado.', 'success');
+    if (window.trackUsage) trackUsage('reparar-pdf');
+  } catch (e) {
+    console.error(e);
+    let msg = e.message;
+    if (/encrypt/i.test(msg)) msg = 'PDF está protegido. Marque "Ignorar encriptação" ou desbloqueie antes.';
+    else if (/parse|invalid/i.test(msg)) msg = 'PDF muito danificado para reparar. Tente outra ferramenta especializada.';
+    ToolUI.setStatus('Erro: ' + msg, 'error');
+    ToolUI.setProgress(0);
+  } finally {
+    btn.disabled = false; btnText.textContent = 'Reparar e baixar';
+  }
+});
+</script>
+</body>
+</html>

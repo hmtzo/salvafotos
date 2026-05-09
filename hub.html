@@ -290,12 +290,15 @@
     transform:scale(1.1) rotate(3deg) translateX(10px);
   }
 
-  /* Badge "novo" */
+  /* Badge "novo" / "em breve" */
   .tool-card .tool-badge{
     position:absolute;top:14px;right:14px;z-index:3;
     font-size:10px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;
     padding:3px 9px;border-radius:100px;
     background:rgba(255,255,255,0.18);color:#fff;backdrop-filter:blur(8px);
+  }
+  .tool-card .tool-badge.tool-badge-soon{
+    background:rgba(245,158,11,0.85);color:#0a0a0c;
   }
 
   /* === Variantes por categoria === */
@@ -569,6 +572,8 @@ const TOOLS = [
   // === IA (destaque) ===
   { slug: 'sindi', cat: 'ai', name: 'Sindi (IA)', desc: 'Copiloto IA que lê documentos e responde dúvidas sobre direito condominial.', icon: 'bot', iconClass: 'icon-ai' },
   { slug: 'corretor-texto', cat: 'ai', name: 'Corretor de Texto PT-BR', desc: 'Corrige ortografia, gramática e pontuação. Mantém o tom do texto.', icon: 'pencil', iconClass: 'icon-ai', badge: 'new' },
+  { slug: 'resumir-pdf', cat: 'ai', name: 'Resumir PDF com IA', desc: 'Resumos executivo, detalhado, ação ou risco em segundos.', icon: 'sparkles', iconClass: 'icon-ai', badge: 'new' },
+  { slug: 'traduzir-pdf', cat: 'ai', name: 'Traduzir PDF com IA', desc: 'Tradução natural multi-idiomas preservando layout.', icon: 'sparkles', iconClass: 'icon-ai', badge: 'new' },
 
   // === GERADORES ===
   { slug: 'wizard-inadimplencia', cat: 'doc', name: 'Wizard Inadimplência', desc: 'Fluxo guiado de cobrança em 5 passos: dados → cálculo → notificação → cronograma.', icon: 'fileSign', iconClass: 'icon-doc', badge: 'new' },
@@ -586,6 +591,11 @@ const TOOLS = [
   { slug: 'pdf-para-jpg', cat: 'convert', name: 'PDF → JPG', desc: 'Converta cada página do PDF em imagem JPG.', icon: 'image', iconClass: 'icon-convert' },
   { slug: 'jpg-para-pdf', cat: 'convert', name: 'Imagens → PDF', desc: 'Junte várias imagens em um PDF.', icon: 'images', iconClass: 'icon-convert' },
   { slug: 'conversor-imagens', cat: 'convert', name: 'Conversor de Imagens', desc: 'PNG ↔ JPG ↔ WEBP. Redimensiona, comprime, em lote.', icon: 'palette', iconClass: 'icon-image', badge: 'new' },
+  { slug: 'html-para-pdf', cat: 'convert', name: 'HTML → PDF', desc: 'Converte página web ou HTML em PDF com layout preservado.', icon: 'fileText', iconClass: 'icon-convert', badge: 'new' },
+  { slug: 'pdf-para-word', cat: 'convert', name: 'PDF → Word', desc: 'Converte PDF para .docx editável (em desenvolvimento).', icon: 'fileText', iconClass: 'icon-convert', badge: 'soon' },
+  { slug: 'pdf-para-powerpoint', cat: 'convert', name: 'PDF → PowerPoint', desc: 'Cada página vira slide editável (em desenvolvimento).', icon: 'fileText', iconClass: 'icon-convert', badge: 'soon' },
+  { slug: 'powerpoint-para-pdf', cat: 'convert', name: 'PowerPoint → PDF', desc: 'Conversão de .pptx para PDF (em desenvolvimento).', icon: 'fileText', iconClass: 'icon-convert', badge: 'soon' },
+  { slug: 'pdf-para-pdfa', cat: 'convert', name: 'PDF → PDF/A', desc: 'Conformidade ISO 19005 para arquivamento (em desenvolvimento).', icon: 'shield', iconClass: 'icon-convert', badge: 'soon' },
 
   // === PDF (manipulação) ===
   { slug: 'editor-pdf', cat: 'pdf', name: 'Editor de PDF', desc: 'Adicione texto, destaque, risque, anote o PDF.', icon: 'pdfEdit', iconClass: 'icon-pdf', badge: 'new' },
@@ -593,6 +603,9 @@ const TOOLS = [
   { slug: 'dividir-pdf', cat: 'pdf', name: 'Dividir PDF', desc: 'Separe páginas ou intervalos em arquivos individuais.', icon: 'scissors', iconClass: 'icon-pdf' },
   { slug: 'comprimir-pdf', cat: 'pdf', name: 'Comprimir PDF', desc: 'Reduz o tamanho do PDF rasterizando em JPEG.', icon: 'archive', iconClass: 'icon-pdf' },
   { slug: 'comparar-pdf', cat: 'pdf', name: 'Comparar Documentos', desc: 'Veja o que mudou entre duas versões (com resumo IA).', icon: 'scale', iconClass: 'icon-pdf', badge: 'new' },
+  { slug: 'reparar-pdf', cat: 'pdf', name: 'Reparar PDF', desc: 'Recupera PDFs danificados, corrompidos ou mal-fechados.', icon: 'pencil', iconClass: 'icon-pdf', badge: 'new' },
+  { slug: 'recortar-pdf', cat: 'pdf', name: 'Recortar PDF', desc: 'Remove margens em todas as páginas (crop).', icon: 'scissors', iconClass: 'icon-pdf', badge: 'new' },
+  { slug: 'formularios-pdf', cat: 'pdf', name: 'Formulários PDF', desc: 'Detecta campos, preenche e cria formulários (em desenvolvimento).', icon: 'fileText', iconClass: 'icon-pdf', badge: 'soon' },
 
   // === ORGANIZAÇÃO ===
   { slug: 'organizar-pdf', cat: 'org', name: 'Organizar Páginas', desc: 'Reordene e remova páginas arrastando miniaturas.', icon: 'layoutGrid', iconClass: 'icon-org' },
@@ -603,12 +616,17 @@ const TOOLS = [
   // === DOCUMENTOS / DADOS ===
   { slug: 'whatsapp-fotos', cat: 'doc', name: 'Fotos do WhatsApp', desc: 'Extrai fotos com legenda, data e remetente.', icon: 'message', iconClass: 'icon-doc' },
   { slug: 'ocr', cat: 'doc', name: 'OCR (Texto em Imagem)', desc: 'Extrai texto de fotos e PDFs escaneados (PT/EN/ES).', icon: 'search', iconClass: 'icon-doc' },
+  { slug: 'digitalizar-pdf', cat: 'doc', name: 'Digitalizar (Câmera)', desc: 'Escaneie documentos físicos pela câmera (em desenvolvimento).', icon: 'image', iconClass: 'icon-doc', badge: 'soon' },
 
   // === SEGURANÇA ===
   { slug: 'proteger-pdf', cat: 'secure', name: 'Proteger PDF', desc: 'Adicione senha (AES-256) antes de enviar.', icon: 'lock', iconClass: 'icon-secure' },
   { slug: 'desbloquear-pdf', cat: 'secure', name: 'Desbloquear PDF', desc: 'Remove senha de PDF (precisa saber a senha).', icon: 'unlock', iconClass: 'icon-secure' },
   { slug: 'redigir-lgpd', cat: 'secure', name: 'Redigir LGPD', desc: 'Tarja CPF, RG, e-mail, telefone automaticamente.', icon: 'shield', iconClass: 'icon-secure', badge: 'new' },
   { slug: 'assinatura', cat: 'secure', name: 'Assinatura Eletrônica', desc: 'Assine PDF digitalmente com trilha de auditoria.', icon: 'signature', iconClass: 'icon-secure', badge: 'new' },
+  { slug: 'ocultar-pdf', cat: 'secure', name: 'Ocultar PDF', desc: 'Tarja manual irreversível em áreas selecionadas (em desenvolvimento).', icon: 'shield', iconClass: 'icon-secure', badge: 'soon' },
+
+  // === AUTOMAÇÃO ===
+  { slug: 'workflows', cat: 'automation', name: 'Fluxos de Trabalho', desc: 'Encadeie ferramentas em sequências automatizadas (em desenvolvimento).', icon: 'sparkles', iconClass: 'icon-ai', badge: 'soon' },
 ];
 
 const grid = document.getElementById('toolsGrid');
@@ -641,7 +659,8 @@ function renderTools() {
 
 function toolCard(t) {
   const href = t.disabled ? '#' : `/tools/${t.slug}.html`;
-  const badge = t.badge ? `<span class="tool-badge">${t.badge === 'new' ? 'NOVO' : 'EM BREVE'}</span>` : '';
+  const badgeText = t.badge === 'new' ? 'NOVO' : t.badge === 'soon' ? 'EM BREVE' : t.badge ? String(t.badge).toUpperCase() : '';
+  const badge = badgeText ? `<span class="tool-badge${t.badge === 'soon' ? ' tool-badge-soon' : ''}">${badgeText}</span>` : '';
   const arrowSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>';
   return `
     <a href="${href}" class="tool-card ${t.disabled ? 'disabled' : ''}" data-cat="${t.cat}">

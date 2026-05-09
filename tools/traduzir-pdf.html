@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0a0a0c">
+<title>Traduzir PDF com IA — Sindicompany</title>
+<meta name="description" content="Traduza PDFs preservando layout e formatação.">
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="icon" type="image/png" href="/assets/brand/icon-color.png">
+<link rel="stylesheet" href="/assets/shared.css">
+<script src="/assets/shared.js"></script>
+<script src="/assets/tool-helpers.js"></script>
+<style>
+  .lang-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+  .lang-grid select{
+    width:100%;background:rgba(255,255,255,0.04);border:1px solid var(--border);
+    border-radius:10px;padding:10px 14px;color:var(--text);
+    font-family:inherit;font-size:13.5px;outline:none;cursor:pointer;
+  }
+  .lang-grid select:focus{border-color:var(--accent-bright)}
+  .lang-grid label{font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;display:block}
+</style>
+</head>
+<body>
+<div id="app-nav"></div>
+
+<main class="tool-container">
+  <header class="tool-hero">
+    <span class="tool-eyebrow"><span class="dot"></span> IA · Tradução</span>
+    <h1>Traduzir PDF com IA</h1>
+    <p>Tradução natural com Gemini. Mantém estrutura, listas e tabelas. Ideal pra contratos internacionais, manuais técnicos e artigos.</p>
+  </header>
+
+  <label for="fileInput" id="dropZone" class="tool-drop-card">
+    <div class="tool-drop-icon">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"/></svg>
+    </div>
+    <div class="tool-drop-title" id="dropTitle">Solte o PDF aqui</div>
+    <div class="tool-drop-sub">ou clique para selecionar &nbsp;·&nbsp; até <kbd>18 MB</kbd></div>
+  </label>
+  <input type="file" id="fileInput" accept="application/pdf" hidden>
+
+  <section class="tool-config">
+    <div class="lang-grid">
+      <div>
+        <label>De</label>
+        <select id="srcLang">
+          <option value="auto">Detectar idioma</option>
+          <option value="pt-BR">Português</option>
+          <option value="en">Inglês</option>
+          <option value="es">Espanhol</option>
+          <option value="fr">Francês</option>
+          <option value="it">Italiano</option>
+          <option value="de">Alemão</option>
+          <option value="ja">Japonês</option>
+          <option value="zh">Chinês</option>
+        </select>
+      </div>
+      <div>
+        <label>Para</label>
+        <select id="tgtLang">
+          <option value="pt-BR" selected>Português (BR)</option>
+          <option value="en">Inglês</option>
+          <option value="es">Espanhol</option>
+          <option value="fr">Francês</option>
+          <option value="it">Italiano</option>
+          <option value="de">Alemão</option>
+          <option value="ja">Japonês</option>
+          <option value="zh">Chinês</option>
+        </select>
+      </div>
+    </div>
+
+    <button class="tool-process" id="processBtn" disabled>
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10"/></svg>
+      <span id="btnText">Traduzir</span>
+    </button>
+
+    <div class="tool-status" id="status">
+      <div class="tool-status-text" id="statusText">Aguardando…</div>
+      <div class="tool-progress"><div class="tool-progress-bar" id="progressBar"></div></div>
+    </div>
+
+    <div class="tool-result" id="result">
+      <div class="tool-result-head">
+        <div class="tool-result-title">Tradução</div>
+        <div class="tool-result-actions">
+          <button class="tool-result-action" id="copyBtn" type="button">Copiar</button>
+          <button class="tool-result-action" id="downloadBtn" type="button">.txt</button>
+        </div>
+      </div>
+      <div class="tool-result-body" id="resultBody"></div>
+    </div>
+  </section>
+
+  <div class="tool-privacy">
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+    Tradução pelo Gemini sem armazenamento.
+  </div>
+</main>
+
+<script>
+let selectedFile = null;
+const LANG_NAMES = {
+  'pt-BR':'português brasileiro','en':'inglês','es':'espanhol','fr':'francês',
+  'it':'italiano','de':'alemão','ja':'japonês','zh':'chinês mandarim',
+};
+ToolFile.setupDropZone({
+  accept: f => /pdf$/i.test(f.type) || /\.pdf$/i.test(f.name),
+  onFile: f => { selectedFile = f; ToolUI.setStatus('Pronto pra traduzir', ''); },
+});
+
+document.getElementById('processBtn').addEventListener('click', async () => {
+  if (!selectedFile) return;
+  const btn = document.getElementById('processBtn');
+  const btnText = document.getElementById('btnText');
+  btn.disabled = true; btnText.textContent = 'Traduzindo…';
+  ToolUI.hideResult();
+  ToolUI.setProgress(20);
+  ToolUI.setStatus('Enviando pro Gemini…');
+
+  const src = document.getElementById('srcLang').value;
+  const tgt = document.getElementById('tgtLang').value;
+  const srcLabel = src === 'auto' ? 'idioma detectado automaticamente' : LANG_NAMES[src];
+  const tgtLabel = LANG_NAMES[tgt];
+  const prompt = `Traduza este documento PDF do ${srcLabel} para ${tgtLabel}.
+
+Regras:
+- Tradução natural e fluente, não literal.
+- Preserve a estrutura: títulos, parágrafos, listas, tabelas.
+- Use markdown (** para negrito, listas com -, tabelas com |).
+- Mantenha nomes próprios, marcas e termos técnicos no original quando apropriado.
+- NÃO traduza números, datas ou códigos.
+- Devolva APENAS o texto traduzido, sem comentários.`;
+
+  try {
+    ToolUI.setProgress(60);
+    const data = await ToolAI.callGeminiWithFile(selectedFile, prompt, { mode: 'flash' });
+    ToolUI.setProgress(100);
+    if (data.empty || !data.text) {
+      ToolUI.setStatus('Sem resposta.', 'error');
+      return;
+    }
+    const html = data.text
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+      .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+      .replace(/\*(.+?)\*/g,'<em>$1</em>')
+      .replace(/`([^`]+)`/g,'<code>$1</code>')
+      .replace(/\n/g,'<br>');
+    ToolUI.showResult(html);
+    ToolUI.setStatus(`Traduzido pra ${tgtLabel}.`, 'success');
+    if (window.trackUsage) trackUsage('traduzir-pdf', { src, tgt });
+  } catch (e) {
+    ToolUI.setStatus('Erro: ' + e.message, 'error');
+    ToolUI.setProgress(0);
+  } finally {
+    btn.disabled = false; btnText.textContent = 'Traduzir';
+  }
+});
+
+document.getElementById('copyBtn').addEventListener('click', () => {
+  navigator.clipboard.writeText(document.getElementById('resultBody').innerText);
+  document.getElementById('copyBtn').textContent = '✓ Copiado';
+  setTimeout(() => location.reload(), 1500);
+});
+document.getElementById('downloadBtn').addEventListener('click', () => {
+  const text = document.getElementById('resultBody').innerText;
+  const name = (selectedFile?.name || 'documento').replace(/\.pdf$/i, '') + '_traduzido.txt';
+  ToolFile.download(new Blob([text], { type: 'text/plain;charset=utf-8' }), name);
+});
+</script>
+</body>
+</html>

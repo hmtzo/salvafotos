@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0a0a0c">
+<title>Resumir PDF com IA — Sindicompany</title>
+<meta name="description" content="Gere resumos concisos de PDFs com IA. Pontos-chave em segundos.">
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="icon" type="image/png" href="/assets/brand/icon-color.png">
+<link rel="stylesheet" href="/assets/shared.css">
+<script src="/assets/shared.js"></script>
+<script src="/assets/tool-helpers.js"></script>
+</head>
+<body>
+<div id="app-nav"></div>
+
+<main class="tool-container">
+  <header class="tool-hero">
+    <span class="tool-eyebrow"><span class="dot"></span> IA · Análise</span>
+    <h1>Resumir PDF com IA</h1>
+    <p>Gere resumos concisos de artigos, contratos, atas, relatórios. Pontos-chave claros e precisos em segundos.</p>
+  </header>
+
+  <label for="fileInput" id="dropZone" class="tool-drop-card">
+    <div class="tool-drop-icon">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+    </div>
+    <div class="tool-drop-title" id="dropTitle">Solte o PDF aqui</div>
+    <div class="tool-drop-sub">ou clique para selecionar &nbsp;·&nbsp; até <kbd>18 MB</kbd></div>
+  </label>
+  <input type="file" id="fileInput" accept="application/pdf" hidden>
+
+  <section class="tool-config">
+    <div class="tool-config-head"><h2>Modo</h2></div>
+    <div class="tool-options">
+      <label class="tool-toggle">
+        <input type="radio" name="mode" value="exec" checked>
+        <span class="tool-toggle-switch"></span>
+        <span class="tool-toggle-label"><strong>Executivo</strong><span>5-7 bullets diretos</span></span>
+      </label>
+      <label class="tool-toggle">
+        <input type="radio" name="mode" value="detail">
+        <span class="tool-toggle-switch"></span>
+        <span class="tool-toggle-label"><strong>Detalhado</strong><span>seções + análise</span></span>
+      </label>
+      <label class="tool-toggle">
+        <input type="radio" name="mode" value="action">
+        <span class="tool-toggle-switch"></span>
+        <span class="tool-toggle-label"><strong>Ação</strong><span>tarefas e prazos</span></span>
+      </label>
+      <label class="tool-toggle">
+        <input type="radio" name="mode" value="risk">
+        <span class="tool-toggle-switch"></span>
+        <span class="tool-toggle-label"><strong>Risco</strong><span>cláusulas e armadilhas</span></span>
+      </label>
+    </div>
+
+    <button class="tool-process" id="processBtn" disabled>
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+      <span id="btnText">Resumir</span>
+    </button>
+
+    <div class="tool-status" id="status">
+      <div class="tool-status-text" id="statusText">Aguardando…</div>
+      <div class="tool-progress"><div class="tool-progress-bar" id="progressBar"></div></div>
+    </div>
+
+    <div class="tool-result" id="result">
+      <div class="tool-result-head">
+        <div class="tool-result-title">Resumo</div>
+        <div class="tool-result-actions">
+          <button class="tool-result-action" id="copyBtn" type="button">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+            Copiar
+          </button>
+          <button class="tool-result-action" id="downloadBtn" type="button">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+            .txt
+          </button>
+        </div>
+      </div>
+      <div class="tool-result-body" id="resultBody"></div>
+    </div>
+  </section>
+
+  <div class="tool-privacy">
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+    PDF processado pelo Gemini. Não fica armazenado depois da resposta.
+  </div>
+</main>
+
+<script>
+let selectedFile = null;
+ToolFile.setupDropZone({
+  accept: f => /pdf$/i.test(f.type) || /\.pdf$/i.test(f.name),
+  onFile: f => { selectedFile = f; ToolUI.setStatus('Pronto pra resumir', ''); },
+});
+
+const PROMPTS = {
+  exec:   'Resuma este documento em 5-7 bullets diretos, focando no essencial. Use **negrito** nos termos-chave. Sem preâmbulo.',
+  detail: 'Faça um resumo detalhado deste documento estruturado em seções (Visão Geral, Pontos Principais, Conclusão). Use markdown.',
+  action: 'Extraia deste documento APENAS as ações e tarefas que precisam ser feitas, com responsável e prazo se mencionado. Lista numerada.',
+  risk:   'Analise este documento em busca de RISCOS, cláusulas problemáticas, armadilhas, ambiguidades. Liste cada um com **gravidade** (alta/média/baixa) e justificativa.',
+};
+
+document.getElementById('processBtn').addEventListener('click', async () => {
+  if (!selectedFile) return;
+  const btn = document.getElementById('processBtn');
+  const btnText = document.getElementById('btnText');
+  btn.disabled = true; btnText.textContent = 'Pensando…';
+  ToolUI.hideResult();
+  ToolUI.setProgress(20);
+  ToolUI.setStatus('Enviando pro Gemini…');
+
+  try {
+    const mode = document.querySelector('input[name=mode]:checked').value;
+    ToolUI.setProgress(60);
+    const data = await ToolAI.callGeminiWithFile(selectedFile, PROMPTS[mode], { mode: 'flash' });
+    ToolUI.setProgress(100);
+    if (data.empty || !data.text) {
+      ToolUI.setStatus('Sem resposta. Tente outro modo.', 'error');
+      return;
+    }
+    const html = data.text
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+      .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+      .replace(/\*(.+?)\*/g,'<em>$1</em>')
+      .replace(/`([^`]+)`/g,'<code>$1</code>')
+      .replace(/\n/g,'<br>');
+    ToolUI.showResult(html);
+    ToolUI.setStatus('Pronto.', 'success');
+    if (window.trackUsage) trackUsage('resumir-pdf', { mode });
+  } catch (e) {
+    ToolUI.setStatus('Erro: ' + e.message, 'error');
+    ToolUI.setProgress(0);
+  } finally {
+    btn.disabled = false; btnText.textContent = 'Resumir';
+  }
+});
+
+document.getElementById('copyBtn').addEventListener('click', () => {
+  const text = document.getElementById('resultBody').innerText;
+  navigator.clipboard.writeText(text);
+  document.getElementById('copyBtn').innerHTML = '✓ Copiado';
+  setTimeout(() => location.reload(), 1500);
+});
+document.getElementById('downloadBtn').addEventListener('click', () => {
+  const text = document.getElementById('resultBody').innerText;
+  const name = (selectedFile?.name || 'resumo').replace(/\.pdf$/i, '') + '_resumo.txt';
+  ToolFile.download(new Blob([text], { type: 'text/plain;charset=utf-8' }), name);
+});
+</script>
+</body>
+</html>

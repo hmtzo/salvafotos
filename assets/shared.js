@@ -654,6 +654,8 @@ const CMDK_INDEX = [
   // --- IA ---
   { kind: 'tool', id: 'sindi',           name: 'Sindi (IA)',           desc: 'Copiloto IA generativo da equipe',                            url: '/tools/sindi.html',              kw: 'ia inteligencia artificial chat copiloto bot gemini sindi assistente' },
   { kind: 'tool', id: 'corretor-texto',  name: 'Corretor de Texto',    desc: 'Correção ortográfica/gramatical PT-BR',                       url: '/tools/corretor-texto.html',     kw: 'corretor ortografia gramatica revisao texto portugues' },
+  { kind: 'tool', id: 'resumir-pdf',     name: 'Resumir PDF com IA',   desc: 'Resumo executivo, detalhado, ação ou risco',                  url: '/tools/resumir-pdf.html',        kw: 'resumir resumo sumario sintese pdf ia gemini executivo' },
+  { kind: 'tool', id: 'traduzir-pdf',    name: 'Traduzir PDF com IA',  desc: 'Tradução natural multi-idioma preservando layout',            url: '/tools/traduzir-pdf.html',       kw: 'traduzir traducao translate pdf ingles espanhol frances ia gemini' },
 
   // --- Geradores ---
   { kind: 'tool', id: 'gerador-notificacao', name: 'Notificação',  desc: 'Gera notificação extrajudicial pronta',     url: '/tools/gerador-notificacao.html', kw: 'notificacao multa advertencia inadimplencia condomino' },
@@ -671,6 +673,11 @@ const CMDK_INDEX = [
   { kind: 'tool', id: 'pdf-para-jpg',    name: 'PDF → JPG',      desc: 'Converte páginas em imagem JPG',                 url: '/tools/pdf-para-jpg.html',    kw: 'pdf jpg imagem foto pagina' },
   { kind: 'tool', id: 'jpg-para-pdf',    name: 'Imagens → PDF',  desc: 'Junta várias imagens em um PDF',                 url: '/tools/jpg-para-pdf.html',    kw: 'jpg png imagem pdf juntar combinar' },
   { kind: 'tool', id: 'conversor-imagens', name: 'Conversor de Imagens', desc: 'PNG ↔ JPG ↔ WEBP, redimensiona em lote', url: '/tools/conversor-imagens.html', kw: 'imagem png jpg webp redimensionar comprimir' },
+  { kind: 'tool', id: 'html-para-pdf',   name: 'HTML → PDF',           desc: 'Converte página web ou HTML em PDF',           url: '/tools/html-para-pdf.html',     kw: 'html para pdf web pagina url converter' },
+  { kind: 'tool', id: 'pdf-para-word',   name: 'PDF → Word',           desc: 'Converte PDF para .docx (em desenvolvimento)', url: '/tools/pdf-para-word.html',     kw: 'pdf para word docx conversao em breve' },
+  { kind: 'tool', id: 'pdf-para-powerpoint', name: 'PDF → PowerPoint', desc: 'Cada página vira slide (em desenvolvimento)',  url: '/tools/pdf-para-powerpoint.html', kw: 'pdf para powerpoint pptx slide apresentacao em breve' },
+  { kind: 'tool', id: 'powerpoint-para-pdf', name: 'PowerPoint → PDF', desc: 'Converte .pptx para PDF (em desenvolvimento)', url: '/tools/powerpoint-para-pdf.html', kw: 'powerpoint pptx para pdf conversao em breve' },
+  { kind: 'tool', id: 'pdf-para-pdfa',   name: 'PDF → PDF/A',          desc: 'Conformidade ISO 19005 (em desenvolvimento)',  url: '/tools/pdf-para-pdfa.html',     kw: 'pdf pdfa iso 19005 arquivamento conformidade em breve' },
 
   // --- PDF ---
   { kind: 'tool', id: 'editor-pdf',      name: 'Editor de PDF',     desc: 'Adiciona texto, destaque, anotação',    url: '/tools/editor-pdf.html',     kw: 'editor pdf editar anotar destacar' },
@@ -678,6 +685,9 @@ const CMDK_INDEX = [
   { kind: 'tool', id: 'dividir-pdf',     name: 'Dividir PDF',       desc: 'Separa páginas ou intervalos',          url: '/tools/dividir-pdf.html',    kw: 'dividir split separar pdf paginas' },
   { kind: 'tool', id: 'comprimir-pdf',   name: 'Comprimir PDF',     desc: 'Reduz tamanho do arquivo',              url: '/tools/comprimir-pdf.html',  kw: 'comprimir reduzir tamanho pdf otimizar' },
   { kind: 'tool', id: 'comparar-pdf',    name: 'Comparar Documentos', desc: 'Diff visual entre versões',           url: '/tools/comparar-pdf.html',   kw: 'comparar diff diferenca pdf versao' },
+  { kind: 'tool', id: 'reparar-pdf',     name: 'Reparar PDF',       desc: 'Recupera PDFs danificados ou corrompidos', url: '/tools/reparar-pdf.html',  kw: 'reparar recuperar danificado corrompido pdf consertar' },
+  { kind: 'tool', id: 'recortar-pdf',    name: 'Recortar PDF',      desc: 'Remove margens (crop) em todas páginas',  url: '/tools/recortar-pdf.html',  kw: 'recortar crop margem corte aparar pdf' },
+  { kind: 'tool', id: 'formularios-pdf', name: 'Formulários PDF',   desc: 'Detecta, preenche e cria formulários (em desenvolvimento)', url: '/tools/formularios-pdf.html', kw: 'formulario form pdf preencher campos em breve' },
 
   // --- Organização ---
   { kind: 'tool', id: 'organizar-pdf',   name: 'Organizar Páginas',  desc: 'Reordena e remove páginas',            url: '/tools/organizar-pdf.html',  kw: 'organizar ordem pagina pdf arrastar' },
@@ -688,12 +698,17 @@ const CMDK_INDEX = [
   // --- Documentos ---
   { kind: 'tool', id: 'whatsapp-fotos',  name: 'Fotos do WhatsApp', desc: 'Extrai fotos com legenda/data/remetente', url: '/tools/whatsapp-fotos.html', kw: 'whatsapp fotos midia legenda export zip' },
   { kind: 'tool', id: 'ocr',             name: 'OCR',               desc: 'Extrai texto de fotos e PDFs escaneados', url: '/tools/ocr.html',            kw: 'ocr texto imagem foto reconhecimento scan' },
+  { kind: 'tool', id: 'digitalizar-pdf', name: 'Digitalizar (Câmera)', desc: 'Escaneia documentos físicos pela câmera (em desenvolvimento)', url: '/tools/digitalizar-pdf.html', kw: 'digitalizar escanear scan camera celular pdf em breve' },
 
   // --- Segurança ---
   { kind: 'tool', id: 'proteger-pdf',    name: 'Proteger PDF',         desc: 'Senha AES-256',                  url: '/tools/proteger-pdf.html',    kw: 'proteger senha lock criptografia pdf' },
   { kind: 'tool', id: 'desbloquear-pdf', name: 'Desbloquear PDF',      desc: 'Remove senha (sabendo a senha)', url: '/tools/desbloquear-pdf.html', kw: 'desbloquear remover senha unlock pdf' },
   { kind: 'tool', id: 'redigir-lgpd',    name: 'Redigir LGPD',         desc: 'Tarja CPF/RG/email/telefone',    url: '/tools/redigir-lgpd.html',    kw: 'lgpd redigir tarjar cpf rg email privacidade' },
   { kind: 'tool', id: 'assinatura',      name: 'Assinatura Eletrônica', desc: 'Assina PDF com trilha de auditoria', url: '/tools/assinatura.html', kw: 'assinatura assinar pdf eletronica digital' },
+  { kind: 'tool', id: 'ocultar-pdf',     name: 'Ocultar PDF',          desc: 'Tarja manual irreversível (em desenvolvimento)', url: '/tools/ocultar-pdf.html', kw: 'ocultar tarjar redact apagar areas pdf em breve' },
+
+  // --- Automação ---
+  { kind: 'tool', id: 'workflows',       name: 'Fluxos de trabalho',   desc: 'Encadeie ferramentas em sequências (em desenvolvimento)', url: '/tools/workflows.html', kw: 'workflow fluxo automacao sequencia em breve' },
 ];
 
 const CMDK_RECENTS_KEY = 'sf_cmdk_recents';
