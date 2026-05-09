@@ -640,7 +640,388 @@ function fmtRelTime(ts) {
 }
 
 // =============================================================================
-// Auto-mount nav/footer + DottedSurface
+// CMD+K — Command Palette global
+// =============================================================================
+// Cada ferramenta + página. Acionável com Cmd+K (Mac) ou Ctrl+K (Win/Linux).
+// Indexa nome, descrição e palavras-chave (português) pra busca natural.
+const CMDK_INDEX = [
+  // --- Páginas principais ---
+  { kind: 'page', id: 'hub',       name: 'Hub',         desc: 'Página inicial do hub Sindicompany',     url: '/hub.html',       kw: 'hub inicio home' },
+  { kind: 'page', id: 'dashboard', name: 'Dashboard',   desc: 'Métricas de uso e tempo economizado',    url: '/dashboard.html', kw: 'dashboard metricas uso analytics' },
+  { kind: 'page', id: 'perfil',    name: 'Perfil',      desc: 'Seu perfil e preferências',              url: '/perfil.html',    kw: 'perfil conta usuario profile' },
+  { kind: 'page', id: 'admin',     name: 'Admin',       desc: 'Configuração administrativa',            url: '/admin.html',     kw: 'admin configuracao settings' },
+
+  // --- IA ---
+  { kind: 'tool', id: 'sindi',           name: 'Sindi (IA)',           desc: 'Copiloto IA generativo da equipe',                            url: '/tools/sindi.html',              kw: 'ia inteligencia artificial chat copiloto bot gemini sindi assistente' },
+  { kind: 'tool', id: 'corretor-texto',  name: 'Corretor de Texto',    desc: 'Correção ortográfica/gramatical PT-BR',                       url: '/tools/corretor-texto.html',     kw: 'corretor ortografia gramatica revisao texto portugues' },
+
+  // --- Geradores ---
+  { kind: 'tool', id: 'gerador-notificacao', name: 'Notificação',  desc: 'Gera notificação extrajudicial pronta',     url: '/tools/gerador-notificacao.html', kw: 'notificacao multa advertencia inadimplencia condomino' },
+  { kind: 'tool', id: 'gerador-ata',         name: 'Ata',          desc: 'Wizard de ata de assembleia',               url: '/tools/gerador-ata.html',         kw: 'ata assembleia reuniao ordinaria extraordinaria' },
+  { kind: 'tool', id: 'gerador-contrato',    name: 'Contrato',     desc: 'Modelos de prestação, locação, manutenção', url: '/tools/gerador-contrato.html',    kw: 'contrato prestacao servico locacao acordo' },
+  { kind: 'tool', id: 'wizard-inadimplencia', name: 'Wizard Inadimplência', desc: 'Fluxo de cobrança guiado',         url: '/tools/wizard-inadimplencia.html',kw: 'inadimplencia cobranca taxa atraso wizard' },
+
+  // --- Calculadoras ---
+  { kind: 'tool', id: 'calculadoras', name: 'Calculadoras', desc: 'Reajuste, multa, rateio, projeção de caixa', url: '/tools/calculadoras.html', kw: 'calculo calculadora rateio reajuste juros multa' },
+
+  // --- Conversões ---
+  { kind: 'tool', id: 'word-para-pdf',   name: 'Word → PDF',     desc: 'Converte .docx em PDF',                          url: '/tools/word-para-pdf.html',   kw: 'word docx pdf converter conversao documento' },
+  { kind: 'tool', id: 'excel-para-pdf',  name: 'Excel → PDF',    desc: 'Converte .xlsx em PDF (múltiplas abas)',         url: '/tools/excel-para-pdf.html',  kw: 'excel xlsx planilha pdf converter' },
+  { kind: 'tool', id: 'pdf-para-excel',  name: 'PDF → Excel',    desc: 'Extrai tabelas de PDFs em planilha',             url: '/tools/pdf-para-excel.html',  kw: 'pdf excel xlsx tabela extrair' },
+  { kind: 'tool', id: 'pdf-para-jpg',    name: 'PDF → JPG',      desc: 'Converte páginas em imagem JPG',                 url: '/tools/pdf-para-jpg.html',    kw: 'pdf jpg imagem foto pagina' },
+  { kind: 'tool', id: 'jpg-para-pdf',    name: 'Imagens → PDF',  desc: 'Junta várias imagens em um PDF',                 url: '/tools/jpg-para-pdf.html',    kw: 'jpg png imagem pdf juntar combinar' },
+  { kind: 'tool', id: 'conversor-imagens', name: 'Conversor de Imagens', desc: 'PNG ↔ JPG ↔ WEBP, redimensiona em lote', url: '/tools/conversor-imagens.html', kw: 'imagem png jpg webp redimensionar comprimir' },
+
+  // --- PDF ---
+  { kind: 'tool', id: 'editor-pdf',      name: 'Editor de PDF',     desc: 'Adiciona texto, destaque, anotação',    url: '/tools/editor-pdf.html',     kw: 'editor pdf editar anotar destacar' },
+  { kind: 'tool', id: 'juntar-pdf',      name: 'Juntar PDF',        desc: 'Combina vários PDFs em um arquivo',     url: '/tools/juntar-pdf.html',     kw: 'juntar combinar merge pdf arquivos' },
+  { kind: 'tool', id: 'dividir-pdf',     name: 'Dividir PDF',       desc: 'Separa páginas ou intervalos',          url: '/tools/dividir-pdf.html',    kw: 'dividir split separar pdf paginas' },
+  { kind: 'tool', id: 'comprimir-pdf',   name: 'Comprimir PDF',     desc: 'Reduz tamanho do arquivo',              url: '/tools/comprimir-pdf.html',  kw: 'comprimir reduzir tamanho pdf otimizar' },
+  { kind: 'tool', id: 'comparar-pdf',    name: 'Comparar Documentos', desc: 'Diff visual entre versões',           url: '/tools/comparar-pdf.html',   kw: 'comparar diff diferenca pdf versao' },
+
+  // --- Organização ---
+  { kind: 'tool', id: 'organizar-pdf',   name: 'Organizar Páginas',  desc: 'Reordena e remove páginas',            url: '/tools/organizar-pdf.html',  kw: 'organizar ordem pagina pdf arrastar' },
+  { kind: 'tool', id: 'girar-pdf',       name: 'Girar PDF',          desc: 'Rotaciona páginas',                    url: '/tools/girar-pdf.html',      kw: 'girar rotacao rotate pdf pagina' },
+  { kind: 'tool', id: 'numerar-paginas', name: 'Numerar Páginas',    desc: 'Adiciona número em cada página',       url: '/tools/numerar-paginas.html',kw: 'numerar numero pagina pdf' },
+  { kind: 'tool', id: 'marca-dagua',     name: 'Marca d\'água',      desc: 'Texto como marca d\'água',             url: '/tools/marca-dagua.html',    kw: 'marca dagua watermark pdf texto' },
+
+  // --- Documentos ---
+  { kind: 'tool', id: 'whatsapp-fotos',  name: 'Fotos do WhatsApp', desc: 'Extrai fotos com legenda/data/remetente', url: '/tools/whatsapp-fotos.html', kw: 'whatsapp fotos midia legenda export zip' },
+  { kind: 'tool', id: 'ocr',             name: 'OCR',               desc: 'Extrai texto de fotos e PDFs escaneados', url: '/tools/ocr.html',            kw: 'ocr texto imagem foto reconhecimento scan' },
+
+  // --- Segurança ---
+  { kind: 'tool', id: 'proteger-pdf',    name: 'Proteger PDF',         desc: 'Senha AES-256',                  url: '/tools/proteger-pdf.html',    kw: 'proteger senha lock criptografia pdf' },
+  { kind: 'tool', id: 'desbloquear-pdf', name: 'Desbloquear PDF',      desc: 'Remove senha (sabendo a senha)', url: '/tools/desbloquear-pdf.html', kw: 'desbloquear remover senha unlock pdf' },
+  { kind: 'tool', id: 'redigir-lgpd',    name: 'Redigir LGPD',         desc: 'Tarja CPF/RG/email/telefone',    url: '/tools/redigir-lgpd.html',    kw: 'lgpd redigir tarjar cpf rg email privacidade' },
+  { kind: 'tool', id: 'assinatura',      name: 'Assinatura Eletrônica', desc: 'Assina PDF com trilha de auditoria', url: '/tools/assinatura.html', kw: 'assinatura assinar pdf eletronica digital' },
+];
+
+const CMDK_RECENTS_KEY = 'sf_cmdk_recents';
+function cmdkRecents() {
+  try { return JSON.parse(localStorage.getItem(CMDK_RECENTS_KEY) || '[]'); } catch { return []; }
+}
+function cmdkAddRecent(id) {
+  let rec = cmdkRecents().filter(r => r !== id);
+  rec.unshift(id);
+  rec = rec.slice(0, 5);
+  try { localStorage.setItem(CMDK_RECENTS_KEY, JSON.stringify(rec)); } catch {}
+}
+
+function setupCmdK() {
+  if (document.getElementById('cmdk-backdrop')) return;
+  const dom = document.createElement('div');
+  dom.innerHTML = `
+    <div id="cmdk-backdrop" class="cmdk-backdrop" hidden role="dialog" aria-modal="true" aria-label="Comandos">
+      <div class="cmdk-modal" id="cmdk-modal">
+        <div class="cmdk-input-wrap">
+          <svg class="cmdk-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input id="cmdk-input" type="text" placeholder="Buscar ferramenta, página, ação…" autocomplete="off" spellcheck="false">
+          <kbd class="cmdk-esc">esc</kbd>
+        </div>
+        <div id="cmdk-list" class="cmdk-list"></div>
+        <div class="cmdk-foot">
+          <span><kbd>↑</kbd><kbd>↓</kbd> navegar</span>
+          <span><kbd>↵</kbd> abrir</span>
+          <span><kbd>esc</kbd> fechar</span>
+          <span class="cmdk-foot-spacer"></span>
+          <span class="cmdk-brand">Sindicompany</span>
+        </div>
+      </div>
+    </div>`;
+  document.body.appendChild(dom.firstElementChild);
+
+  const backdrop = document.getElementById('cmdk-backdrop');
+  const input    = document.getElementById('cmdk-input');
+  const list     = document.getElementById('cmdk-list');
+  let active = 0;
+  let results = [];
+
+  function open() {
+    backdrop.hidden = false;
+    document.body.style.overflow = 'hidden';
+    input.value = '';
+    render('');
+    requestAnimationFrame(() => input.focus());
+  }
+  function close() {
+    backdrop.hidden = true;
+    document.body.style.overflow = '';
+  }
+  function score(item, q) {
+    if (!q) return 1;
+    const hay = `${item.name} ${item.desc} ${item.kw || ''}`.toLowerCase();
+    const ql = q.toLowerCase();
+    if (item.name.toLowerCase() === ql) return 100;
+    if (item.name.toLowerCase().startsWith(ql)) return 50;
+    if (hay.includes(ql)) return 10;
+    // tokens (todas precisam estar em alguma parte)
+    const tokens = ql.split(/\s+/).filter(Boolean);
+    if (tokens.length > 1 && tokens.every(t => hay.includes(t))) return 5;
+    return 0;
+  }
+  function render(q) {
+    const ranked = CMDK_INDEX
+      .map(it => ({ it, s: score(it, q) }))
+      .filter(x => x.s > 0)
+      .sort((a, b) => b.s - a.s);
+
+    // Quando query vazia, mostra recentes primeiro, depois resto
+    if (!q) {
+      const recents = cmdkRecents();
+      const recItems = recents
+        .map(id => CMDK_INDEX.find(i => i.id === id))
+        .filter(Boolean);
+      const recIds = new Set(recItems.map(i => i.id));
+      const rest = ranked.map(r => r.it).filter(i => !recIds.has(i.id));
+      results = [...recItems.map(i => ({ ...i, _section: 'Recentes' })), ...rest];
+    } else {
+      results = ranked.map(r => r.it);
+    }
+
+    if (!results.length) {
+      list.innerHTML = `<div class="cmdk-empty">Nada encontrado pra "${q}". <kbd>esc</kbd> pra fechar.</div>`;
+      return;
+    }
+    let lastSection = null;
+    let html = '';
+    results.forEach((item, i) => {
+      if (item._section && item._section !== lastSection) {
+        html += `<div class="cmdk-section-title">${item._section}</div>`;
+        lastSection = item._section;
+      } else if (!item._section && lastSection !== '_main') {
+        if (lastSection) html += `<div class="cmdk-section-title">Tudo</div>`;
+        lastSection = '_main';
+      }
+      const tag = item.kind === 'page' ? 'Página' : item.kind === 'tool' ? 'Ferramenta' : '';
+      html += `
+        <div class="cmdk-item${i === active ? ' is-active' : ''}" data-idx="${i}">
+          <div class="cmdk-item-main">
+            <div class="cmdk-item-name">${item.name}</div>
+            <div class="cmdk-item-desc">${item.desc}</div>
+          </div>
+          <div class="cmdk-item-tag">${tag}</div>
+        </div>`;
+    });
+    list.innerHTML = html;
+    // scroll active into view
+    const el = list.querySelector('.cmdk-item.is-active');
+    if (el) el.scrollIntoView({ block: 'nearest' });
+  }
+  function go(idx) {
+    const item = results[idx];
+    if (!item) return;
+    cmdkAddRecent(item.id);
+    close();
+    if (item.url) location.href = item.url;
+  }
+
+  input.addEventListener('input', () => { active = 0; render(input.value.trim()); });
+  input.addEventListener('keydown', e => {
+    if (e.key === 'ArrowDown') { e.preventDefault(); active = Math.min(active + 1, results.length - 1); render(input.value.trim()); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); active = Math.max(active - 1, 0); render(input.value.trim()); }
+    else if (e.key === 'Enter') { e.preventDefault(); go(active); }
+    else if (e.key === 'Escape') { e.preventDefault(); close(); }
+  });
+  list.addEventListener('click', e => {
+    const el = e.target.closest('.cmdk-item');
+    if (!el) return;
+    const idx = parseInt(el.dataset.idx, 10);
+    if (!isNaN(idx)) go(idx);
+  });
+  list.addEventListener('mousemove', e => {
+    const el = e.target.closest('.cmdk-item');
+    if (!el) return;
+    const idx = parseInt(el.dataset.idx, 10);
+    if (!isNaN(idx) && idx !== active) { active = idx; render(input.value.trim()); }
+  });
+  backdrop.addEventListener('click', e => { if (e.target === backdrop) close(); });
+
+  document.addEventListener('keydown', e => {
+    // Cmd+K (Mac) ou Ctrl+K (Win/Linux)
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+      e.preventDefault();
+      backdrop.hidden ? open() : close();
+    }
+    // "/" abre cmdk se nada estiver focado
+    else if (e.key === '/' && backdrop.hidden) {
+      const tag = document.activeElement?.tagName;
+      const editable = document.activeElement?.isContentEditable;
+      if (tag !== 'INPUT' && tag !== 'TEXTAREA' && tag !== 'SELECT' && !editable) {
+        e.preventDefault();
+        open();
+      }
+    }
+  });
+
+  // Expõe API global pra outros módulos abrirem
+  window.SindiCmdK = { open, close };
+}
+
+// =============================================================================
+// SINDI FLUTUANTE — botão fixo bottom-right + drawer com mini-chat
+// =============================================================================
+// Aparece em todas as páginas (exceto na própria sindi.html, login, index).
+function setupSindiFloat() {
+  // Não duplicar e não mostrar onde já há Sindi nativa
+  if (document.getElementById('sindi-float')) return;
+  const path = location.pathname;
+  if (path === '/tools/sindi.html' || path === '/login.html' || path === '/' || path === '/index.html') return;
+
+  const btn = document.createElement('button');
+  btn.id = 'sindi-float';
+  btn.className = 'sindi-float';
+  btn.type = 'button';
+  btn.setAttribute('aria-label', 'Abrir Sindi (IA)');
+  btn.innerHTML = `
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 8V4H8"/><rect x="4" y="8" width="16" height="12" rx="2"/>
+      <path d="M2 14h2M20 14h2M15 13v2M9 13v2"/>
+    </svg>
+    <span class="sindi-float-label">Sindi</span>`;
+  document.body.appendChild(btn);
+
+  const drawer = document.createElement('div');
+  drawer.id = 'sindi-drawer';
+  drawer.className = 'sindi-drawer';
+  drawer.hidden = true;
+  drawer.innerHTML = `
+    <div class="sindi-drawer-head">
+      <div class="sindi-drawer-title">
+        <span class="sindi-drawer-dot"></span>
+        Sindi
+      </div>
+      <a class="sindi-drawer-expand" href="/tools/sindi.html" title="Abrir tela cheia">⤢</a>
+      <button class="sindi-drawer-close" type="button" aria-label="Fechar">×</button>
+    </div>
+    <div class="sindi-drawer-msgs" id="sindi-drawer-msgs">
+      <div class="sindi-drawer-empty">
+        <div class="sindi-drawer-empty-title">Em que posso ajudar?</div>
+        <div class="sindi-drawer-empty-sub">Pergunte sobre condomínio, redija um comunicado, peça um cálculo, qualquer coisa.</div>
+      </div>
+    </div>
+    <form class="sindi-drawer-input" id="sindi-drawer-form">
+      <input type="text" id="sindi-drawer-text" placeholder="Pergunte algo à Sindi…" autocomplete="off">
+      <button type="submit" class="sindi-drawer-send" aria-label="Enviar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+      </button>
+    </form>`;
+  document.body.appendChild(drawer);
+
+  const msgsEl = drawer.querySelector('#sindi-drawer-msgs');
+  const form   = drawer.querySelector('#sindi-drawer-form');
+  const input  = drawer.querySelector('#sindi-drawer-text');
+  const messages = []; // memória curta da conversa neste drawer
+
+  function open() { drawer.hidden = false; requestAnimationFrame(() => input.focus()); }
+  function close() { drawer.hidden = true; }
+  btn.addEventListener('click', () => drawer.hidden ? open() : close());
+  drawer.querySelector('.sindi-drawer-close').addEventListener('click', close);
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && !drawer.hidden) close(); });
+
+  function bubbleHTML(role, text) {
+    const cls = role === 'user' ? 'sd-msg sd-user' : 'sd-msg sd-bot';
+    return `<div class="${cls}"><div class="sd-bubble">${escapeHtml(text)}</div></div>`;
+  }
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, c => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[c]));
+  }
+
+  async function send(text) {
+    msgsEl.querySelector('.sindi-drawer-empty')?.remove();
+    msgsEl.insertAdjacentHTML('beforeend', bubbleHTML('user', text));
+    messages.push({ role: 'user', content: text });
+    msgsEl.scrollTop = msgsEl.scrollHeight;
+
+    // bolha "pensando"
+    const botWrap = document.createElement('div');
+    botWrap.className = 'sd-msg sd-bot';
+    botWrap.innerHTML = `<div class="sd-bubble sd-streaming"><span class="sd-typing">...</span></div>`;
+    msgsEl.appendChild(botWrap);
+    const bubble = botWrap.querySelector('.sd-bubble');
+
+    try {
+      const res = await fetch('/api/sindi', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages, mode: null }),
+      });
+      const ctype = res.headers.get('Content-Type') || '';
+      if (!res.ok || !ctype.includes('text/event-stream')) {
+        const data = await res.json().catch(() => ({}));
+        bubble.classList.remove('sd-streaming');
+        bubble.innerHTML = `<span class="sd-err">⚠️ ${escapeHtml(data.error || 'Erro')}</span>`;
+        return;
+      }
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buf = '';
+      let full = '';
+      bubble.innerHTML = '';
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += decoder.decode(value, { stream: true });
+        const events = buf.split('\n\n');
+        buf = events.pop() || '';
+        for (const ev of events) {
+          let dataStr = '';
+          let evType = 'message';
+          for (const ln of ev.split('\n')) {
+            if (ln.startsWith('event: ')) evType = ln.slice(7).trim();
+            else if (ln.startsWith('data: ')) dataStr += ln.slice(6);
+          }
+          if (!dataStr || dataStr.trim() === '[DONE]') continue;
+          try {
+            const json = JSON.parse(dataStr);
+            if (evType === 'meta') continue;
+            const cand = json.candidates?.[0];
+            for (const part of cand?.content?.parts || []) {
+              if (part.text) full += part.text;
+            }
+            // markdown leve via formatMd se disponível, senão texto puro
+            bubble.innerHTML = (typeof formatMd === 'function')
+              ? formatMd(full)
+              : escapeHtml(full).replace(/\n/g, '<br>');
+          } catch {}
+        }
+        msgsEl.scrollTop = msgsEl.scrollHeight;
+      }
+      bubble.classList.remove('sd-streaming');
+      messages.push({ role: 'assistant', content: full });
+    } catch (e) {
+      bubble.classList.remove('sd-streaming');
+      bubble.innerHTML = `<span class="sd-err">⚠️ Sem conexão</span>`;
+    }
+  }
+
+  form.addEventListener('submit', e => {
+    e.preventDefault();
+    const t = input.value.trim();
+    if (!t) return;
+    input.value = '';
+    send(t);
+  });
+}
+
+// formatMd simples (caso a página atual não tenha um próprio)
+if (typeof window.formatMd !== 'function') {
+  window.formatMd = function(text) {
+    if (!text) return '';
+    let html = String(text)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.+?)\*/g, '<em>$1</em>')
+      .replace(/`([^`]+)`/g, '<code>$1</code>')
+      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>')
+      .replace(/\n/g, '<br>');
+    return html;
+  };
+}
+
+// =============================================================================
+// Auto-mount nav/footer + DottedSurface + CmdK + SindiFloat
 // =============================================================================
 document.addEventListener('DOMContentLoaded', () => {
   // PWA: registra service worker + manifest dinâmico
@@ -663,4 +1044,9 @@ document.addEventListener('DOMContentLoaded', () => {
   if (footSlot) footSlot.innerHTML = renderFooter();
   // Inicia o background animado depois do paint inicial
   setTimeout(initDottedSurface, 100);
+
+  // Cmd+K em todas as páginas
+  setupCmdK();
+  // Sindi flutuante (exceto sindi.html, login, index)
+  setupSindiFloat();
 });
