@@ -81,7 +81,7 @@ export async function createContact({ name, phone, email }) {
   return r.json();
 }
 
-// Envia texto pra um contato específico
+// Envia texto pra um contato específico (precisa do contact ID)
 export async function sendText({ contactId, message }) {
   const customer = env('POLI_CUSTOMER_ID');
   const channel  = env('POLI_CHANNEL_ID');
@@ -106,19 +106,53 @@ export async function sendText({ contactId, message }) {
   return r.json().catch(() => ({}));
 }
 
-// Conveniência: envia texto resolvendo o contato a partir do telefone.
-// Estratégia em camadas (a doc pública da Poli não documenta criação de
-// contato via API, então tentamos o que funciona):
-//   1) findContactByPhone — se já cadastrado no painel, usa o id
-//   2) tenta send_text passando o telefone E.164 direto no path {contact}
-//      (algumas APIs aceitam isso; outras retornam erro claro)
-//   3) tenta createContact (palpite — pode falhar com 401 se token não tem permissão)
-// Se tudo falhar, devolve erro detalhado com o que foi tentado.
+// Envia texto direto pra um número de telefone — endpoint UID
+// (não precisa criar contato antes — descobrimos pelo OpenAPI spec oficial)
+// POST /customers/{c}/whatsapp/send_text/channels/{ch}/uid/{number}/users/{u}
+export async function sendTextByUid({ phone, message }) {
+  const customer = env('POLI_CUSTOMER_ID');
+  const channel  = env('POLI_CHANNEL_ID');
+  const user     = env('POLI_USER_ID');
+  const token    = env('POLI_API_TOKEN');
+  const norm = normalizePhone(phone);
+  const url = `${BASE}/customers/${customer}/whatsapp/send_text/channels/${channel}/uid/${norm}/users/${user}`;
+  const body = {
+    usermsg: String(message),
+    database64: '',
+    mimetype: '',
+    caption: '',
+  };
+  const r = await fetch(url, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', Accept: 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!r.ok) {
+    const t = await r.text();
+    throw new Error(`Poli sendTextByUid falhou (${r.status}): ${t.slice(0, 300)}`);
+  }
+  return r.json().catch(() => ({}));
+}
+
+// Conveniência: envia texto pra um telefone usando a melhor estratégia.
+// Descoberta importante (OpenAPI spec oficial em cs.poli.digital/api-cliente/openapi.yaml):
+// existe endpoint UID que aceita o número de telefone direto, sem criar contato.
+// Estratégia em ordem:
+//   1) sendTextByUid — endpoint /uid/{number}/ — manda direto pro telefone
+//   2) findContactByPhone + sendText (se UID falhar, tenta o caminho clássico)
+//   3) createContact + sendText (último recurso)
 export async function sendTextByPhone({ phone, message, name = '', email = '' }) {
   const norm = normalizePhone(phone);
   const tries = [];
 
-  // (1) Existing contact
+  // (1) Endpoint UID — mais limpo, não precisa cadastrar contato antes
+  try {
+    return await sendTextByUid({ phone: norm, message });
+  } catch (e) {
+    tries.push({ step: 'sendTextByUid', ok: false, err: e.message });
+  }
+
+  // (2) findContact existente + send
   try {
     const found = await findContactByPhone(phone);
     if (found) {
@@ -128,19 +162,12 @@ export async function sendTextByPhone({ phone, message, name = '', email = '' })
         return await sendText({ contactId: id, message });
       }
     }
-    tries.push({ step: 'findContact', ok: false });
+    tries.push({ step: 'findContact', ok: false, reason: 'not found' });
   } catch (e) {
     tries.push({ step: 'findContact', ok: false, err: e.message });
   }
 
-  // (2) Tentativa direta — phone como contactId no path do send_text
-  try {
-    return await sendText({ contactId: norm, message });
-  } catch (e) {
-    tries.push({ step: 'sendDirectByPhone', ok: false, err: e.message });
-  }
-
-  // (3) Último recurso — tenta criar e mandar
+  // (3) Último recurso — tenta criar contato e mandar
   try {
     const created = await createContact({ name: name || norm, phone: norm, email });
     const id = created.id || created.contact_id || created.uuid;
@@ -152,7 +179,6 @@ export async function sendTextByPhone({ phone, message, name = '', email = '' })
     tries.push({ step: 'createContact', ok: false, err: e.message });
   }
 
-  // Todas as tentativas falharam
-  const summary = tries.map(t => `${t.step}=${t.ok ? 'ok' : 'fail'}${t.err ? ' (' + t.err.slice(0, 80) + ')' : ''}`).join(' | ');
+  const summary = tries.map(t => `${t.step}=${t.ok ? 'ok' : 'fail'}${t.err ? ' (' + t.err.slice(0, 80) + ')' : ''}${t.reason ? ' (' + t.reason + ')' : ''}`).join(' | ');
   throw new Error(`Poli sendTextByPhone falhou em todas as estratégias: ${summary}`);
 }
