@@ -1005,6 +1005,112 @@ function setupSindiFloat() {
   });
 }
 
+// =============================================================================
+// ONBOARDING HINT — Cmd+K toast na primeira visita do usuário logado
+// =============================================================================
+function setupCmdKHint() {
+  const KEY = 'sf_cmdk_hint_shown';
+  if (localStorage.getItem(KEY)) return;
+  // Não mostra na landing/login (são páginas públicas)
+  const path = location.pathname;
+  if (path === '/' || path === '/index.html' || path === '/login.html') return;
+
+  // Mostra depois de 4s pra não interromper o load inicial
+  setTimeout(() => {
+    if (document.getElementById('cmdk-hint')) return;
+    const isMac = /Mac|iPhone|iPad/i.test(navigator.platform || '');
+    const key = isMac ? '⌘K' : 'Ctrl+K';
+    const hint = document.createElement('div');
+    hint.id = 'cmdk-hint';
+    hint.className = 'cmdk-hint';
+    hint.innerHTML = `
+      <div class="cmdk-hint-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      </div>
+      <div class="cmdk-hint-text">
+        <strong>Acessar tudo rápido:</strong> aperta <kbd>${key}</kbd> a qualquer momento.
+      </div>
+      <button class="cmdk-hint-close" type="button" aria-label="Fechar">×</button>`;
+    document.body.appendChild(hint);
+    requestAnimationFrame(() => hint.classList.add('show'));
+    const dismiss = () => {
+      hint.classList.remove('show');
+      setTimeout(() => hint.remove(), 250);
+      try { localStorage.setItem(KEY, '1'); } catch {}
+    };
+    hint.querySelector('.cmdk-hint-close').addEventListener('click', dismiss);
+    setTimeout(dismiss, 8000);
+  }, 4000);
+}
+
+// =============================================================================
+// PWA INSTALL — captura beforeinstallprompt + mostra banner discreto em mobile
+// =============================================================================
+function setupPwaInstall() {
+  let deferredPrompt = null;
+  const KEY_DISMISSED = 'sf_pwa_install_dismissed';
+  const KEY_INSTALLED = 'sf_pwa_installed';
+
+  // Já instalado (display-mode standalone)
+  if (window.matchMedia?.('(display-mode: standalone)').matches) {
+    try { localStorage.setItem(KEY_INSTALLED, '1'); } catch {}
+    return;
+  }
+  if (localStorage.getItem(KEY_INSTALLED)) return;
+
+  window.addEventListener('beforeinstallprompt', e => {
+    e.preventDefault();
+    deferredPrompt = e;
+    if (localStorage.getItem(KEY_DISMISSED)) return;
+
+    // Mostra banner depois de 6s (depois do hint do Cmd+K)
+    setTimeout(showInstallBanner, 6000);
+  });
+
+  window.addEventListener('appinstalled', () => {
+    try { localStorage.setItem(KEY_INSTALLED, '1'); } catch {}
+    document.getElementById('pwa-install')?.remove();
+  });
+
+  function showInstallBanner() {
+    if (!deferredPrompt) return;
+    if (document.getElementById('pwa-install')) return;
+    const path = location.pathname;
+    if (path === '/' || path === '/index.html' || path === '/login.html') return;
+
+    const banner = document.createElement('div');
+    banner.id = 'pwa-install';
+    banner.className = 'pwa-install';
+    banner.innerHTML = `
+      <div class="pwa-install-icon">
+        <img src="/assets/brand/icon-color.png" alt="" width="32" height="32" loading="lazy">
+      </div>
+      <div class="pwa-install-text">
+        <strong>Instalar Sindicompany</strong>
+        <span>Acesso rápido sem abrir navegador.</span>
+      </div>
+      <button class="pwa-install-cta" type="button">Instalar</button>
+      <button class="pwa-install-close" type="button" aria-label="Fechar">×</button>`;
+    document.body.appendChild(banner);
+    requestAnimationFrame(() => banner.classList.add('show'));
+
+    banner.querySelector('.pwa-install-cta').addEventListener('click', async () => {
+      banner.classList.remove('show');
+      setTimeout(() => banner.remove(), 200);
+      const result = await deferredPrompt.prompt();
+      if (result.outcome === 'accepted') {
+        try { localStorage.setItem(KEY_INSTALLED, '1'); } catch {}
+      }
+      deferredPrompt = null;
+    });
+    banner.querySelector('.pwa-install-close').addEventListener('click', () => {
+      banner.classList.remove('show');
+      setTimeout(() => banner.remove(), 200);
+      try { localStorage.setItem(KEY_DISMISSED, '1'); } catch {}
+    });
+  }
+}
+
 // formatMd simples (caso a página atual não tenha um próprio)
 if (typeof window.formatMd !== 'function') {
   window.formatMd = function(text) {
@@ -1049,4 +1155,8 @@ document.addEventListener('DOMContentLoaded', () => {
   setupCmdK();
   // Sindi flutuante (exceto sindi.html, login, index)
   setupSindiFloat();
+  // Onboarding hint (1ª visita)
+  setupCmdKHint();
+  // PWA install banner (Android/desktop com beforeinstallprompt)
+  setupPwaInstall();
 });
