@@ -147,10 +147,22 @@ export default async function handler(request) {
     }), { status: 503, headers: { 'Content-Type': 'application/json' } });
   }
 
-  const employees = await listEmployees();
+  // Modo teste: ?testEmail=foo@bar.com força envio só pra esse email,
+  // ignora dedup, ignora dia da semana. Útil pra confirmar que destravou.
+  const url = new URL(request.url);
+  const testEmail = url.searchParams.get('testEmail');
+  const forceSend = url.searchParams.get('force') === '1' || !!testEmail;
+
+  let employees = await listEmployees();
+  if (testEmail) {
+    employees = employees.filter(e => e.email.toLowerCase() === testEmail.toLowerCase());
+  }
   if (!employees.length) {
     return new Response(JSON.stringify({
-      ok: true, sent: 0, skipped: 0, note: 'Nenhum funcionário com WhatsApp cadastrado.',
+      ok: true, sent: 0, skipped: 0,
+      note: testEmail
+        ? `Funcionário ${testEmail} não encontrado ou sem WhatsApp cadastrado.`
+        : 'Nenhum funcionário com WhatsApp cadastrado.',
     }), { status: 200, headers: { 'Content-Type': 'application/json' } });
   }
 
@@ -158,12 +170,14 @@ export default async function handler(request) {
   const todayKey = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
 
   for (const emp of employees) {
-    // Dedup: não envia 2x no mesmo dia
+    // Dedup: não envia 2x no mesmo dia (exceto quando ?force=1 ou ?testEmail)
     const dedupKey = `sindi-wpp-sent:${todayKey}:${emp.email.toLowerCase()}`;
-    const already = await kvGet(dedupKey);
-    if (already) {
-      log.push({ email: emp.email, status: 'skipped', reason: 'já enviado hoje' });
-      continue;
+    if (!forceSend) {
+      const already = await kvGet(dedupKey);
+      if (already) {
+        log.push({ email: emp.email, status: 'skipped', reason: 'já enviado hoje' });
+        continue;
+      }
     }
 
     try {
