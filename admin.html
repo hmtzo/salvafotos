@@ -234,6 +234,47 @@
     </section>
 
     <!-- Usuários -->
+    <!-- Online em tempo real -->
+    <section class="panel" id="onlinePanel">
+      <h2>👥 Online agora <span class="meta" id="onlineCount">—</span></h2>
+      <div id="onlineList" style="display:flex;flex-direction:column;gap:8px;margin-top:8px"></div>
+    </section>
+    <style>
+      .online-row{
+        display:flex;align-items:center;gap:14px;
+        padding:12px 14px;background:rgba(255,255,255,0.025);
+        border:1px solid var(--border);border-radius:12px;
+      }
+      .online-dot{
+        width:10px;height:10px;border-radius:50%;flex-shrink:0;
+        background:#10b981;box-shadow:0 0 0 0 rgba(16,185,129,0.55);
+        animation:online-pulse 2s ease-out infinite;
+      }
+      @keyframes online-pulse{
+        0%{box-shadow:0 0 0 0 rgba(16,185,129,0.55)}
+        70%{box-shadow:0 0 0 10px rgba(16,185,129,0)}
+        100%{box-shadow:0 0 0 0 rgba(16,185,129,0)}
+      }
+      .online-info{flex:1;min-width:0}
+      .online-name{font-size:14px;font-weight:700;color:var(--text);letter-spacing:-0.01em}
+      .online-name .role{font-weight:400;color:var(--text-dim);margin-left:6px;font-size:12.5px}
+      .online-tool{font-size:12px;color:var(--text-dim);margin-top:2px;display:flex;align-items:center;gap:6px}
+      .online-tool-chip{
+        background:rgba(99,102,241,0.15);color:#a5b4fc;
+        padding:2px 8px;border-radius:100px;font-weight:600;
+        font-size:11px;border:1px solid rgba(99,102,241,0.25);
+      }
+      .online-when{
+        font-size:11px;color:var(--text-muted);
+        font-variant-numeric:tabular-nums;flex-shrink:0;
+      }
+      .online-empty{
+        padding:20px;text-align:center;color:var(--text-muted);
+        font-size:13px;background:rgba(255,255,255,0.02);
+        border:1px dashed var(--border);border-radius:12px;
+      }
+    </style>
+
     <section class="panel">
       <h2>Usuários <span class="meta" id="usersCount">—</span></h2>
       <div class="users-grid" id="usersGrid"></div>
@@ -751,6 +792,60 @@ function renderInsights(list) {
 }
 
 loadAll();
+
+// =============================================================================
+// ONLINE: quem tá no painel agora (auto-refresh 10s)
+// =============================================================================
+(function setupOnlinePanel() {
+  const listEl = document.getElementById('onlineList');
+  const countEl = document.getElementById('onlineCount');
+
+  function fmtAgo(secs) {
+    if (secs < 5) return 'agora';
+    if (secs < 60) return `${secs}s atrás`;
+    return `${Math.floor(secs / 60)}min atrás`;
+  }
+
+  async function refresh() {
+    try {
+      const res = await fetch('/api/presence', { cache: 'no-store' });
+      if (!res.ok) return;
+      const data = await res.json();
+      const online = data.online || [];
+
+      countEl.textContent = online.length === 0
+        ? 'ninguém'
+        : online.length === 1 ? '1 pessoa' : `${online.length} pessoas`;
+      countEl.style.color = online.length > 0 ? '#10b981' : '';
+
+      if (!online.length) {
+        listEl.innerHTML = '<div class="online-empty">Ninguém está usando o painel agora.</div>';
+        return;
+      }
+
+      listEl.innerHTML = online.map(p => `
+        <div class="online-row">
+          <span class="online-dot"></span>
+          <div class="online-info">
+            <div class="online-name">
+              ${escapeHtml(p.name || p.email)}
+              ${p.role ? `<span class="role">· ${escapeHtml(p.role)}</span>` : ''}
+            </div>
+            <div class="online-tool">
+              em <span class="online-tool-chip">${escapeHtml(p.toolName || p.tool)}</span>
+            </div>
+          </div>
+          <span class="online-when">${fmtAgo(p.idleSeconds || 0)}</span>
+        </div>
+      `).join('');
+    } catch {}
+  }
+  function escapeHtml(s) {
+    return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
+  }
+  refresh();
+  setInterval(refresh, 10000);
+})();
 
 // =============================================================================
 // EMAIL: convite + diário

@@ -1032,6 +1032,66 @@ function setupSindiFloat() {
 }
 
 // =============================================================================
+// PRESENCE — heartbeat de presença em tempo real (admin vê quem tá online)
+// =============================================================================
+function setupPresence() {
+  // Detecta nome amigável da página atual (slug + label) pra exibir no admin
+  const path = location.pathname;
+  let tool = 'desconhecido';
+  let toolName = 'Página';
+
+  if (path === '/' || path === '/index.html') return; // landing, não logado
+  if (path === '/login.html') return;
+
+  if (path === '/hub.html')           { tool = 'hub';        toolName = 'Hub'; }
+  else if (path === '/dashboard.html'){ tool = 'dashboard';  toolName = 'Dashboard'; }
+  else if (path === '/perfil.html')   { tool = 'perfil';     toolName = 'Perfil'; }
+  else if (path === '/admin.html')    { tool = 'admin';      toolName = 'Admin'; }
+  else {
+    const m = path.match(/^\/tools\/([\w-]+)\.html?$/);
+    if (m) {
+      tool = m[1];
+      // Tenta achar o nome legível em CMDK_INDEX (já carregado no shared.js)
+      try {
+        const item = (typeof CMDK_INDEX !== 'undefined' ? CMDK_INDEX : []).find(i => i.id === tool);
+        toolName = item?.name || (tool.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase()));
+      } catch { toolName = tool; }
+    }
+  }
+
+  let lastSent = 0;
+  let stopped = false;
+
+  async function ping() {
+    if (stopped) return;
+    if (document.hidden) return; // não bate ping com aba escondida
+    const now = Date.now();
+    if (now - lastSent < 25000) return; // throttle 25s
+    lastSent = now;
+    try {
+      await fetch('/api/presence', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ tool, toolName }),
+        keepalive: true,
+      });
+    } catch {}
+  }
+
+  // Heartbeat inicial e a cada 30s
+  ping();
+  const interval = setInterval(ping, 30000);
+
+  // Re-ping ao voltar pra aba
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) ping();
+  });
+
+  // Stop ao sair da página
+  window.addEventListener('pagehide', () => { stopped = true; clearInterval(interval); });
+}
+
+// =============================================================================
 // ONBOARDING HINT — Cmd+K toast na primeira visita do usuário logado
 // =============================================================================
 function setupCmdKHint() {
@@ -1185,4 +1245,6 @@ document.addEventListener('DOMContentLoaded', () => {
   setupCmdKHint();
   // PWA install banner (Android/desktop com beforeinstallprompt)
   setupPwaInstall();
+  // Presença em tempo real (heartbeat 30s)
+  setupPresence();
 });
