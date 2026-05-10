@@ -43,44 +43,66 @@ function getUser(req) {
 
 function inviteHtml({ name, email }) {
   const body = `
-    <h1 style="margin:0 0 12px;font-size:30px;font-weight:800;letter-spacing:-0.025em;line-height:1.1;background:linear-gradient(180deg,#fff 0%,rgba(255,255,255,0.7) 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:#fff">Olá, ${escapeHtml(name)}! 👋</h1>
-    <p style="margin:0 0 18px;font-size:16px;line-height:1.55;color:#d4d4d8">Tudo pronto pra você acessar o <strong style="color:#fff">Painel Sindicompany</strong> — a plataforma interna que reúne tudo que a equipe precisa em um só lugar.</p>
+    <div style="display:inline-block;padding:6px 12px;border-radius:100px;background:linear-gradient(135deg,rgba(245,158,11,0.18),rgba(251,191,36,0.10));border:1px solid rgba(245,158,11,0.35);margin-bottom:16px">
+      <span style="font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:#fbbf24">🎁 Presente da Sindicompany · Uso interno</span>
+    </div>
 
-    <div style="margin:24px 0;padding:18px 20px;background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.25);border-radius:14px">
-      <p style="margin:0 0 12px;font-size:13px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#a5b4fc">Suas credenciais</p>
+    <h1 style="margin:0 0 12px;font-size:32px;font-weight:800;letter-spacing:-0.025em;line-height:1.1;background:linear-gradient(180deg,#fff 0%,rgba(255,255,255,0.7) 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:#fff">${escapeHtml(name)}, é seu. 🎁</h1>
+
+    <p style="margin:0 0 18px;font-size:16px;line-height:1.6;color:#e4e4e7">Pensamos numa forma de fazer seu dia render mais.<br>E aqui está — um <strong style="color:#fff">painel feito sob medida pra equipe</strong>, com <strong style="color:#a5b4fc">41 ferramentas + IA</strong> que resolvem em segundos o que hoje leva horas.</p>
+
+    <div style="margin:20px 0 24px;padding:16px 18px;background:rgba(16,185,129,0.08);border-left:3px solid #10b981;border-radius:8px">
+      <p style="margin:0;font-size:14px;line-height:1.65;color:#d4d4d8">
+        <strong style="color:#86efac">⚡ Notificação extrajudicial pronta?</strong> 30 segundos.<br>
+        <strong style="color:#86efac">⚡ Cálculo de inadimplência com juros e correção?</strong> 10 segundos.<br>
+        <strong style="color:#86efac">⚡ Resumir uma ata de 40 páginas?</strong> 1 minuto.<br>
+        <strong style="color:#86efac">⚡ Dúvida de convenção ou NBR?</strong> Pergunta pra Sindi e ela responde na hora.
+      </p>
+    </div>
+
+    <p style="margin:0 0 22px;font-size:15px;line-height:1.55;color:#d4d4d8">Tudo <strong style="color:#fff">grátis</strong>, <strong style="color:#fff">ilimitado</strong>, direto do navegador. Sem instalar nada, sem mensalidade, sem complicação. É da casa, pra casa.</p>
+
+    <div style="margin:24px 0;padding:18px 20px;background:rgba(99,102,241,0.10);border:1px solid rgba(99,102,241,0.30);border-radius:14px">
+      <p style="margin:0 0 12px;font-size:13px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#a5b4fc">🔑 Suas credenciais</p>
       <table cellpadding="0" cellspacing="0" border="0" style="width:100%">
-        <tr><td style="padding:4px 0;font-size:13px;color:#a1a1aa">Login:</td><td style="padding:4px 0;font-size:14px;font-weight:600;color:#fff;font-family:'SF Mono','Menlo',ui-monospace,monospace">${escapeHtml(email)}</td></tr>
+        <tr><td style="padding:4px 0;font-size:13px;color:#a1a1aa;width:100px">Login:</td><td style="padding:4px 0;font-size:14px;font-weight:600;color:#fff;font-family:'SF Mono','Menlo',ui-monospace,monospace;word-break:break-all">${escapeHtml(email)}</td></tr>
         <tr><td style="padding:4px 0;font-size:13px;color:#a1a1aa">Senha inicial:</td><td style="padding:4px 0;font-size:14px;font-weight:600;color:#fff;font-family:'SF Mono','Menlo',ui-monospace,monospace">${DEFAULT_PASSWORD}</td></tr>
       </table>
     </div>
 
-    <h2 style="margin:24px 0 12px;font-size:18px;font-weight:700;color:#fff;letter-spacing:-0.01em">O que você encontra lá</h2>
+    <h2 style="margin:32px 0 14px;font-size:18px;font-weight:700;color:#fff;letter-spacing:-0.01em">O que tá esperando você</h2>
 
-    <table cellpadding="0" cellspacing="0" border="0" style="width:100%;margin:0 0 8px">
-      <tr><td style="padding:10px 14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:10px;margin-bottom:8px">
-        <p style="margin:0 0 4px;font-size:14px;font-weight:700;color:#fff">🤖 Sindi (IA)</p>
-        <p style="margin:0;font-size:13px;color:#a1a1aa;line-height:1.5">Pergunta qualquer coisa: convenção, NBR, redação de notificação, dúvida do dia. Streaming em tempo real e até por WhatsApp.</p>
+    <table cellpadding="0" cellspacing="0" border="0" style="width:100%">
+      <tr><td style="padding:14px 16px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:12px">
+        <p style="margin:0 0 5px;font-size:14.5px;font-weight:700;color:#fff">🤖 Sindi · sua copiloto IA</p>
+        <p style="margin:0;font-size:13px;color:#a1a1aa;line-height:1.55">Conversa fluida sobre qualquer coisa — convenção, lei, redação, brainstorm, cálculo. Streaming em tempo real, com pesquisa na web e leitura de PDF que você anexa. Também responde no seu WhatsApp.</p>
       </td></tr>
-      <tr><td height="6"></td></tr>
-      <tr><td style="padding:10px 14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:10px">
-        <p style="margin:0 0 4px;font-size:14px;font-weight:700;color:#fff">📄 41 ferramentas profissionais</p>
-        <p style="margin:0;font-size:13px;color:#a1a1aa;line-height:1.5">PDF (juntar, dividir, comprimir, OCR, editor), conversões Word/Excel/PDF, geradores de ata/contrato/notificação, calculadoras de rateio e multa, assinatura eletrônica, redação LGPD, e muito mais.</p>
+      <tr><td height="8"></td></tr>
+      <tr><td style="padding:14px 16px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:12px">
+        <p style="margin:0 0 5px;font-size:14.5px;font-weight:700;color:#fff">📄 41 ferramentas que economizam horas</p>
+        <p style="margin:0;font-size:13px;color:#a1a1aa;line-height:1.55">PDF (juntar, dividir, comprimir, OCR, editor, traduzir com IA), conversões Word/Excel/PDF, geradores de ata/contrato/notificação, calculadoras de rateio/multa/reajuste, assinatura eletrônica, redação LGPD automática.</p>
       </td></tr>
-      <tr><td height="6"></td></tr>
-      <tr><td style="padding:10px 14px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:10px">
-        <p style="margin:0 0 4px;font-size:14px;font-weight:700;color:#fff">⚡ Atalho mágico</p>
-        <p style="margin:0;font-size:13px;color:#a1a1aa;line-height:1.5">Em qualquer página, aperta <code style="background:rgba(255,255,255,0.06);padding:1px 6px;border-radius:4px;font-size:12px">⌘K</code> (Mac) ou <code style="background:rgba(255,255,255,0.06);padding:1px 6px;border-radius:4px;font-size:12px">Ctrl+K</code> (Win) e busca direto.</p>
+      <tr><td height="8"></td></tr>
+      <tr><td style="padding:14px 16px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:12px">
+        <p style="margin:0 0 5px;font-size:14.5px;font-weight:700;color:#fff">⌘ Atalho mágico em qualquer lugar</p>
+        <p style="margin:0;font-size:13px;color:#a1a1aa;line-height:1.55">Aperta <code style="background:rgba(99,102,241,0.18);color:#a5b4fc;padding:2px 7px;border-radius:5px;font-size:12px;font-weight:600">⌘K</code> no Mac ou <code style="background:rgba(99,102,241,0.18);color:#a5b4fc;padding:2px 7px;border-radius:5px;font-size:12px;font-weight:600">Ctrl+K</code> no Windows e busca direto a ferramenta que você quer. Voa.</p>
+      </td></tr>
+      <tr><td height="8"></td></tr>
+      <tr><td style="padding:14px 16px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.08);border-radius:12px">
+        <p style="margin:0 0 5px;font-size:14.5px;font-weight:700;color:#fff">🌅 Bom dia diário com a Sindi</p>
+        <p style="margin:0;font-size:13px;color:#a1a1aa;line-height:1.55">Toda manhã uma frase pra começar bem. À noite, um resumo do que você fez no dia (ou ideias do que poderia testar). Cuidamos de você como cuidamos do nosso trabalho.</p>
       </td></tr>
     </table>
 
-    <p style="margin:24px 0 0;font-size:14px;line-height:1.55;color:#d4d4d8">Bora começar? Clique no botão abaixo, faz login com suas credenciais e dá uma volta. <strong style="color:#fff">Qualquer dúvida, é só responder este email</strong>.</p>
+    <p style="margin:32px 0 8px;font-size:15px;line-height:1.55;color:#e4e4e7"><strong style="color:#fff">Bora começar?</strong> Clica no botão abaixo, faz login com as credenciais aí em cima e dá uma volta — leva 5 minutos pra entender tudo.</p>
+    <p style="margin:0;font-size:13px;line-height:1.55;color:#a1a1aa">Qualquer dúvida, é só responder este email. Estamos junto.</p>
   `;
 
   return emailLayout({
-    title: 'Convite Sindicompany Painel',
-    preheader: `Suas credenciais já estão prontas — acesse painel.sindicompany.com.br`,
+    title: 'Seu painel Sindicompany chegou',
+    preheader: '41 ferramentas + IA pra economizar horas todo dia. Suas credenciais estão dentro.',
     body,
-    ctaText: 'Acessar painel agora',
+    ctaText: 'Abrir meu painel agora',
     ctaUrl: 'https://painel.sindicompany.com.br/hub.html',
   });
 }
@@ -131,7 +153,7 @@ export default async function handler(request) {
 
       const result = await sendEmail({
         to: email,
-        subject: 'Boas-vindas ao Painel Sindicompany 🚀',
+        subject: '🎁 Seu painel Sindicompany chegou — 41 atalhos pro dia a dia',
         html,
       });
       log.push({ email, status: 'sent', name, id: result?.id || null });
