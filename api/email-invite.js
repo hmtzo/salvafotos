@@ -43,8 +43,8 @@ function getUser(req) {
 
 function inviteHtml({ name, email }) {
   const body = `
-    <h1 style="margin:0 0 12px;font-size:30px;font-weight:800;letter-spacing:-0.025em;line-height:1.1;background:linear-gradient(180deg,#fff 0%,rgba(255,255,255,0.7) 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:#fff">Bem-vinda, ${escapeHtml(name)}! 👋</h1>
-    <p style="margin:0 0 18px;font-size:16px;line-height:1.55;color:#d4d4d8">Você foi convidada a usar o <strong style="color:#fff">Painel Sindicompany</strong> — a plataforma interna que reúne tudo que a equipe precisa em um só lugar.</p>
+    <h1 style="margin:0 0 12px;font-size:30px;font-weight:800;letter-spacing:-0.025em;line-height:1.1;background:linear-gradient(180deg,#fff 0%,rgba(255,255,255,0.7) 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:#fff">Olá, ${escapeHtml(name)}! 👋</h1>
+    <p style="margin:0 0 18px;font-size:16px;line-height:1.55;color:#d4d4d8">Tudo pronto pra você acessar o <strong style="color:#fff">Painel Sindicompany</strong> — a plataforma interna que reúne tudo que a equipe precisa em um só lugar.</p>
 
     <div style="margin:24px 0;padding:18px 20px;background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.25);border-radius:14px">
       <p style="margin:0 0 12px;font-size:13px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#a5b4fc">Suas credenciais</p>
@@ -131,7 +131,7 @@ export default async function handler(request) {
 
       const result = await sendEmail({
         to: email,
-        subject: 'Bem-vindo ao Painel Sindicompany 🚀',
+        subject: 'Boas-vindas ao Painel Sindicompany 🚀',
         html,
       });
       log.push({ email, status: 'sent', name, id: result?.id || null });

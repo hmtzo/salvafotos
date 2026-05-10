@@ -149,9 +149,41 @@ export const TEAM_EMAILS = [
 /**
  * Pega nome amigável a partir do email (heurística). Se houver perfil cadastrado
  * no KV, prefere usar o name de lá.
+ *
+ * Pra emails de cargo/genéricos mapeia pra label da equipe ("equipe Marketing",
+ * "equipe Comercial", etc.). Pra emails pessoais formata o local part.
  */
+const GENERIC_LOCAL_LABEL = {
+  'mkt': 'equipe Marketing',
+  'marketing': 'equipe Marketing',
+  'comercial': 'equipe Comercial',
+  'vendas': 'equipe Comercial',
+  'sales': 'equipe Comercial',
+  'orcamentos': 'equipe Orçamentos',
+  'orcamento': 'equipe Orçamentos',
+  'contato': 'time',
+  'contact': 'time',
+  'suporte': 'equipe Suporte',
+  'support': 'equipe Suporte',
+  'atendimento': 'equipe Atendimento',
+  'admin': 'time',
+  'financeiro': 'equipe Financeiro',
+  'financas': 'equipe Financeiro',
+  'rh': 'equipe RH',
+  'juridico': 'equipe Jurídica',
+  'legal': 'equipe Jurídica',
+  'diretoria': 'time',
+  'gerencia': 'time',
+  'gestao': 'time',
+  'operacoes': 'equipe Operações',
+  'noreply': 'time',
+  'no-reply': 'time',
+  'info': 'time',
+};
+
 export function nameFromEmail(email) {
-  const local = String(email || '').split('@')[0];
+  const local = String(email || '').split('@')[0].toLowerCase();
+  if (GENERIC_LOCAL_LABEL[local]) return GENERIC_LOCAL_LABEL[local];
   return local
     .replace(/[._-]+/g, ' ')
     .replace(/\b\w/g, c => c.toUpperCase());
