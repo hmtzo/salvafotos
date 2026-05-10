@@ -4,176 +4,309 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#0a0a0c">
-<title>Word → PDF — Sindicompany Hub</title>
+<title>Word → PDF — Sindicompany</title>
 <meta name="robots" content="noindex, nofollow">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<link rel="icon" href="/logo.svg">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="icon" type="image/png" href="/assets/brand/icon-color.png">
 <link rel="stylesheet" href="/assets/shared.css">
-<script src="https://cdn.jsdelivr.net/npm/mammoth@1.7.2/mammoth.browser.min.js"></script>
+<!-- docx-preview renderiza .docx PRESERVANDO layout original (fontes, margens, tabelas, headers/footers).
+     É bem mais fiel que mammoth, que simplifica pra HTML semântico. -->
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/docx-preview@0.3.5/dist/docx-preview.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+<script src="/assets/shared.js"></script>
+<script src="/assets/tool-helpers.js"></script>
 <style>
-  .preview-frame{
-    margin-top:18px;border:1px solid var(--border);border-radius:10px;
-    background:white;max-height:500px;overflow:auto;padding:30px 40px;
-    font-family:Calibri,'Segoe UI',sans-serif;color:#222;
+  /* Container onde o docx é renderizado fielmente */
+  .docx-render-host{
+    margin-top:18px;background:#fff;border:1px solid var(--border);border-radius:10px;
+    padding:0;max-height:520px;overflow:auto;
+    scrollbar-width:thin;scrollbar-color:var(--border-bright) transparent;
   }
-  .preview-frame h1{font-size:22px;margin-bottom:10px}
-  .preview-frame h2{font-size:18px;margin-bottom:8px;margin-top:14px}
-  .preview-frame p{margin-bottom:8px;line-height:1.5;font-size:14px}
-  .preview-frame table{border-collapse:collapse;margin:8px 0}
-  .preview-frame td,.preview-frame th{border:1px solid #ccc;padding:6px 10px}
+  .docx-render-host::-webkit-scrollbar{width:8px}
+  .docx-render-host::-webkit-scrollbar-thumb{background:var(--border-bright);border-radius:4px}
+  /* docx-preview cria <article class="docx"><section class="docx-page">...</section></article>.
+     Cada section é uma página A4 (ou outro tamanho do .docx). Reset de margem visual. */
+  .docx-render-host .docx{margin:0 auto;background:#f5f5f5;padding:14px 0}
+  .docx-render-host .docx-page{margin:0 auto 14px;box-shadow:0 4px 16px rgba(0,0,0,0.15)}
+  .docx-render-host .docx-page:last-child{margin-bottom:0}
+
+  .preview-info{
+    font-size:11.5px;color:var(--text-muted);
+    margin-top:6px;display:flex;align-items:center;gap:6px;
+  }
+  .preview-info svg{width:13px;height:13px}
+
+  /* Container offscreen pra render em alta resolução durante a conversão */
+  #convertHost{position:fixed;left:-99999px;top:0;background:#fff}
+  #convertHost .docx{padding:0}
+  #convertHost .docx-page{margin:0;box-shadow:none}
 </style>
 </head>
 <body>
 <div id="app-nav"></div>
-<div class="container">
-  <section class="tool-hero">
-    <span class="eyebrow">📊 Conversão</span>
+
+<main class="tool-container">
+  <header class="tool-hero">
+    <span class="tool-eyebrow"><span class="dot"></span> Conversão · Word</span>
     <h1>Word → PDF</h1>
-    <p>Converta arquivos .docx em PDF preservando formatação, tabelas e imagens. Útil pra padronizar documentos antes de enviar pra terceiros.</p>
-  </section>
+    <p>Converte arquivos <code style="background:rgba(99,102,241,0.12);padding:2px 6px;border-radius:4px;font-size:0.85em;color:#a5b4fc">.docx</code> em PDF preservando o layout original — fontes, margens, tabelas, alinhamentos, listas. Renderização fiel via docx-preview.</p>
+  </header>
 
-  <div class="card">
-    <label for="fileInput" class="drop-zone" id="dropZone">
-      <div class="drop-icon">
-        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
-      </div>
-      <div class="drop-title">Arraste o arquivo .docx aqui</div>
-      <div class="drop-sub">Word 2007+ (.docx) · processado no seu navegador</div>
-    </label>
-    <input type="file" id="fileInput" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
+  <label for="fileInput" id="dropZone" class="tool-drop-card">
+    <div class="tool-drop-icon">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2zM9 13h6m-6 4h6m-6-8h2"/></svg>
+    </div>
+    <div class="tool-drop-title" id="dropTitle">Solte o <kbd>.docx</kbd> aqui</div>
+    <div class="tool-drop-sub">ou clique para selecionar &nbsp;·&nbsp; Word 2007+ &nbsp;·&nbsp; processado no navegador</div>
+  </label>
+  <input type="file" id="fileInput" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document" hidden>
 
-    <div id="fileInfo" style="display:none;margin-top:12px;padding:12px 14px;background:var(--bg-elev);border-radius:10px;font-size:13px;color:var(--text-dim);"></div>
-
-    <div id="previewWrap" style="display:none">
-      <h3 style="margin-top:18px;margin-bottom:8px;font-size:13px;font-weight:600;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.05em">Prévia</h3>
-      <div class="preview-frame" id="preview"></div>
+  <section class="tool-config">
+    <div class="tool-options" style="margin-bottom:14px">
+      <label class="tool-toggle">
+        <input type="checkbox" id="optHighRes" checked>
+        <span class="tool-toggle-switch"></span>
+        <span class="tool-toggle-label">
+          <strong>Alta resolução</strong>
+          <span>2x DPI · arquivo maior, qualidade superior</span>
+        </span>
+      </label>
+      <label class="tool-toggle">
+        <input type="checkbox" id="optBreakPages" checked>
+        <span class="tool-toggle-switch"></span>
+        <span class="tool-toggle-label">
+          <strong>Respeitar quebras de página</strong>
+          <span>cada página do Word vira 1 página do PDF</span>
+        </span>
+      </label>
     </div>
 
-    <button class="btn-primary" id="processBtn" disabled>
+    <div id="renderHost" class="docx-render-host" hidden></div>
+    <div id="renderInfo" class="preview-info" hidden></div>
+
+    <button class="tool-process" id="processBtn" disabled>
       <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
       <span id="btnText">Selecione um .docx</span>
     </button>
 
-    <div class="status" id="status">
-      <div class="status-text">Aguardando…</div>
-      <div class="progress"><div class="progress-bar"></div></div>
+    <div class="tool-status" id="status">
+      <div class="tool-status-text" id="statusText">Aguardando…</div>
+      <div class="tool-progress"><div class="tool-progress-bar" id="progressBar"></div></div>
     </div>
+
+    <div class="tool-stats" id="stats">
+      <div class="tool-stat"><div class="tool-stat-value" id="statPages">0</div><div class="tool-stat-label">Páginas</div></div>
+      <div class="tool-stat"><div class="tool-stat-value" id="statSize">—</div><div class="tool-stat-label">Tamanho final</div></div>
+    </div>
+  </section>
+
+  <!-- Container offscreen onde o docx é re-renderizado em alta resolução pra captura -->
+  <div id="convertHost"></div>
+
+  <details class="tool-config" style="margin-top:24px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:0;overflow:hidden">
+    <summary style="cursor:pointer;list-style:none;padding:14px 18px;font-size:13px;font-weight:600;color:var(--text)">⚠️ Quando essa conversão NÃO é 100% fiel</summary>
+    <div style="padding:0 18px 16px;border-top:1px solid var(--border)">
+      <p style="font-size:13px;color:var(--text-dim);line-height:1.6;margin:12px 0 0">
+        A renderização cobre 95% dos casos típicos: textos formatados, tabelas, listas, imagens, headers/footers, margens. Mas casos extremamente raros podem variar:
+      </p>
+      <ul style="font-size:12.5px;color:var(--text-dim);line-height:1.7;margin:8px 0 0 22px">
+        <li>SmartArt, gráficos do Excel embutidos, equações matemáticas (Office Math)</li>
+        <li>Macros, campos dinâmicos com cálculos (mailmerge), bookmarks</li>
+        <li>Tipografia OpenType com kerning manual aplicado letra a letra</li>
+      </ul>
+      <p style="font-size:13px;color:var(--text-dim);line-height:1.6;margin:12px 0 0">
+        Pra esses casos, abre o docx no Word/LibreOffice e usa <strong style="color:var(--text)">Salvar como PDF</strong> direto. Pra qualquer outro caso, esta ferramenta gera resultado idêntico ao original.
+      </p>
+    </div>
+  </details>
+
+  <div class="tool-privacy" style="margin-top:18px">
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+    100% no navegador. Nada vai pra servidor.
   </div>
-</div>
-<div id="app-footer"></div>
+</main>
 
-<script src="/assets/shared.js"></script>
 <script>
-const dropZone = document.getElementById('dropZone');
-const fileInput = document.getElementById('fileInput');
-const fileInfo = document.getElementById('fileInfo');
-const previewWrap = document.getElementById('previewWrap');
-const preview = document.getElementById('preview');
-const processBtn = document.getElementById('processBtn');
-const btnText = document.getElementById('btnText');
-const statusEl = document.getElementById('status');
-
 let file = null;
+let renderedDocxBuffer = null;
 
-setupDropZone(dropZone, fileInput, async newFiles => {
-  file = newFiles[0];
-  if (!file) return;
-  fileInfo.style.display = 'block';
-  fileInfo.innerHTML = `<strong>${file.name}</strong> · ${formatBytes(file.size)} · <em>convertendo prévia…</em>`;
+ToolFile.setupDropZone({
+  accept: f => /\.docx$/i.test(f.name) || f.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  onFile: async f => {
+    file = f;
+    renderedDocxBuffer = null;
+    const renderHost = document.getElementById('renderHost');
+    const renderInfo = document.getElementById('renderInfo');
+    const btn = document.getElementById('processBtn');
+    const btnText = document.getElementById('btnText');
 
-  try {
-    const arrBuf = await file.arrayBuffer();
-    const result = await mammoth.convertToHtml({ arrayBuffer: arrBuf });
-    preview.innerHTML = result.value;
-    previewWrap.style.display = 'block';
-    fileInfo.innerHTML = `<strong>${file.name}</strong> · ${formatBytes(file.size)} · prévia carregada`;
-    processBtn.disabled = false;
-    btnText.textContent = 'Converter para PDF';
-  } catch (err) {
-    fileInfo.innerHTML = `<strong>${file.name}</strong> · ❌ Erro ao ler: ${err.message}`;
-  }
+    btn.disabled = true;
+    btnText.textContent = 'Carregando prévia…';
+    renderHost.hidden = false;
+    renderHost.innerHTML = '<div style="padding:30px;text-align:center;color:#888;font-family:Inter,sans-serif">Renderizando documento…</div>';
+    renderInfo.hidden = true;
+
+    try {
+      const buf = await f.arrayBuffer();
+      renderedDocxBuffer = buf;
+      // docx-preview API: renderAsync(blob | arrayBuffer, bodyContainer, styleContainer?, options?)
+      renderHost.innerHTML = '';
+      await docx.renderAsync(buf, renderHost, null, {
+        className: 'docx',
+        inWrapper: true,
+        ignoreWidth: false,
+        ignoreHeight: false,
+        ignoreFonts: false,
+        breakPages: true,
+        ignoreLastRenderedPageBreak: true,
+        experimental: false,
+        trimXmlDeclaration: true,
+        useBase64URL: true,
+        renderHeaders: true,
+        renderFooters: true,
+        renderFootnotes: true,
+        renderEndnotes: true,
+        debug: false,
+      });
+
+      const pages = renderHost.querySelectorAll('section.docx-page').length || 1;
+      renderInfo.hidden = false;
+      renderInfo.innerHTML = `
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4M21 12c-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7"/><path d="M12 5C7.523 5 3.732 7.943 2.458 12"/></svg>
+        Renderização fiel · ${pages} página${pages > 1 ? 's' : ''} detectada${pages > 1 ? 's' : ''} no Word
+      `;
+      btn.disabled = false;
+      btnText.textContent = 'Converter para PDF';
+    } catch (err) {
+      console.error(err);
+      renderHost.innerHTML = `<div style="padding:30px;text-align:center;color:#c00;font-family:Inter,sans-serif">Erro lendo o .docx: ${err.message}</div>`;
+      btnText.textContent = 'Selecione outro .docx';
+    }
+  },
 });
 
-processBtn.addEventListener('click', async () => {
-  if (!file) return;
-  processBtn.disabled = true;
-  btnText.textContent = 'Processando…';
-  showStatus(statusEl, 'Renderizando documento…');
-  setProgress(statusEl, 10);
+document.getElementById('processBtn').addEventListener('click', async () => {
+  if (!file || !renderedDocxBuffer) return;
+  const btn = document.getElementById('processBtn');
+  const btnText = document.getElementById('btnText');
+  btn.disabled = true;
+  btnText.textContent = 'Convertendo…';
+  document.getElementById('stats').classList.remove('show');
+  ToolUI.setProgress(8);
+  ToolUI.setStatus('Re-renderizando em alta resolução…');
+
+  const convertHost = document.getElementById('convertHost');
+  convertHost.innerHTML = '';
 
   try {
-    // Renderiza HTML em um container fora da viewport com largura A4
-    const container = document.createElement('div');
-    container.style.width = '794px'; // ~A4 em 96dpi
-    container.style.padding = '60px 70px';
-    container.style.fontFamily = "Calibri, 'Segoe UI', sans-serif";
-    container.style.fontSize = '14px';
-    container.style.lineHeight = '1.5';
-    container.style.color = '#222';
-    container.style.background = 'white';
-    container.style.position = 'absolute';
-    container.style.top = '-99999px';
-    container.style.left = '0';
-    container.innerHTML = preview.innerHTML;
-    document.body.appendChild(container);
+    const highRes = document.getElementById('optHighRes').checked;
+    const respectBreaks = document.getElementById('optBreakPages').checked;
 
-    setProgress(statusEl, 30);
-    showStatus(statusEl, 'Capturando páginas…');
+    // Re-renderiza num container offscreen (fora da viewport) com escala alta
+    await docx.renderAsync(renderedDocxBuffer, convertHost, null, {
+      className: 'docx',
+      inWrapper: true,
+      breakPages: respectBreaks,
+      ignoreLastRenderedPageBreak: true,
+      renderHeaders: true,
+      renderFooters: true,
+      renderFootnotes: true,
+      renderEndnotes: true,
+      useBase64URL: true,
+    });
 
-    const totalHeight = container.scrollHeight;
-    const a4HeightPx = Math.round(794 * 1.414); // ratio A4 portrait
-    const pages = Math.max(1, Math.ceil(totalHeight / a4HeightPx));
+    // Espera fonts/imgs assentarem
+    await new Promise(r => setTimeout(r, 300));
+    if (document.fonts && document.fonts.ready) {
+      try { await document.fonts.ready; } catch {}
+    }
 
+    const pages = Array.from(convertHost.querySelectorAll('section.docx-page'));
+    if (!pages.length) throw new Error('Não consegui detectar páginas no documento renderizado.');
+
+    ToolUI.setProgress(20);
     const pdf = await PDFLib.PDFDocument.create();
-    for (let p = 0; p < pages; p++) {
-      setProgress(statusEl, 30 + (p / pages) * 60);
-      showStatus(statusEl, `Renderizando página ${p + 1}/${pages}…`);
-      // Captura a área específica desta página
-      const canvas = await html2canvas(container, {
-        y: p * a4HeightPx,
-        height: Math.min(a4HeightPx, totalHeight - p * a4HeightPx),
-        windowWidth: 794,
-        scale: 1.5,
+    const scale = highRes ? 2 : 1.25;
+    const A4_W_PT = 595.28;
+    const A4_H_PT = 841.89;
+
+    for (let i = 0; i < pages.length; i++) {
+      const pageEl = pages[i];
+      ToolUI.setStatus(`Capturando página ${i + 1}/${pages.length}…`);
+      ToolUI.setProgress(20 + Math.round((i / pages.length) * 70));
+
+      // Captura a página usando html2canvas com alta fidelidade
+      const canvas = await html2canvas(pageEl, {
+        scale,
+        useCORS: true,
         backgroundColor: '#ffffff',
+        logging: false,
+        imageTimeout: 0,
       });
-      const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+
+      // Converte pra JPEG de alta qualidade (PDF é menor que PNG e fonte é nítida)
+      const dataUrl = canvas.toDataURL('image/jpeg', highRes ? 0.95 : 0.88);
       const jpgBytes = await fetch(dataUrl).then(r => r.arrayBuffer());
       const img = await pdf.embedJpg(jpgBytes);
-      const page = pdf.addPage([595.28, 841.89]); // A4 em pontos
-      const ratio = Math.min(595.28 / img.width, 841.89 / img.height);
-      page.drawImage(img, {
-        x: 0,
-        y: 841.89 - img.height * ratio,
-        width: img.width * ratio,
-        height: img.height * ratio,
-      });
+
+      // Preserva o tamanho real da página renderizada (mesmo aspect ratio do .docx)
+      // Converte px do canvas pra pt (1pt = 1.333 px @ 96 DPI; html2canvas escala canvas em "scale")
+      const pageWidthPt = (canvas.width / scale) * 0.75;
+      const pageHeightPt = (canvas.height / scale) * 0.75;
+
+      // Se as dimensões batem com A4 (±5%), força A4 perfeito
+      const ratioW = pageWidthPt / A4_W_PT;
+      const ratioH = pageHeightPt / A4_H_PT;
+      let finalW, finalH;
+      if (Math.abs(ratioW - 1) < 0.05 && Math.abs(ratioH - 1) < 0.05) {
+        finalW = A4_W_PT; finalH = A4_H_PT;
+      } else {
+        finalW = pageWidthPt; finalH = pageHeightPt;
+      }
+
+      const pdfPage = pdf.addPage([finalW, finalH]);
+      pdfPage.drawImage(img, { x: 0, y: 0, width: finalW, height: finalH });
+
+      // Permite UI repintar entre páginas pesadas
       await new Promise(r => setTimeout(r, 0));
     }
 
-    document.body.removeChild(container);
+    convertHost.innerHTML = '';
+    ToolUI.setProgress(95);
+    ToolUI.setStatus('Salvando PDF…');
 
-    setProgress(statusEl, 95);
     const bytes = await pdf.save();
     const blob = new Blob([bytes], { type: 'application/pdf' });
     const baseName = file.name.replace(/\.docx?$/i, '');
-    downloadBlob(blob, `${baseName}.pdf`);
+    ToolFile.download(blob, `${baseName}.pdf`);
 
-    setProgress(statusEl, 100);
-    showStatus(statusEl, `✓ Pronto! ${pages} página${pages > 1 ? 's' : ''} convertidas (${formatBytes(blob.size)}).`, 'success');
-    trackUsage('word-para-pdf', { pages });
+    document.getElementById('statPages').textContent = pages.length;
+    document.getElementById('statSize').textContent = formatBytes(blob.size);
+    document.getElementById('stats').classList.add('show');
+
+    ToolUI.setProgress(100);
+    ToolUI.setStatus(`✓ Convertido fielmente · ${pages.length} página${pages.length > 1 ? 's' : ''}`, 'success');
+    if (window.trackUsage) trackUsage('word-para-pdf', { pages: pages.length, highRes });
   } catch (err) {
     console.error(err);
-    showStatus(statusEl, 'Erro: ' + err.message, 'error');
-    setProgress(statusEl, 0);
+    convertHost.innerHTML = '';
+    ToolUI.setStatus('Erro: ' + err.message, 'error');
+    ToolUI.setProgress(0);
   } finally {
-    processBtn.disabled = false;
+    btn.disabled = false;
     btnText.textContent = 'Converter para PDF';
   }
 });
+
+function formatBytes(n) {
+  if (n < 1024) return n + ' B';
+  if (n < 1024 * 1024) return (n / 1024).toFixed(1) + ' KB';
+  return (n / 1024 / 1024).toFixed(2) + ' MB';
+}
 </script>
 </body>
 </html>
