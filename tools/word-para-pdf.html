@@ -25,6 +25,7 @@
     margin-top:18px;background:#fff;border:1px solid var(--border);border-radius:10px;
     padding:0;max-height:520px;overflow:auto;
     scrollbar-width:thin;scrollbar-color:var(--border-bright) transparent;
+    -webkit-overflow-scrolling:touch;
   }
   .docx-render-host::-webkit-scrollbar{width:8px}
   .docx-render-host::-webkit-scrollbar-thumb{background:var(--border-bright);border-radius:4px}
@@ -40,10 +41,55 @@
   }
   .preview-info svg{width:13px;height:13px}
 
-  /* Container offscreen pra render em alta resolução durante a conversão */
-  #convertHost{position:fixed;left:-99999px;top:0;background:#fff}
-  #convertHost .docx{padding:0}
-  #convertHost .docx-page{margin:0;box-shadow:none}
+  /* Mobile (≤600px): preview menor, página visível por scroll horizontal,
+     toggles em coluna, botão maior, layout edge-to-edge */
+  @media (max-width: 600px){
+    .tool-container{padding:18px 12px 60px}
+    .tool-hero h1{font-size:30px}
+    .tool-hero p{font-size:14px}
+    .tool-drop-card{padding:30px 16px}
+    .tool-drop-icon{width:50px;height:50px;border-radius:14px}
+    .tool-drop-icon svg{width:26px;height:26px}
+    .tool-drop-title{font-size:15.5px}
+    .tool-drop-sub{font-size:12px}
+
+    .docx-render-host{
+      max-height:55vh;border-radius:10px;
+      /* Permite o user fazer scroll horizontal pra ver a página inteira */
+    }
+    .docx-render-host .docx{padding:8px 0}
+    .docx-render-host .docx-page{
+      margin:6px auto;
+      box-shadow:0 2px 8px rgba(0,0,0,0.10);
+    }
+
+    .tool-options{grid-template-columns:1fr !important;gap:4px}
+    .tool-toggle{padding:14px}
+    .tool-toggle-label strong{font-size:14px}
+    .tool-toggle-label span{font-size:12px}
+
+    .tool-process{
+      padding:18px 22px;font-size:15px;
+      /* Sticky bottom em mobile pra ficar sempre acessível */
+      position:sticky;bottom:env(safe-area-inset-bottom, 0);
+      z-index:5;
+      box-shadow:0 -8px 24px rgba(10,10,12,0.6), 0 6px 20px rgba(99,102,241,0.3);
+    }
+
+    .tool-stats{grid-template-columns:1fr 1fr !important;gap:8px}
+    .tool-stat{padding:14px 10px}
+    .tool-stat-value{font-size:22px}
+  }
+
+  /* Aviso quando documento é grande */
+  .doc-warning{
+    margin-top:10px;padding:10px 14px;
+    background:rgba(245,158,11,0.10);border:1px solid rgba(245,158,11,0.30);
+    border-radius:10px;font-size:12.5px;color:#fbbf24;line-height:1.5;
+    display:none;
+  }
+  .doc-warning.show{display:block;animation:tool-fade .25s ease-out}
+  .doc-warning strong{color:#fff}
 </style>
 </head>
 <body>
@@ -68,11 +114,11 @@
   <section class="tool-config">
     <div class="tool-options" style="margin-bottom:14px">
       <label class="tool-toggle">
-        <input type="checkbox" id="optHighRes" checked>
+        <input type="checkbox" id="optHighRes">
         <span class="tool-toggle-switch"></span>
         <span class="tool-toggle-label">
           <strong>Alta resolução</strong>
-          <span>2x DPI · arquivo maior, qualidade superior</span>
+          <span id="optHighResHint">2x DPI · arquivo maior, qualidade superior</span>
         </span>
       </label>
       <label class="tool-toggle">
@@ -87,6 +133,7 @@
 
     <div id="renderHost" class="docx-render-host" hidden></div>
     <div id="renderInfo" class="preview-info" hidden></div>
+    <div id="docWarning" class="doc-warning"></div>
 
     <button class="tool-process" id="processBtn" disabled>
       <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
@@ -103,9 +150,6 @@
       <div class="tool-stat"><div class="tool-stat-value" id="statSize">—</div><div class="tool-stat-label">Tamanho final</div></div>
     </div>
   </section>
-
-  <!-- Container offscreen onde o docx é re-renderizado em alta resolução pra captura -->
-  <div id="convertHost"></div>
 
   <details class="tool-config" style="margin-top:24px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:0;overflow:hidden">
     <summary style="cursor:pointer;list-style:none;padding:14px 18px;font-size:13px;font-weight:600;color:var(--text)">⚠️ Quando essa conversão NÃO é 100% fiel</summary>
@@ -131,14 +175,48 @@
 </main>
 
 <script>
+// Detecta mobile pra ajustar scale default (mobile tem menos memória, scale alto = OOM)
+const IS_MOBILE = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) || window.innerWidth < 700;
+const IS_IOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+// Em mobile: NÃO marca alta resolução por padrão (evita out-of-memory).
+// User pode ligar manualmente se aceitar mais memória/tempo.
+// Atualiza hint dinamicamente pra deixar isso explícito.
+(function tuneHighResDefault() {
+  const opt = document.getElementById('optHighRes');
+  const hint = document.getElementById('optHighResHint');
+  if (IS_MOBILE) {
+    opt.checked = false;
+    hint.textContent = '2x DPI · pode falhar em documentos longos no celular';
+  } else {
+    opt.checked = true;
+  }
+})();
+
 let file = null;
 let renderedDocxBuffer = null;
+
+function showWarning(html) {
+  const el = document.getElementById('docWarning');
+  el.innerHTML = html;
+  el.classList.add('show');
+}
+function hideWarning() {
+  document.getElementById('docWarning').classList.remove('show');
+}
+
+function fmtBytes(n) {
+  if (n < 1024) return n + ' B';
+  if (n < 1024 * 1024) return (n / 1024).toFixed(1) + ' KB';
+  return (n / 1024 / 1024).toFixed(2) + ' MB';
+}
 
 ToolFile.setupDropZone({
   accept: f => /\.docx$/i.test(f.name) || f.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
   onFile: async f => {
     file = f;
     renderedDocxBuffer = null;
+    hideWarning();
     const renderHost = document.getElementById('renderHost');
     const renderInfo = document.getElementById('renderInfo');
     const btn = document.getElementById('processBtn');
@@ -149,6 +227,11 @@ ToolFile.setupDropZone({
     renderHost.hidden = false;
     renderHost.innerHTML = '<div style="padding:30px;text-align:center;color:#888;font-family:Inter,sans-serif">Renderizando documento…</div>';
     renderInfo.hidden = true;
+
+    // Aviso preventivo se arquivo é grande (mobile sofre mais)
+    if (f.size > 8 * 1024 * 1024) {
+      showWarning(`<strong>⚠ Documento grande (${fmtBytes(f.size)}).</strong> ${IS_MOBILE ? 'No celular pode demorar ou falhar — se travar, tenta no computador ou abre o Word e usa "Salvar como PDF" direto.' : 'Pode levar alguns segundos pra processar.'}`);
+    }
 
     try {
       const buf = await f.arrayBuffer();
@@ -177,8 +260,16 @@ ToolFile.setupDropZone({
       renderInfo.hidden = false;
       renderInfo.innerHTML = `
         <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4M21 12c-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7"/><path d="M12 5C7.523 5 3.732 7.943 2.458 12"/></svg>
-        Renderização fiel · ${pages} página${pages > 1 ? 's' : ''} detectada${pages > 1 ? 's' : ''} no Word
+        Renderização fiel · ${pages} página${pages > 1 ? 's' : ''} · ${fmtBytes(f.size)}
       `;
+
+      // Avisa quando documento tem muitas páginas (mobile sofre mais)
+      if (pages > 30) {
+        showWarning(`<strong>⚠ ${pages} páginas detectadas.</strong> ${IS_MOBILE ? 'No celular pode demorar 1-2 minutos. Considere converter no computador.' : 'Pode levar ~30s pra processar.'}`);
+      } else if (pages > 15 && IS_MOBILE) {
+        showWarning(`<strong>⚠ ${pages} páginas detectadas.</strong> No celular pode demorar 30-60s. Pode deixar a aba aberta tranquilo.`);
+      }
+
       btn.disabled = false;
       btnText.textContent = 'Converter para PDF';
     } catch (err) {
@@ -225,42 +316,75 @@ document.getElementById('processBtn').addEventListener('click', async () => {
 
     ToolUI.setProgress(20);
     const pdf = await PDFLib.PDFDocument.create();
-    const scale = highRes ? 2 : 1.25;
+
+    // Scale adaptativo: mobile usa menos pra evitar OOM em iOS Safari.
+    // - Desktop alta-res: 2.0x
+    // - Desktop normal: 1.5x
+    // - Mobile alta-res: 1.5x (cap pra não estourar)
+    // - Mobile normal: 1.25x
+    let scale;
+    if (IS_MOBILE) scale = highRes ? 1.5 : 1.25;
+    else            scale = highRes ? 2.0 : 1.5;
+
     const A4_W_PT = 595.28;
     const A4_H_PT = 841.89;
 
     for (let i = 0; i < pages.length; i++) {
       const pageEl = pages[i];
-      ToolUI.setStatus(`Capturando página ${i + 1}/${pages.length}…`);
+      ToolUI.setStatus(`Convertendo página ${i + 1} de ${pages.length}…`);
       ToolUI.setProgress(20 + Math.round((i / pages.length) * 70));
 
-      // Garante que o elemento tá visível antes de capturar
+      // Garante que o elemento tá visível antes de capturar (sem animação)
       pageEl.scrollIntoView({ block: 'start', inline: 'start', behavior: 'instant' });
-      await new Promise(r => setTimeout(r, 50));
+      await new Promise(r => setTimeout(r, IS_MOBILE ? 100 : 50));
 
-      const canvas = await html2canvas(pageEl, {
-        scale,
-        useCORS: true,
-        allowTaint: false,
-        backgroundColor: '#ffffff',
-        logging: false,
-        imageTimeout: 0,
-        scrollX: 0,
-        scrollY: 0,
-        // Use a largura/altura natural do elemento, não da janela
-        width: pageEl.scrollWidth || pageEl.offsetWidth,
-        height: pageEl.scrollHeight || pageEl.offsetHeight,
-        windowWidth: pageEl.scrollWidth || pageEl.offsetWidth,
-        windowHeight: pageEl.scrollHeight || pageEl.offsetHeight,
-      });
+      // Captura com retry: se falhar com OOM ou timeout, tenta novamente com scale menor
+      let canvas;
+      try {
+        canvas = await html2canvas(pageEl, {
+          scale,
+          useCORS: true,
+          allowTaint: false,
+          backgroundColor: '#ffffff',
+          logging: false,
+          imageTimeout: 0,
+          scrollX: 0,
+          scrollY: 0,
+          width: pageEl.scrollWidth || pageEl.offsetWidth,
+          height: pageEl.scrollHeight || pageEl.offsetHeight,
+          windowWidth: pageEl.scrollWidth || pageEl.offsetWidth,
+          windowHeight: pageEl.scrollHeight || pageEl.offsetHeight,
+        });
+      } catch (err) {
+        // iOS Safari pode estourar memória — retry com scale menor
+        console.warn('html2canvas failed, retrying with lower scale', err);
+        const fallbackScale = Math.max(0.8, scale * 0.6);
+        canvas = await html2canvas(pageEl, {
+          scale: fallbackScale,
+          useCORS: true,
+          backgroundColor: '#ffffff',
+          logging: false,
+          imageTimeout: 0,
+          width: pageEl.scrollWidth || pageEl.offsetWidth,
+          height: pageEl.scrollHeight || pageEl.offsetHeight,
+          windowWidth: pageEl.scrollWidth || pageEl.offsetWidth,
+          windowHeight: pageEl.scrollHeight || pageEl.offsetHeight,
+        });
+        scale = fallbackScale; // próximas páginas já tentam com scale menor direto
+      }
 
-      const dataUrl = canvas.toDataURL('image/jpeg', highRes ? 0.95 : 0.88);
+      // JPEG quality varia por modo
+      const jpegQ = IS_MOBILE ? (highRes ? 0.90 : 0.82) : (highRes ? 0.95 : 0.88);
+      const dataUrl = canvas.toDataURL('image/jpeg', jpegQ);
       const jpgBytes = await fetch(dataUrl).then(r => r.arrayBuffer());
       const img = await pdf.embedJpg(jpgBytes);
 
-      // Converte px do canvas pra pt (px / scale = px reais; px * 0.75 = pt @ 96 DPI)
-      const pageWidthPt = (canvas.width / scale) * 0.75;
-      const pageHeightPt = (canvas.height / scale) * 0.75;
+      // Libera o canvas explicitamente (ajuda GC em mobile)
+      canvas.width = 1; canvas.height = 1; canvas = null;
+
+      // px reais (sem scale) → pt
+      const pageWidthPt = (img.width / scale) * 0.75;
+      const pageHeightPt = (img.height / scale) * 0.75;
 
       // Se ~A4, força A4 perfeito
       const ratioW = pageWidthPt / A4_W_PT;
@@ -275,7 +399,8 @@ document.getElementById('processBtn').addEventListener('click', async () => {
       const pdfPage = pdf.addPage([finalW, finalH]);
       pdfPage.drawImage(img, { x: 0, y: 0, width: finalW, height: finalH });
 
-      await new Promise(r => setTimeout(r, 0));
+      // Yield mais agressivo em mobile pra UI não congelar
+      await new Promise(r => setTimeout(r, IS_MOBILE ? 50 : 0));
     }
 
     ToolUI.setProgress(95);
@@ -295,8 +420,16 @@ document.getElementById('processBtn').addEventListener('click', async () => {
     if (window.trackUsage) trackUsage('word-para-pdf', { pages: pages.length, highRes });
   } catch (err) {
     console.error(err);
-    convertHost.innerHTML = '';
-    ToolUI.setStatus('Erro: ' + err.message, 'error');
+    let msg = err.message || String(err);
+    // Mensagens mais úteis pra erros comuns em mobile
+    if (/canvas|memory|oom|out of/i.test(msg)) {
+      msg = `Memória insuficiente. ${IS_MOBILE ? 'Tenta desligar "Alta resolução" ou converte no computador.' : 'Tente desligar "Alta resolução".'}`;
+    } else if (/timeout/i.test(msg)) {
+      msg = 'Tempo esgotado. Documento muito complexo pra converter no navegador.';
+    } else if (/page/i.test(msg) && /detect/i.test(msg)) {
+      msg = 'Não consegui detectar páginas. Reabra a ferramenta e selecione o arquivo de novo.';
+    }
+    ToolUI.setStatus('Erro: ' + msg, 'error');
     ToolUI.setProgress(0);
   } finally {
     btn.disabled = false;
