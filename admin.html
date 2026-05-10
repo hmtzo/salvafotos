@@ -243,16 +243,48 @@
     <section class="panel" id="emailPanel">
       <h2>📧 Email · Convite & Relatório diário <span class="meta" id="emailStatus">verificando config…</span></h2>
       <p style="font-size:13px;color:var(--text-dim);margin:0 0 14px;line-height:1.55">
-        <strong>Convite:</strong> manda email de boas-vindas com credenciais e tour da plataforma pra todos os 8 funcionários.
-        <strong>Diário:</strong> automático às 19h dia útil — quem usou recebe resumo de produtividade, quem não usou recebe sugestões.
+        <strong>Convite:</strong> email de boas-vindas com credenciais e tour da plataforma.
+        <strong>Diário:</strong> automático às 19h dia útil — quem usou recebe resumo, quem não usou recebe sugestões.
       </p>
-      <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px">
-        <button class="btn-pri" id="btnInviteAll" type="button">Enviar convite pra equipe</button>
+
+      <h3 style="font-size:11px;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:0.08em;margin:12px 0 8px">Enviar individual (pra testar)</h3>
+      <div id="inviteList" style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px"></div>
+
+      <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
+        <button class="btn-pri" id="btnInviteAll" type="button">Enviar convite pra TODA a equipe</button>
         <button class="btn-sec" id="btnInviteDry" type="button">Preview (dry-run)</button>
         <button class="btn-sec" id="btnDailyTest" type="button">Testar email diário pra mim</button>
       </div>
-      <div id="emailLog" style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11.5px;background:rgba(0,0,0,0.3);border:1px solid var(--border);border-radius:10px;padding:12px;min-height:60px;max-height:280px;overflow-y:auto;white-space:pre-wrap;color:var(--text-dim);display:none"></div>
+      <div id="emailLog" style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11.5px;background:rgba(0,0,0,0.3);border:1px solid var(--border);border-radius:10px;padding:12px;min-height:60px;max-height:280px;overflow-y:auto;white-space:pre-wrap;color:var(--text-dim);display:none;margin-top:12px"></div>
     </section>
+
+    <style>
+      .invite-row{
+        display:flex;align-items:center;justify-content:space-between;gap:10px;
+        padding:10px 14px;background:rgba(255,255,255,0.025);
+        border:1px solid var(--border);border-radius:10px;
+      }
+      .invite-row-email{
+        font-family:'JetBrains Mono',ui-monospace,monospace;font-size:13px;
+        color:var(--text);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+      }
+      .invite-row-status{
+        font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;
+        padding:3px 9px;border-radius:100px;flex-shrink:0;
+      }
+      .invite-row-status.idle{background:rgba(255,255,255,0.06);color:var(--text-muted)}
+      .invite-row-status.sending{background:rgba(99,102,241,0.18);color:#a5b4fc}
+      .invite-row-status.sent{background:rgba(16,185,129,0.18);color:#86efac}
+      .invite-row-status.error{background:rgba(239,68,68,0.18);color:#fca5a5}
+      .invite-row-btn{
+        background:var(--accent);color:#fff;border:none;border-radius:8px;
+        padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;
+        transition:background .15s, transform .1s;flex-shrink:0;
+      }
+      .invite-row-btn:hover{background:var(--accent-bright)}
+      .invite-row-btn:active{transform:scale(0.96)}
+      .invite-row-btn:disabled{opacity:0.5;cursor:not-allowed}
+    </style>
 
     <!-- Auditoria -->
     <section class="panel">
@@ -723,12 +755,76 @@ loadAll();
 // =============================================================================
 // EMAIL: convite + diário
 // =============================================================================
+const TEAM_EMAILS = [
+  'luciane@sindicompany.com.br',
+  'juliana@sindicompany.com.br',
+  'raquel@sindicompany.com.br',
+  'mkt@sindicompany.com.br',
+  'junior@sindicompany.com.br',
+  'felipe.fernandes@sindicompany.com.br',
+  'comercial@sindicompany.com.br',
+  'orcamentos@sindicompany.com.br',
+];
+
 (function setupEmailPanel() {
   const logEl = document.getElementById('emailLog');
   const statusEl = document.getElementById('emailStatus');
   const btnInvite = document.getElementById('btnInviteAll');
   const btnDry = document.getElementById('btnInviteDry');
   const btnDaily = document.getElementById('btnDailyTest');
+  const inviteList = document.getElementById('inviteList');
+
+  // Renderiza lista individual
+  inviteList.innerHTML = TEAM_EMAILS.map(email => `
+    <div class="invite-row" data-email="${email}">
+      <span class="invite-row-email">${email}</span>
+      <span class="invite-row-status idle" data-status>—</span>
+      <button class="invite-row-btn" type="button" data-action="send">Enviar</button>
+    </div>
+  `).join('');
+
+  inviteList.addEventListener('click', async e => {
+    const btn = e.target.closest('[data-action="send"]');
+    if (!btn) return;
+    const row = btn.closest('.invite-row');
+    const email = row.dataset.email;
+    const statusEl = row.querySelector('[data-status]');
+
+    btn.disabled = true;
+    statusEl.className = 'invite-row-status sending';
+    statusEl.textContent = 'Enviando…';
+
+    try {
+      const res = await fetch('/api/email-invite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ to: [email] }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        statusEl.className = 'invite-row-status error';
+        statusEl.textContent = 'Erro';
+        log(`✗ ${email} — ${data.error || res.status}`, true);
+        return;
+      }
+      const item = data.log[0];
+      if (item?.status === 'sent') {
+        statusEl.className = 'invite-row-status sent';
+        statusEl.textContent = 'Enviado ✓';
+        log(`✓ ${email} (${item.id ? item.id.slice(0, 8) : ''})`);
+      } else {
+        statusEl.className = 'invite-row-status error';
+        statusEl.textContent = 'Erro';
+        log(`✗ ${email} — ${item?.error || 'falha desconhecida'}`, true);
+      }
+    } catch (err) {
+      statusEl.className = 'invite-row-status error';
+      statusEl.textContent = 'Erro';
+      log(`✗ ${email} — ${err.message}`, true);
+    } finally {
+      btn.disabled = false;
+    }
+  });
 
   function log(text, isErr) {
     logEl.style.display = 'block';
