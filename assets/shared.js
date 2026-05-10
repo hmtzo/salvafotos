@@ -334,6 +334,7 @@ function askSindiAbout(filename, textContent, suggestedQuestion) {
 }
 
 function trackUsage(toolSlug, meta = {}) {
+  // Local (rápido pra dashboard pessoal)
   try {
     const KEY = 'sf_usage_v1';
     const now = Date.now();
@@ -349,6 +350,16 @@ function trackUsage(toolSlug, meta = {}) {
     if (data.history.length > 200) data.history = data.history.slice(0, 200);
     localStorage.setItem(KEY, JSON.stringify(data));
   } catch (e) { console.warn('tracking failed', e); }
+
+  // Server (pra email diário e analytics) — fire and forget, ignora erro
+  try {
+    fetch('/api/track-usage', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tool: toolSlug, meta }),
+      keepalive: true,
+    }).catch(() => {});
+  } catch {}
 }
 
 function getUsage() {

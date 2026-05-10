@@ -239,6 +239,21 @@
       <div class="users-grid" id="usersGrid"></div>
     </section>
 
+    <!-- Email convite + diário -->
+    <section class="panel" id="emailPanel">
+      <h2>📧 Email · Convite & Relatório diário <span class="meta" id="emailStatus">verificando config…</span></h2>
+      <p style="font-size:13px;color:var(--text-dim);margin:0 0 14px;line-height:1.55">
+        <strong>Convite:</strong> manda email de boas-vindas com credenciais e tour da plataforma pra todos os 8 funcionários.
+        <strong>Diário:</strong> automático às 19h dia útil — quem usou recebe resumo de produtividade, quem não usou recebe sugestões.
+      </p>
+      <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:12px">
+        <button class="btn-pri" id="btnInviteAll" type="button">Enviar convite pra equipe</button>
+        <button class="btn-sec" id="btnInviteDry" type="button">Preview (dry-run)</button>
+        <button class="btn-sec" id="btnDailyTest" type="button">Testar email diário pra mim</button>
+      </div>
+      <div id="emailLog" style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11.5px;background:rgba(0,0,0,0.3);border:1px solid var(--border);border-radius:10px;padding:12px;min-height:60px;max-height:280px;overflow-y:auto;white-space:pre-wrap;color:var(--text-dim);display:none"></div>
+    </section>
+
     <!-- Auditoria -->
     <section class="panel">
       <h2>Trilha de auditoria <span class="meta" id="auditCount">— últimas interações</span></h2>
@@ -704,6 +719,114 @@ function renderInsights(list) {
 }
 
 loadAll();
+
+// =============================================================================
+// EMAIL: convite + diário
+// =============================================================================
+(function setupEmailPanel() {
+  const logEl = document.getElementById('emailLog');
+  const statusEl = document.getElementById('emailStatus');
+  const btnInvite = document.getElementById('btnInviteAll');
+  const btnDry = document.getElementById('btnInviteDry');
+  const btnDaily = document.getElementById('btnDailyTest');
+
+  function log(text, isErr) {
+    logEl.style.display = 'block';
+    const time = new Date().toLocaleTimeString('pt-BR');
+    const line = `[${time}] ${text}`;
+    logEl.textContent += (logEl.textContent ? '\n' : '') + line;
+    logEl.scrollTop = logEl.scrollHeight;
+    if (isErr) logEl.style.borderColor = 'rgba(239,68,68,0.4)';
+  }
+  function setBusy(busy) {
+    [btnInvite, btnDry, btnDaily].forEach(b => b.disabled = busy);
+  }
+
+  async function callInvite(opts = {}) {
+    setBusy(true);
+    log(opts.dryRun ? 'Preview (dry-run): gerando emails sem enviar...' : 'Disparando convite pra toda a equipe...');
+    try {
+      const res = await fetch('/api/email-invite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(opts),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        log('⚠ ' + (data.error || res.status), true);
+        if (data.configured === false) {
+          statusEl.textContent = 'RESEND_API_KEY ou EMAIL_FROM faltando no Vercel';
+          statusEl.style.color = 'var(--warn)';
+        }
+        return;
+      }
+      log(`✓ ${data.sent} enviado(s), ${data.dryRun} dry-run, ${data.errors} erro(s) de ${data.total}`);
+      data.log.forEach(l => {
+        const status = l.status === 'sent' ? '✓' : l.status === 'dry-run' ? '⊙' : '✗';
+        log(`  ${status} ${l.email}${l.error ? ' — ' + l.error : ''}${l.id ? ' (' + l.id.slice(0, 8) + ')' : ''}`);
+      });
+    } catch (e) {
+      log('✗ Falha de conexão: ' + e.message, true);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  btnInvite.addEventListener('click', () => {
+    if (!confirm('Mandar email de convite pra TODOS os 8 funcionários?')) return;
+    callInvite();
+  });
+  btnDry.addEventListener('click', () => callInvite({ dryRun: true }));
+
+  btnDaily.addEventListener('click', async () => {
+    const myEmail = (document.cookie.match(/sf_auth=([^;]+)/) || [])[1];
+    let me = '';
+    try { me = atob(myEmail).split(':')[0]; } catch {}
+    if (!me) { log('Não consegui detectar seu email logado.', true); return; }
+    setBusy(true);
+    log(`Disparando email diário de teste pra ${me}...`);
+    try {
+      // Esse endpoint é protegido por CRON_SECRET, não cookie — então admin
+      // chama via /api/email-invite-style? Não — vamos chamar direto via cron secret
+      // mas isso exige bearer. Como admin não tem secret, criamos rota separada
+      // OU usamos /api/email-daily com testEmail e o user precisa ter o secret.
+      // Solução: o painel admin usa um endpoint helper que chama internamente.
+      // Por simplicidade: usuário cola o CRON_SECRET no prompt.
+      const secret = prompt('Cola o CRON_SECRET (definido no Vercel) pra disparar:');
+      if (!secret) { setBusy(false); log('Cancelado.'); return; }
+      const res = await fetch(`/api/email-daily?testEmail=${encodeURIComponent(me)}&force=1`, {
+        method: 'POST',
+        headers: { Authorization: 'Bearer ' + secret },
+      });
+      const data = await res.json();
+      if (!res.ok) { log('⚠ ' + (data.error || res.status), true); return; }
+      log(`✓ ${data.sent} enviado(s), ${data.errors} erro(s)`);
+      data.log.forEach(l => {
+        const status = l.status === 'sent' ? '✓' : '✗';
+        log(`  ${status} ${l.email}${l.error ? ' — ' + l.error : ''}${typeof l.used === 'boolean' ? ' (' + (l.used ? 'usou' : 'idle') + ', ' + l.count + ' ações)' : ''}`);
+      });
+    } catch (e) {
+      log('✗ Falha: ' + e.message, true);
+    } finally {
+      setBusy(false);
+    }
+  });
+
+  // Status: tenta detectar se email tá configurado fazendo um dry-run silencioso
+  fetch('/api/email-invite', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ dryRun: true, to: ['nobody@example.com'] }),
+  }).then(r => r.json()).then(d => {
+    if (d.configured === false) {
+      statusEl.textContent = 'configurar RESEND_API_KEY + EMAIL_FROM';
+      statusEl.style.color = 'var(--warn)';
+    } else if (d.ok) {
+      statusEl.textContent = 'configurado ✓';
+      statusEl.style.color = 'var(--success, #10b981)';
+    }
+  }).catch(() => {});
+})();
 </script>
 </body>
 </html>
