@@ -197,36 +197,31 @@ document.getElementById('processBtn').addEventListener('click', async () => {
   btnText.textContent = 'Convertendo…';
   document.getElementById('stats').classList.remove('show');
   ToolUI.setProgress(8);
-  ToolUI.setStatus('Re-renderizando em alta resolução…');
-
-  const convertHost = document.getElementById('convertHost');
-  convertHost.innerHTML = '';
+  ToolUI.setStatus('Preparando captura…');
 
   try {
     const highRes = document.getElementById('optHighRes').checked;
-    const respectBreaks = document.getElementById('optBreakPages').checked;
+    const renderHost = document.getElementById('renderHost');
 
-    // Re-renderiza num container offscreen (fora da viewport) com escala alta
-    await docx.renderAsync(renderedDocxBuffer, convertHost, null, {
-      className: 'docx',
-      inWrapper: true,
-      breakPages: respectBreaks,
-      ignoreLastRenderedPageBreak: true,
-      renderHeaders: true,
-      renderFooters: true,
-      renderFootnotes: true,
-      renderEndnotes: true,
-      useBase64URL: true,
-    });
-
-    // Espera fonts/imgs assentarem
-    await new Promise(r => setTimeout(r, 300));
+    // Espera fonts/imgs assentarem antes de capturar
     if (document.fonts && document.fonts.ready) {
       try { await document.fonts.ready; } catch {}
     }
+    await new Promise(r => setTimeout(r, 200));
 
-    const pages = Array.from(convertHost.querySelectorAll('section.docx-page'));
-    if (!pages.length) throw new Error('Não consegui detectar páginas no documento renderizado.');
+    // Captura DIRETO do preview (já renderizado e visível). Mais robusto
+    // que re-renderizar offscreen — evita o bug "section.docx-page não detectada".
+    // Tenta achar páginas; se não achar, captura o container inteiro como 1 página.
+    let pages = Array.from(renderHost.querySelectorAll('section.docx-page'));
+    if (!pages.length) {
+      // Fallback: tenta seletores alternativos do docx-preview
+      pages = Array.from(renderHost.querySelectorAll('.docx-page, [class*="docx-page"]'));
+    }
+    if (!pages.length) {
+      // Último fallback: usa o wrapper inteiro como página única
+      const wrapper = renderHost.querySelector('.docx, .docx-wrapper, article') || renderHost;
+      pages = [wrapper];
+    }
 
     ToolUI.setProgress(20);
     const pdf = await PDFLib.PDFDocument.create();
@@ -239,26 +234,35 @@ document.getElementById('processBtn').addEventListener('click', async () => {
       ToolUI.setStatus(`Capturando página ${i + 1}/${pages.length}…`);
       ToolUI.setProgress(20 + Math.round((i / pages.length) * 70));
 
-      // Captura a página usando html2canvas com alta fidelidade
+      // Garante que o elemento tá visível antes de capturar
+      pageEl.scrollIntoView({ block: 'start', inline: 'start', behavior: 'instant' });
+      await new Promise(r => setTimeout(r, 50));
+
       const canvas = await html2canvas(pageEl, {
         scale,
         useCORS: true,
+        allowTaint: false,
         backgroundColor: '#ffffff',
         logging: false,
         imageTimeout: 0,
+        scrollX: 0,
+        scrollY: 0,
+        // Use a largura/altura natural do elemento, não da janela
+        width: pageEl.scrollWidth || pageEl.offsetWidth,
+        height: pageEl.scrollHeight || pageEl.offsetHeight,
+        windowWidth: pageEl.scrollWidth || pageEl.offsetWidth,
+        windowHeight: pageEl.scrollHeight || pageEl.offsetHeight,
       });
 
-      // Converte pra JPEG de alta qualidade (PDF é menor que PNG e fonte é nítida)
       const dataUrl = canvas.toDataURL('image/jpeg', highRes ? 0.95 : 0.88);
       const jpgBytes = await fetch(dataUrl).then(r => r.arrayBuffer());
       const img = await pdf.embedJpg(jpgBytes);
 
-      // Preserva o tamanho real da página renderizada (mesmo aspect ratio do .docx)
-      // Converte px do canvas pra pt (1pt = 1.333 px @ 96 DPI; html2canvas escala canvas em "scale")
+      // Converte px do canvas pra pt (px / scale = px reais; px * 0.75 = pt @ 96 DPI)
       const pageWidthPt = (canvas.width / scale) * 0.75;
       const pageHeightPt = (canvas.height / scale) * 0.75;
 
-      // Se as dimensões batem com A4 (±5%), força A4 perfeito
+      // Se ~A4, força A4 perfeito
       const ratioW = pageWidthPt / A4_W_PT;
       const ratioH = pageHeightPt / A4_H_PT;
       let finalW, finalH;
@@ -271,11 +275,9 @@ document.getElementById('processBtn').addEventListener('click', async () => {
       const pdfPage = pdf.addPage([finalW, finalH]);
       pdfPage.drawImage(img, { x: 0, y: 0, width: finalW, height: finalH });
 
-      // Permite UI repintar entre páginas pesadas
       await new Promise(r => setTimeout(r, 0));
     }
 
-    convertHost.innerHTML = '';
     ToolUI.setProgress(95);
     ToolUI.setStatus('Salvando PDF…');
 
