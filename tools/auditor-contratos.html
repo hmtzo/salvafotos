@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0a0a0c">
+<title>Auditor de Contratos · IA — Sindicompany</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="icon" type="image/png" href="/assets/brand/icon-color.png">
+<link rel="stylesheet" href="/assets/shared.css">
+<script src="/assets/shared.js"></script>
+<script src="/assets/tool-helpers.js"></script>
+<style>
+  .audit-risk{
+    display:inline-flex;align-items:center;gap:6px;
+    padding:3px 10px;border-radius:100px;
+    font-size:11px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;
+  }
+  .audit-risk.alto{background:rgba(239,68,68,0.18);color:#fca5a5;border:1px solid rgba(239,68,68,0.35)}
+  .audit-risk.medio{background:rgba(245,158,11,0.18);color:#fbbf24;border:1px solid rgba(245,158,11,0.35)}
+  .audit-risk.baixo{background:rgba(99,102,241,0.18);color:#a5b4fc;border:1px solid rgba(99,102,241,0.35)}
+
+  .audit-section{
+    margin-bottom:18px;padding:16px 18px;border-radius:12px;
+    background:rgba(255,255,255,0.03);border:1px solid var(--border);
+  }
+  .audit-section h3{
+    font-size:13px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;
+    color:#a5b4fc;margin:0 0 12px;display:flex;align-items:center;gap:8px;
+  }
+  .audit-section h3 svg{width:16px;height:16px}
+  .audit-section.danger h3{color:#fca5a5}
+  .audit-section.warn h3{color:#fbbf24}
+  .audit-section.danger{background:rgba(239,68,68,0.06);border-color:rgba(239,68,68,0.25)}
+  .audit-section.warn{background:rgba(245,158,11,0.06);border-color:rgba(245,158,11,0.25)}
+
+  .audit-item{
+    padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.06);
+  }
+  .audit-item:last-child{border-bottom:none;padding-bottom:0}
+  .audit-item:first-child{padding-top:0}
+  .audit-item-head{
+    display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:4px;
+  }
+  .audit-item-title{font-size:14px;font-weight:600;color:var(--text);flex:1}
+  .audit-item-desc{font-size:13px;color:var(--text-dim);line-height:1.55}
+  .audit-item-quote{
+    margin-top:6px;padding:8px 10px;background:rgba(0,0,0,0.25);
+    border-left:2px solid var(--border-bright);border-radius:6px;
+    font-size:12px;color:var(--text-dim);font-style:italic;font-family:'Inter',serif;
+  }
+</style>
+</head>
+<body>
+<div id="app-nav"></div>
+
+<main class="tool-container">
+  <header class="tool-hero">
+    <span class="tool-eyebrow"><span class="dot"></span> IA · Jurídico</span>
+    <h1>Auditor de Contratos</h1>
+    <p>Sobe um contrato em PDF e a Sindi analisa: cláusulas suspeitas, multas escondidas, prazos críticos e risco geral. Útil pra revisar antes de assinar (locação, prestação de serviço, fornecedor, obra).</p>
+  </header>
+
+  <label for="fileInput" id="dropZone" class="tool-drop-card">
+    <div class="tool-drop-icon">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+    </div>
+    <div class="tool-drop-title" id="dropTitle">Solte o contrato PDF aqui</div>
+    <div class="tool-drop-sub">ou clique para selecionar &nbsp;·&nbsp; até <kbd>18 MB</kbd> &nbsp;·&nbsp; análise via Sindi</div>
+  </label>
+  <input type="file" id="fileInput" accept="application/pdf" hidden>
+
+  <section class="tool-config">
+    <div class="tool-config-head"><h2>Perspectiva da análise</h2></div>
+    <div class="tool-options">
+      <label class="tool-toggle">
+        <input type="radio" name="perspective" value="contratante" checked>
+        <span class="tool-toggle-switch"></span>
+        <span class="tool-toggle-label"><strong>Sindicompany contratando</strong><span>somos quem paga · ex: pintor, segurança</span></span>
+      </label>
+      <label class="tool-toggle">
+        <input type="radio" name="perspective" value="contratada">
+        <span class="tool-toggle-switch"></span>
+        <span class="tool-toggle-label"><strong>Sindicompany prestando</strong><span>somos quem recebe · ex: administração</span></span>
+      </label>
+      <label class="tool-toggle">
+        <input type="radio" name="perspective" value="condomino">
+        <span class="tool-toggle-switch"></span>
+        <span class="tool-toggle-label"><strong>Em nome do morador</strong><span>ex: locação, compra</span></span>
+      </label>
+      <label class="tool-toggle">
+        <input type="radio" name="perspective" value="neutral">
+        <span class="tool-toggle-switch"></span>
+        <span class="tool-toggle-label"><strong>Neutra</strong><span>análise jurídica geral</span></span>
+      </label>
+    </div>
+
+    <button class="tool-process" id="processBtn" disabled>
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+      <span id="btnText">Auditar</span>
+    </button>
+
+    <div class="tool-status" id="status">
+      <div class="tool-status-text" id="statusText">Aguardando…</div>
+      <div class="tool-progress"><div class="tool-progress-bar" id="progressBar"></div></div>
+    </div>
+
+    <div class="tool-result" id="result">
+      <div class="tool-result-head">
+        <div class="tool-result-title">Auditoria</div>
+        <div class="tool-result-actions">
+          <button class="tool-result-action" id="copyBtn" type="button">Copiar tudo</button>
+          <button class="tool-result-action" id="downloadBtn" type="button">.md</button>
+        </div>
+      </div>
+      <div class="tool-result-body" id="resultBody"></div>
+    </div>
+  </section>
+
+  <div class="tool-privacy">
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+    Sindi não é advogado — uso a análise como triagem, decisão final é de quem tem responsabilidade jurídica.
+  </div>
+</main>
+
+<script>
+let selectedFile = null;
+ToolFile.setupDropZone({
+  accept: f => /pdf$/i.test(f.type) || /\.pdf$/i.test(f.name),
+  onFile: f => { selectedFile = f; ToolUI.setStatus('Pronto pra auditar', ''); },
+});
+
+const PERSPECTIVES = {
+  contratante: 'A Sindicompany / condomínio CONTRATANTE deste serviço (quem paga). Foque em RISCOS PRO LADO QUE PAGA: multas pesadas, cláusulas leoninas, foro inadequado, renovação automática prejudicial, ausência de garantia, prazos curtos pra rescisão, indenizações descabidas. Sugira pontos de negociação a favor do contratante.',
+  contratada: 'A Sindicompany como CONTRATADA (quem presta o serviço, ex: contrato de administração condominial). Foque em PROTEÇÕES PRA QUEM PRESTA: limitação de responsabilidade, condições pra rescisão sem multa, atrasos no recebimento, multa por cancelamento antecipado, exclusividade. Sugira ajustes a favor da contratada.',
+  condomino: 'Um CONDÔMINO/MORADOR que vai assinar (locação, compra de imóvel, parcelamento). Foque em RISCOS PESSOAIS: garantias exigidas, multas, foro, condições de rescisão, atualização monetária, custos ocultos. Sugira pontos pra renegociar antes de assinar.',
+  neutral: 'Análise NEUTRA, técnica, sem favorecer nenhum lado. Aponte cláusulas problemáticas pra qualquer parte, ambiguidades, omissões legais, prazos críticos, multas, foro.',
+};
+
+function buildPrompt(perspective) {
+  return `Você é uma advogada brasileira experiente analisando um contrato pra ${PERSPECTIVES[perspective]}
+
+Analise o documento PDF anexado e devolva uma resposta estruturada EXATAMENTE neste formato markdown (use os emojis exatos pra UI renderizar bem):
+
+## 📋 Resumo executivo
+Em 3-5 linhas: tipo do contrato, partes envolvidas, objeto, valor, prazo total. Direto ao ponto.
+
+## ⚠️ RISCO GERAL: [ALTO/MÉDIO/BAIXO]
+Uma linha justificando o nível de risco geral pra parte que estamos representando.
+
+## 🚨 Cláusulas problemáticas
+Liste em ordem de gravidade. Pra cada cláusula:
+- **[Cláusula X — RISCO ALTO/MÉDIO/BAIXO]**: descrição do que tá errado e por quê.
+  > "trecho exato citado entre aspas"
+
+## 💰 Multas, penalidades e custos
+Liste TODAS as multas, custos extras, juros, correção que aparecem no contrato. Indique valor exato ou fórmula.
+
+## 📅 Prazos críticos
+Datas, prazos de aviso prévio, renovação automática, períodos de fidelidade — TUDO que tem deadline. Em ordem cronológica.
+
+## ✅ Pontos positivos
+Cláusulas que protegem nosso lado, dão garantias, são razoáveis.
+
+## 🎯 Recomendações de ajuste
+Antes de assinar, sugira pontos pra renegociar OU aprovar caso esteja bom. 3-7 itens, ordem de prioridade.
+
+## 📝 Conclusão
+Recomendação final: pode assinar / assinar com ressalvas / não assinar / renegociar. 1-2 linhas.
+
+REGRAS:
+- Use APENAS conteúdo do PDF — não invente nada que não esteja lá
+- Cite trechos literais entre aspas quando relevante
+- Se uma cláusula é ambígua ou omissa, sinalize
+- Seja direto e útil, não academicamente longo`;
+}
+
+document.getElementById('processBtn').addEventListener('click', async () => {
+  if (!selectedFile) return;
+  const btn = document.getElementById('processBtn');
+  const btnText = document.getElementById('btnText');
+  btn.disabled = true; btnText.textContent = 'Auditando…';
+  ToolUI.hideResult();
+  ToolUI.setProgress(15);
+  ToolUI.setStatus('Lendo contrato…');
+
+  try {
+    const perspective = document.querySelector('input[name=perspective]:checked').value;
+    const prompt = buildPrompt(perspective);
+    ToolUI.setProgress(40);
+    ToolUI.setStatus('Sindi analisando cláusula a cláusula…');
+    const data = await ToolAI.callGeminiWithFile(selectedFile, prompt, { mode: 'think' });
+    ToolUI.setProgress(100);
+    if (data.empty || !data.text) {
+      ToolUI.setStatus('Sem resposta. Tente novamente.', 'error');
+      return;
+    }
+    renderAudit(data.text);
+    ToolUI.setStatus('Auditoria concluída.', 'success');
+    if (window.trackUsage) trackUsage('auditor-contratos', { perspective });
+  } catch (e) {
+    ToolUI.setStatus('Erro: ' + e.message, 'error');
+    ToolUI.setProgress(0);
+  } finally {
+    btn.disabled = false;
+    btnText.textContent = 'Auditar';
+  }
+});
+
+function renderAudit(text) {
+  // Parser de markdown simples para enriquecer com cards/cor por seção
+  const sections = text.split(/^##\s+/m).slice(1);
+  const sectionRender = sections.map(s => {
+    const lines = s.split('\n');
+    const titleRaw = lines[0].trim();
+    const body = lines.slice(1).join('\n').trim();
+
+    // Identifica tipo de seção pela emoji/título
+    let cssClass = '';
+    if (/🚨|problemátic|cláusula/i.test(titleRaw)) cssClass = 'danger';
+    else if (/⚠️|RISCO GERAL|multas|penalid/i.test(titleRaw)) cssClass = 'warn';
+
+    // Risk badge inline no h3 quando aplicável
+    let titleHtml = escapeHtml(titleRaw);
+    const riskMatch = titleRaw.match(/RISCO\s+(ALTO|MÉDIO|MEDIO|BAIXO)/i);
+    if (riskMatch) {
+      const lvl = riskMatch[1].toLowerCase().replace('medio', 'medio').replace('médio', 'medio');
+      const norm = lvl === 'medio' ? 'medio' : lvl === 'alto' ? 'alto' : 'baixo';
+      titleHtml = titleHtml.replace(/RISCO\s+(ALTO|MÉDIO|MEDIO|BAIXO)/i, `<span class="audit-risk ${norm}">RISCO ${lvl.toUpperCase()}</span>`);
+    }
+
+    return `
+      <div class="audit-section ${cssClass}">
+        <h3>${titleHtml}</h3>
+        <div>${renderMarkdownBody(body)}</div>
+      </div>`;
+  }).join('');
+
+  document.getElementById('resultBody').innerHTML = sectionRender;
+  document.getElementById('result').classList.add('show');
+}
+
+function renderMarkdownBody(text) {
+  return text
+    .split(/\n\n+/)
+    .map(block => {
+      // Bloco de quote
+      if (/^>/.test(block)) {
+        const q = block.replace(/^>\s*/gm, '').trim();
+        return `<div class="audit-item-quote">${formatInline(q)}</div>`;
+      }
+      // Lista bullet
+      if (/^[-*]\s+/m.test(block)) {
+        const items = block.split('\n').filter(l => /^[-*]\s+/.test(l));
+        return `<ul style="margin:0 0 0 18px;padding:0">${items.map(it => `<li style="margin-bottom:6px;line-height:1.6">${formatInline(it.replace(/^[-*]\s+/, ''))}</li>`).join('')}</ul>`;
+      }
+      // Lista numerada
+      if (/^\d+\.\s+/m.test(block)) {
+        const items = block.split('\n').filter(l => /^\d+\.\s+/.test(l));
+        return `<ol style="margin:0 0 0 18px;padding:0">${items.map(it => `<li style="margin-bottom:6px;line-height:1.6">${formatInline(it.replace(/^\d+\.\s+/, ''))}</li>`).join('')}</ol>`;
+      }
+      return `<p style="margin:0 0 8px;line-height:1.6;color:var(--text-dim);font-size:13.5px">${formatInline(block)}</p>`;
+    }).join('');
+}
+
+function formatInline(t) {
+  return escapeHtml(t)
+    .replace(/\*\*(.+?)\*\*/g, '<strong style="color:var(--text)">$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    .replace(/`([^`]+)`/g, '<code style="background:rgba(0,0,0,0.4);padding:1px 5px;border-radius:4px;font-size:0.9em;color:#fbbf24">$1</code>');
+}
+function escapeHtml(s) {
+  return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
+}
+
+document.getElementById('copyBtn').addEventListener('click', () => {
+  navigator.clipboard.writeText(document.getElementById('resultBody').innerText);
+  document.getElementById('copyBtn').textContent = '✓ Copiado';
+  setTimeout(() => location.reload(), 1500);
+});
+document.getElementById('downloadBtn').addEventListener('click', () => {
+  const text = document.getElementById('resultBody').innerText;
+  const name = (selectedFile?.name || 'contrato').replace(/\.pdf$/i, '') + '_auditoria.md';
+  ToolFile.download(new Blob([text], { type: 'text/markdown;charset=utf-8' }), name);
+});
+</script>
+</body>
+</html>

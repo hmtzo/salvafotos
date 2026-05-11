@@ -667,6 +667,10 @@ const CMDK_INDEX = [
   { kind: 'tool', id: 'corretor-texto',  name: 'Corretor de Texto',    desc: 'Correção ortográfica/gramatical PT-BR',                       url: '/tools/corretor-texto.html',     kw: 'corretor ortografia gramatica revisao texto portugues' },
   { kind: 'tool', id: 'resumir-pdf',     name: 'Resumir PDF com IA',   desc: 'Resumo executivo, detalhado, ação ou risco',                  url: '/tools/resumir-pdf.html',        kw: 'resumir resumo sumario sintese pdf ia gemini executivo' },
   { kind: 'tool', id: 'traduzir-pdf',    name: 'Traduzir PDF com IA',  desc: 'Tradução natural multi-idioma preservando layout',            url: '/tools/traduzir-pdf.html',       kw: 'traduzir traducao translate pdf ingles espanhol frances ia gemini' },
+  { kind: 'tool', id: 'auditor-contratos', name: 'Auditor de Contratos', desc: 'Sindi audita: cláusulas problemáticas, multas, prazos',  url: '/tools/auditor-contratos.html',  kw: 'auditor auditoria contrato analise revisao risco juridico clausula ia' },
+  { kind: 'tool', id: 'sindi-reunioes',  name: 'Sindi Reuniões',       desc: 'Áudio → ata + resumo + action items',                          url: '/tools/sindi-reunioes.html',     kw: 'reuniao assembleia audio ata action items transcricao gravacao ia' },
+  { kind: 'tool', id: 'mensagens-prontas', name: 'Mensagens Prontas',  desc: 'Banco de templates: cobrança, comunicado, atendimento',       url: '/tools/mensagens-prontas.html',  kw: 'mensagem template cobranca comunicado atendimento copy paste' },
+  { kind: 'tool', id: 'quick-capture',   name: 'Quick Capture',        desc: 'Foto + categoria + texto rápido em campo',                    url: '/tools/quick-capture.html',      kw: 'captura foto camera chamado manutencao vistoria mobile' },
 
   // --- Geradores ---
   { kind: 'tool', id: 'gerador-notificacao', name: 'Notificação',  desc: 'Gera notificação extrajudicial pronta',     url: '/tools/gerador-notificacao.html', kw: 'notificacao multa advertencia inadimplencia condomino' },
@@ -719,7 +723,10 @@ const CMDK_INDEX = [
   { kind: 'tool', id: 'ocultar-pdf',     name: 'Ocultar PDF',          desc: 'Tarja manual irreversível (em desenvolvimento)', url: '/tools/ocultar-pdf.html', kw: 'ocultar tarjar redact apagar areas pdf em breve' },
 
   // --- Automação ---
-  { kind: 'tool', id: 'workflows',       name: 'Fluxos de trabalho',   desc: 'Encadeie ferramentas em sequências (em desenvolvimento)', url: '/tools/workflows.html', kw: 'workflow fluxo automacao sequencia em breve' },
+  { kind: 'tool', id: 'lembretes-inteligentes', name: 'Lembretes Inteligentes', desc: 'Regras automáticas de aviso (em desenvolvimento)', url: '/tools/lembretes-inteligentes.html', kw: 'lembrete aviso automacao regra avcb seguro inadimplencia em breve' },
+  { kind: 'tool', id: 'saude-condominio', name: 'Saúde do Condomínio',  desc: 'Dashboard de inadimplência, chamados, prazos (em desenvolvimento)', url: '/tools/saude-condominio.html', kw: 'saude condominio dashboard inadimplencia chamados prazo nps em breve' },
+  { kind: 'tool', id: 'workflow-builder', name: 'Workflow Builder',    desc: 'Encadeie ferramentas em sequências (em desenvolvimento)', url: '/tools/workflow-builder.html', kw: 'workflow fluxo automacao sequencia builder em breve' },
+  { kind: 'tool', id: 'inbox-unificada', name: 'Inbox Unificada',      desc: 'Email + WhatsApp + Site num só lugar (em desenvolvimento)', url: '/tools/inbox-unificada.html', kw: 'inbox caixa entrada email whatsapp site atendimento unificada em breve' },
 ];
 
 const CMDK_RECENTS_KEY = 'sf_cmdk_recents';

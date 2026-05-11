@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#0a0a0c">
+<title>Quick Capture — Sindicompany</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="icon" type="image/png" href="/assets/brand/icon-color.png">
+<link rel="stylesheet" href="/assets/shared.css">
+<script src="/assets/shared.js"></script>
+<script src="/assets/tool-helpers.js"></script>
+<style>
+  /* ============ QUICK CAPTURE — mobile-first ============ */
+  .qc-stage{
+    max-width:520px;margin:0 auto;padding:20px 16px 80px;
+    display:flex;flex-direction:column;gap:14px;
+  }
+  .qc-hero{margin-bottom:6px}
+  .qc-hero h1{
+    font-size:clamp(26px,5vw,34px);font-weight:800;letter-spacing:-0.025em;line-height:1.05;
+    background:linear-gradient(180deg, #fff 0%, rgba(255,255,255,0.7) 100%);
+    -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+    margin:0 0 4px;
+  }
+  .qc-hero p{color:var(--text-dim);font-size:14px;line-height:1.5;margin:0}
+
+  /* === Painel de captura: foto + textos === */
+  .qc-photo{
+    position:relative;width:100%;aspect-ratio:1/1;
+    background:#000;border-radius:18px;overflow:hidden;
+    border:1px solid var(--border);
+    display:flex;align-items:center;justify-content:center;
+  }
+  .qc-photo video{width:100%;height:100%;object-fit:cover}
+  .qc-photo img{width:100%;height:100%;object-fit:cover}
+  .qc-photo-placeholder{
+    text-align:center;color:var(--text-muted);font-size:13px;padding:30px;
+    display:flex;flex-direction:column;align-items:center;gap:14px;
+  }
+  .qc-photo-placeholder svg{width:48px;height:48px;color:#a5b4fc;opacity:0.6}
+  .qc-photo-controls{
+    position:absolute;bottom:14px;left:14px;right:14px;
+    display:flex;align-items:center;justify-content:space-between;gap:10px;
+  }
+  .qc-photo-btn{
+    background:rgba(0,0,0,0.55);border:1px solid rgba(255,255,255,0.18);
+    color:#fff;padding:8px 12px;border-radius:100px;
+    font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;
+    display:inline-flex;align-items:center;gap:6px;
+    backdrop-filter:blur(8px);
+  }
+  .qc-photo-btn svg{width:14px;height:14px}
+  .qc-photo-btn:disabled{opacity:0.4;cursor:not-allowed}
+  .qc-shoot-btn{
+    width:62px;height:62px;border-radius:50%;border:4px solid #fff;
+    background:#fff;cursor:pointer;flex-shrink:0;
+    transition:transform .1s;
+  }
+  .qc-shoot-btn:active{transform:scale(0.92)}
+  .qc-shoot-btn::after{
+    content:'';width:100%;height:100%;border-radius:50%;
+    background:radial-gradient(circle, #fff 50%, #e5e7eb 100%);
+    display:block;
+  }
+
+  /* === Categorias === */
+  .qc-cats{
+    display:grid;grid-template-columns:repeat(3, 1fr);gap:8px;
+  }
+  .qc-cat{
+    background:rgba(255,255,255,0.04);border:1px solid var(--border);
+    padding:12px 8px;border-radius:12px;cursor:pointer;
+    display:flex;flex-direction:column;align-items:center;gap:6px;
+    transition:all .15s;font-family:inherit;
+  }
+  .qc-cat:hover{background:rgba(255,255,255,0.08)}
+  .qc-cat.active{
+    background:linear-gradient(135deg, rgba(99,102,241,0.20), rgba(99,102,241,0.10));
+    border-color:rgba(99,102,241,0.40);
+  }
+  .qc-cat-emoji{font-size:24px;line-height:1}
+  .qc-cat-label{font-size:11px;font-weight:600;color:var(--text);text-align:center;line-height:1.2}
+  .qc-cat.active .qc-cat-label{color:#a5b4fc}
+
+  /* === Descrição (texto + mic) === */
+  .qc-desc-wrap{position:relative}
+  .qc-desc{
+    width:100%;background:rgba(255,255,255,0.04);border:1px solid var(--border);
+    border-radius:14px;padding:12px 48px 12px 14px;color:var(--text);
+    font-family:inherit;font-size:14.5px;line-height:1.5;outline:none;
+    resize:none;min-height:84px;
+    transition:border-color .15s;
+  }
+  .qc-desc:focus{border-color:var(--accent-bright)}
+  .qc-desc::placeholder{color:var(--text-muted)}
+  .qc-mic{
+    position:absolute;right:8px;top:8px;
+    width:34px;height:34px;border-radius:10px;border:none;
+    background:rgba(99,102,241,0.12);color:#a5b4fc;cursor:pointer;
+    display:inline-flex;align-items:center;justify-content:center;
+    transition:background .15s;
+  }
+  .qc-mic:hover{background:rgba(99,102,241,0.20)}
+  .qc-mic.recording{background:rgba(239,68,68,0.20);color:#fca5a5;animation:qc-rec 1.2s ease-in-out infinite}
+  @keyframes qc-rec{0%,100%{opacity:1}50%{opacity:0.5}}
+  .qc-mic svg{width:16px;height:16px}
+
+  /* === Send button === */
+  .qc-send{
+    width:100%;padding:16px;border-radius:14px;border:none;cursor:pointer;
+    background:linear-gradient(135deg, #6366f1 0%, #818cf8 100%);
+    color:#fff;font-family:inherit;font-size:15px;font-weight:700;letter-spacing:-0.01em;
+    box-shadow:0 6px 20px rgba(99,102,241,0.30), 0 1px 0 rgba(255,255,255,0.1) inset;
+    transition:transform .15s, opacity .15s;
+    display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  }
+  .qc-send:hover:not(:disabled){transform:translateY(-1px)}
+  .qc-send:active:not(:disabled){transform:translateY(0)}
+  .qc-send:disabled{opacity:0.5;cursor:not-allowed}
+  .qc-send svg{width:18px;height:18px}
+
+  /* === Capturas recentes === */
+  .qc-recent{margin-top:20px}
+  .qc-recent-head{
+    font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;
+    color:var(--text-dim);margin-bottom:10px;
+  }
+  .qc-item{
+    display:flex;gap:10px;padding:10px;background:var(--card);
+    border:1px solid var(--border);border-radius:12px;margin-bottom:8px;
+  }
+  .qc-item-thumb{
+    width:54px;height:54px;border-radius:8px;flex-shrink:0;
+    background:rgba(255,255,255,0.05);overflow:hidden;
+    display:flex;align-items:center;justify-content:center;
+    font-size:22px;
+  }
+  .qc-item-thumb img{width:100%;height:100%;object-fit:cover}
+  .qc-item-body{flex:1;min-width:0}
+  .qc-item-head{display:flex;align-items:center;gap:6px;margin-bottom:2px}
+  .qc-item-cat{font-size:10px;font-weight:700;color:#a5b4fc;text-transform:uppercase;letter-spacing:0.05em}
+  .qc-item-time{font-size:10px;color:var(--text-muted);margin-left:auto;font-variant-numeric:tabular-nums}
+  .qc-item-text{font-size:13px;color:var(--text);line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+
+  .qc-toast{
+    position:fixed;left:50%;bottom:20px;transform:translate(-50%, 100px);
+    background:rgba(16,185,129,0.95);color:#fff;padding:12px 22px;border-radius:100px;
+    font-size:14px;font-weight:700;box-shadow:0 12px 28px rgba(16,185,129,0.30);
+    z-index:9999;transition:transform .25s cubic-bezier(0.16,1,0.3,1);
+  }
+  .qc-toast.show{transform:translate(-50%, 0)}
+</style>
+</head>
+<body>
+<div id="app-nav"></div>
+
+<main class="qc-stage">
+  <header class="qc-hero">
+    <h1>Quick Capture 📸</h1>
+    <p>Tira foto, escolhe categoria, fala/escreve o que tá rolando. Salva e a equipe responsável recebe.</p>
+  </header>
+
+  <div class="qc-photo" id="photoArea">
+    <div class="qc-photo-placeholder" id="photoEmpty">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+      <div>Aperta o botão de câmera abaixo<br>pra começar a capturar</div>
+    </div>
+    <video id="cameraVideo" autoplay playsinline muted hidden></video>
+    <img id="photoPreview" hidden>
+    <div class="qc-photo-controls" id="photoControls" hidden>
+      <button class="qc-photo-btn" id="flipBtn" type="button" aria-label="Trocar câmera">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 4v6h-6"/><path d="M3 20v-6h6"/><path d="M3 10a9 9 0 0114-3.5L21 10M21 14a9 9 0 01-14 3.5L3 14"/></svg>
+      </button>
+      <button class="qc-shoot-btn" id="shootBtn" type="button" aria-label="Capturar"></button>
+      <button class="qc-photo-btn" id="closeBtn" type="button" aria-label="Fechar">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="qc-photo-controls" id="reviewControls" hidden>
+      <button class="qc-photo-btn" id="retakeBtn" type="button">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+        Refazer
+      </button>
+      <button class="qc-photo-btn" id="openCamBtn2" type="button">📷 Câmera</button>
+      <label class="qc-photo-btn" for="fileFallback">📁 Galeria</label>
+    </div>
+  </div>
+  <input type="file" id="fileFallback" accept="image/*" capture="environment" hidden>
+
+  <button class="qc-photo-btn" id="openCamBtn" type="button" style="padding:14px;justify-content:center;background:var(--accent);border-color:var(--accent-bright);color:#fff;font-weight:700;font-size:14px">
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+    Abrir câmera
+  </button>
+
+  <div>
+    <div class="qc-recent-head">Categoria</div>
+    <div class="qc-cats" id="catsBar">
+      <button class="qc-cat" data-cat="manutencao"><span class="qc-cat-emoji">🔧</span><span class="qc-cat-label">Manutenção</span></button>
+      <button class="qc-cat" data-cat="vistoria"><span class="qc-cat-emoji">📋</span><span class="qc-cat-label">Vistoria</span></button>
+      <button class="qc-cat" data-cat="obra"><span class="qc-cat-emoji">🏗️</span><span class="qc-cat-label">Obra</span></button>
+      <button class="qc-cat" data-cat="urgencia"><span class="qc-cat-emoji">🚨</span><span class="qc-cat-label">Urgência</span></button>
+      <button class="qc-cat" data-cat="atendimento"><span class="qc-cat-emoji">📞</span><span class="qc-cat-label">Atendimento</span></button>
+      <button class="qc-cat" data-cat="financeiro"><span class="qc-cat-emoji">💰</span><span class="qc-cat-label">Financeiro</span></button>
+    </div>
+  </div>
+
+  <div class="qc-desc-wrap">
+    <textarea id="descInput" class="qc-desc" placeholder="O que está acontecendo? (ex: vazamento no 5º andar, painel elétrico desligando…)"></textarea>
+    <button class="qc-mic" id="micBtn" type="button" aria-label="Ditar">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M19 10v2a7 7 0 01-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+    </button>
+  </div>
+
+  <button class="qc-send" id="sendBtn" type="button" disabled>
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+    Salvar captura
+  </button>
+
+  <div class="qc-recent" id="recentSection" hidden>
+    <div class="qc-recent-head">Suas capturas (últimas 10)</div>
+    <div id="recentList"></div>
+  </div>
+</main>
+
+<div class="qc-toast" id="toast">✓ Captura salva</div>
+
+<script>
+// ===== Estado =====
+let stream = null;
+let usingFront = false;
+let currentPhoto = null; // dataURL
+let currentCat = null;
+const RECENT_KEY = 'sf_qc_recent';
+
+const CATEGORIES = {
+  manutencao: '🔧 Manutenção',
+  vistoria: '📋 Vistoria',
+  obra: '🏗️ Obra',
+  urgencia: '🚨 Urgência',
+  atendimento: '📞 Atendimento',
+  financeiro: '💰 Financeiro',
+};
+
+const photoArea = document.getElementById('photoArea');
+const photoEmpty = document.getElementById('photoEmpty');
+const cameraVideo = document.getElementById('cameraVideo');
+const photoPreview = document.getElementById('photoPreview');
+const photoControls = document.getElementById('photoControls');
+const reviewControls = document.getElementById('reviewControls');
+const openCamBtn = document.getElementById('openCamBtn');
+const openCamBtn2 = document.getElementById('openCamBtn2');
+const shootBtn = document.getElementById('shootBtn');
+const flipBtn = document.getElementById('flipBtn');
+const closeBtn = document.getElementById('closeBtn');
+const retakeBtn = document.getElementById('retakeBtn');
+const fileFallback = document.getElementById('fileFallback');
+const sendBtn = document.getElementById('sendBtn');
+const descInput = document.getElementById('descInput');
+const micBtn = document.getElementById('micBtn');
+
+// ===== Câmera =====
+async function openCamera() {
+  try {
+    const constraints = {
+      audio: false,
+      video: {
+        facingMode: usingFront ? 'user' : { ideal: 'environment' },
+        width: { ideal: 1920 },
+        height: { ideal: 1920 },
+      },
+    };
+    stream = await navigator.mediaDevices.getUserMedia(constraints);
+    cameraVideo.srcObject = stream;
+    cameraVideo.hidden = false;
+    photoEmpty.style.display = 'none';
+    photoPreview.hidden = true;
+    photoControls.hidden = false;
+    reviewControls.hidden = true;
+    openCamBtn.style.display = 'none';
+  } catch (e) {
+    alert('Permissão de câmera negada ou indisponível. Use o botão "Galeria" pra subir uma foto da galeria.');
+    fileFallback.click();
+  }
+}
+function closeCamera() {
+  if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
+  cameraVideo.hidden = true;
+  photoControls.hidden = true;
+}
+function showEmpty() {
+  closeCamera();
+  photoEmpty.style.display = 'flex';
+  photoPreview.hidden = true;
+  reviewControls.hidden = true;
+  openCamBtn.style.display = 'inline-flex';
+  currentPhoto = null;
+  updateSendState();
+}
+function shoot() {
+  if (!stream) return;
+  const v = cameraVideo;
+  const canvas = document.createElement('canvas');
+  const w = v.videoWidth, h = v.videoHeight;
+  // Aspect ratio quadrado: centraliza crop
+  const size = Math.min(w, h);
+  canvas.width = size; canvas.height = size;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(v, (w - size)/2, (h - size)/2, size, size, 0, 0, size, size);
+  currentPhoto = canvas.toDataURL('image/jpeg', 0.85);
+  photoPreview.src = currentPhoto;
+  photoPreview.hidden = false;
+  closeCamera();
+  reviewControls.hidden = false;
+  photoEmpty.style.display = 'none';
+  openCamBtn.style.display = 'none';
+  updateSendState();
+}
+
+openCamBtn.addEventListener('click', openCamera);
+openCamBtn2.addEventListener('click', openCamera);
+shootBtn.addEventListener('click', shoot);
+flipBtn.addEventListener('click', () => { usingFront = !usingFront; closeCamera(); openCamera(); });
+closeBtn.addEventListener('click', showEmpty);
+retakeBtn.addEventListener('click', () => { currentPhoto = null; showEmpty(); openCamera(); });
+fileFallback.addEventListener('change', e => {
+  const f = e.target.files[0];
+  if (!f) return;
+  const r = new FileReader();
+  r.onload = () => {
+    currentPhoto = r.result;
+    photoPreview.src = currentPhoto;
+    photoPreview.hidden = false;
+    photoEmpty.style.display = 'none';
+    photoControls.hidden = true;
+    reviewControls.hidden = false;
+    openCamBtn.style.display = 'none';
+    closeCamera();
+    updateSendState();
+  };
+  r.readAsDataURL(f);
+});
+
+// ===== Categorias =====
+document.getElementById('catsBar').addEventListener('click', e => {
+  const btn = e.target.closest('[data-cat]');
+  if (!btn) return;
+  document.querySelectorAll('.qc-cat').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentCat = btn.dataset.cat;
+  updateSendState();
+});
+
+// ===== Descrição (mic via Web Speech API) =====
+descInput.addEventListener('input', updateSendState);
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+if (SR) {
+  let listening = false;
+  let recognition = null;
+  micBtn.addEventListener('click', () => {
+    if (listening) { recognition?.stop(); return; }
+    recognition = new SR();
+    recognition.lang = 'pt-BR';
+    recognition.interimResults = true;
+    recognition.continuous = false;
+    let finalT = '';
+    recognition.onresult = e => {
+      let interim = '';
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        const t = e.results[i][0].transcript;
+        if (e.results[i].isFinal) finalT += t;
+        else interim += t;
+      }
+      const before = descInput.value.replace(/\s*\S*$/, '').trim();
+      descInput.value = (before ? before + ' ' : '') + finalT + interim;
+      updateSendState();
+    };
+    recognition.onend = () => { listening = false; micBtn.classList.remove('recording'); };
+    recognition.onerror = () => { listening = false; micBtn.classList.remove('recording'); };
+    try { recognition.start(); listening = true; micBtn.classList.add('recording'); } catch {}
+  });
+} else {
+  micBtn.style.display = 'none';
+}
+
+function updateSendState() {
+  const hasText = descInput.value.trim().length >= 3;
+  const hasCat = !!currentCat;
+  sendBtn.disabled = !(hasText && hasCat); // foto é opcional
+}
+
+// ===== Salvar =====
+sendBtn.addEventListener('click', async () => {
+  if (sendBtn.disabled) return;
+  sendBtn.disabled = true;
+  sendBtn.innerHTML = '<span style="opacity:0.8">Salvando…</span>';
+
+  const item = {
+    id: 'cap-' + Date.now().toString(36),
+    cat: currentCat,
+    catLabel: CATEGORIES[currentCat],
+    text: descInput.value.trim(),
+    photo: currentPhoto,
+    ts: Date.now(),
+  };
+  // Salva local + server (server pode ser desabilitado se backend não existir)
+  saveLocal(item);
+  try {
+    await fetch('/api/quick-capture', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id: item.id, cat: item.cat, text: item.text, ts: item.ts,
+        photo: item.photo, // base64 da foto (pode ser grande)
+      }),
+      keepalive: true,
+    }).catch(() => {});
+  } catch {}
+  if (window.trackUsage) trackUsage('quick-capture', { cat: currentCat });
+
+  // Reset UI
+  showToast('✓ Captura salva');
+  setTimeout(() => {
+    descInput.value = '';
+    document.querySelectorAll('.qc-cat').forEach(b => b.classList.remove('active'));
+    currentCat = null;
+    currentPhoto = null;
+    showEmpty();
+    sendBtn.innerHTML = `
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
+      Salvar captura
+    `;
+    updateSendState();
+    renderRecent();
+  }, 400);
+});
+
+function saveLocal(item) {
+  try {
+    const list = JSON.parse(localStorage.getItem(RECENT_KEY) || '[]');
+    list.unshift(item);
+    localStorage.setItem(RECENT_KEY, JSON.stringify(list.slice(0, 10)));
+  } catch {}
+}
+
+function showToast(text) {
+  const t = document.getElementById('toast');
+  t.textContent = text;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2400);
+}
+
+function fmtTime(ts) {
+  const sec = Math.floor((Date.now() - ts) / 1000);
+  if (sec < 60) return 'agora';
+  if (sec < 3600) return `${Math.floor(sec/60)}min`;
+  if (sec < 86400) return `${Math.floor(sec/3600)}h`;
+  return `${Math.floor(sec/86400)}d`;
+}
+
+function renderRecent() {
+  let list = [];
+  try { list = JSON.parse(localStorage.getItem(RECENT_KEY) || '[]'); } catch {}
+  if (!list.length) {
+    document.getElementById('recentSection').hidden = true;
+    return;
+  }
+  document.getElementById('recentSection').hidden = false;
+  document.getElementById('recentList').innerHTML = list.map(it => `
+    <div class="qc-item">
+      <div class="qc-item-thumb">
+        ${it.photo ? `<img src="${it.photo}" alt="">` : `<span>${(it.catLabel || '').slice(0, 2)}</span>`}
+      </div>
+      <div class="qc-item-body">
+        <div class="qc-item-head">
+          <span class="qc-item-cat">${escapeHtml(it.catLabel || it.cat)}</span>
+          <span class="qc-item-time">${fmtTime(it.ts)} atrás</span>
+        </div>
+        <div class="qc-item-text">${escapeHtml(it.text)}</div>
+      </div>
+    </div>
+  `).join('');
+}
+function escapeHtml(s) {
+  return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
+}
+
+renderRecent();
+
+// Limpa câmera ao sair
+window.addEventListener('pagehide', closeCamera);
+</script>
+</body>
+</html>

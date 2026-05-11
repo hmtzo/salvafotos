@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0a0a0c">
+<title>Sindi Reuniões · áudio → ata — Sindicompany</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="icon" type="image/png" href="/assets/brand/icon-color.png">
+<link rel="stylesheet" href="/assets/shared.css">
+<script src="/assets/shared.js"></script>
+<script src="/assets/tool-helpers.js"></script>
+<style>
+  .rec-controls{
+    display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap;
+  }
+  .rec-btn{
+    background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff;border:none;
+    padding:11px 18px;border-radius:100px;font-weight:700;font-size:13.5px;cursor:pointer;
+    font-family:inherit;display:inline-flex;align-items:center;gap:8px;
+    transition:transform .15s, box-shadow .15s;
+    box-shadow:0 6px 16px rgba(239,68,68,0.25);
+  }
+  .rec-btn:hover:not(:disabled){transform:translateY(-1px)}
+  .rec-btn:disabled{opacity:0.5;cursor:not-allowed}
+  .rec-btn.recording{
+    background:rgba(239,68,68,0.18);color:#fca5a5;
+    border:1px solid rgba(239,68,68,0.5);box-shadow:none;
+    animation:rec-pulse 1.2s ease-in-out infinite;
+  }
+  @keyframes rec-pulse{0%,100%{opacity:1}50%{opacity:0.7}}
+  .rec-btn svg{width:14px;height:14px}
+  .rec-dot{width:8px;height:8px;border-radius:50%;background:#fff;animation:rec-blink 1s infinite}
+  @keyframes rec-blink{0%,100%{opacity:1}50%{opacity:0.3}}
+  .rec-time{font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums}
+  .rec-help{font-size:11.5px;color:var(--text-muted);flex:1;min-width:200px}
+
+  /* Tabs do resultado */
+  .res-tabs{
+    display:flex;gap:4px;background:rgba(255,255,255,0.04);
+    border:1px solid var(--border);border-radius:10px;padding:4px;
+    margin-bottom:12px;overflow-x:auto;
+  }
+  .res-tab{
+    padding:8px 14px;border-radius:7px;border:none;background:transparent;color:var(--text-dim);
+    font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap;
+    transition:background .15s, color .15s;
+  }
+  .res-tab.active{background:rgba(99,102,241,0.18);color:#fff}
+  .res-pane{display:none}
+  .res-pane.active{display:block}
+
+  .action-item{
+    display:flex;align-items:flex-start;gap:12px;padding:12px 14px;
+    background:rgba(99,102,241,0.06);border:1px solid rgba(99,102,241,0.20);
+    border-radius:10px;margin-bottom:8px;
+  }
+  .action-num{
+    width:24px;height:24px;border-radius:50%;flex-shrink:0;
+    background:rgba(99,102,241,0.25);color:#a5b4fc;
+    display:inline-flex;align-items:center;justify-content:center;
+    font-size:11px;font-weight:800;font-variant-numeric:tabular-nums;
+  }
+  .action-body{flex:1;min-width:0}
+  .action-text{font-size:14px;color:var(--text);line-height:1.5;font-weight:500}
+  .action-meta{
+    display:flex;flex-wrap:wrap;gap:8px;margin-top:6px;font-size:11.5px;color:var(--text-dim);
+  }
+  .action-tag{
+    background:rgba(255,255,255,0.06);padding:2px 9px;border-radius:100px;
+    border:1px solid var(--border);
+  }
+  .action-tag.deadline{background:rgba(245,158,11,0.15);color:#fbbf24;border-color:rgba(245,158,11,0.30)}
+  .action-tag.owner{background:rgba(16,185,129,0.15);color:#86efac;border-color:rgba(16,185,129,0.30)}
+</style>
+</head>
+<body>
+<div id="app-nav"></div>
+
+<main class="tool-container">
+  <header class="tool-hero">
+    <span class="tool-eyebrow"><span class="dot"></span> IA · Reuniões</span>
+    <h1>Sindi Reuniões</h1>
+    <p>Sobe o áudio de uma reunião ou assembleia e a Sindi gera: transcrição, ata formatada, resumo executivo, action items com responsável e prazo, decisões. Tudo pronto pra mandar pra equipe.</p>
+  </header>
+
+  <section class="tool-config" style="margin-top:0">
+    <div class="rec-controls">
+      <button class="rec-btn" id="recBtn" type="button">
+        <span class="rec-dot" style="display:none" id="recDot"></span>
+        <svg id="recIcon" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M19 10v2a7 7 0 01-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+        <span id="recLabel">Gravar pelo navegador</span>
+      </button>
+      <span class="rec-time" id="recTime" hidden>00:00</span>
+      <span class="rec-help">ou sobe um arquivo (MP3, M4A, WAV, OGG, OPUS, MP4 — até 18 MB)</span>
+    </div>
+  </section>
+
+  <label for="fileInput" id="dropZone" class="tool-drop-card">
+    <div class="tool-drop-icon">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M9 19V6l12-3v13M9 19a3 3 0 11-6 0 3 3 0 016 0zm12-3a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+    </div>
+    <div class="tool-drop-title" id="dropTitle">Solte o áudio aqui</div>
+    <div class="tool-drop-sub">ou clique para selecionar &nbsp;·&nbsp; até <kbd>18 MB</kbd></div>
+  </label>
+  <input type="file" id="fileInput" accept="audio/*,video/mp4,.mp3,.m4a,.wav,.ogg,.opus,.mp4,.webm" hidden>
+
+  <section class="tool-config">
+    <div class="tool-config-head"><h2>Tipo de reunião</h2></div>
+    <div class="tool-options">
+      <label class="tool-toggle">
+        <input type="radio" name="mtype" value="assembleia" checked>
+        <span class="tool-toggle-switch"></span>
+        <span class="tool-toggle-label"><strong>Assembleia condominial</strong><span>gera ata formal + decisões</span></span>
+      </label>
+      <label class="tool-toggle">
+        <input type="radio" name="mtype" value="interna">
+        <span class="tool-toggle-switch"></span>
+        <span class="tool-toggle-label"><strong>Reunião interna</strong><span>equipe Sindicompany · action items</span></span>
+      </label>
+      <label class="tool-toggle">
+        <input type="radio" name="mtype" value="comercial">
+        <span class="tool-toggle-switch"></span>
+        <span class="tool-toggle-label"><strong>Reunião comercial</strong><span>prospect/cliente · próximos passos</span></span>
+      </label>
+      <label class="tool-toggle">
+        <input type="radio" name="mtype" value="sindico">
+        <span class="tool-toggle-switch"></span>
+        <span class="tool-toggle-label"><strong>Com síndico/morador</strong><span>chamado · resolução · follow-up</span></span>
+      </label>
+    </div>
+
+    <button class="tool-process" id="processBtn" disabled>
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+      <span id="btnText">Transcrever e estruturar</span>
+    </button>
+
+    <div class="tool-status" id="status">
+      <div class="tool-status-text" id="statusText">Aguardando…</div>
+      <div class="tool-progress"><div class="tool-progress-bar" id="progressBar"></div></div>
+    </div>
+
+    <div class="tool-result" id="result">
+      <div class="tool-result-head">
+        <div class="tool-result-title">Reunião estruturada</div>
+        <div class="tool-result-actions">
+          <button class="tool-result-action" id="copyBtn" type="button">Copiar</button>
+          <button class="tool-result-action" id="downloadBtn" type="button">.md</button>
+        </div>
+      </div>
+      <div class="res-tabs" id="resTabs">
+        <button class="res-tab active" data-tab="ata">📋 Ata</button>
+        <button class="res-tab" data-tab="resumo">⚡ Resumo</button>
+        <button class="res-tab" data-tab="actions">✅ Action items</button>
+        <button class="res-tab" data-tab="transcript">🎙 Transcrição</button>
+      </div>
+      <div class="tool-result-body" id="resultBody"></div>
+    </div>
+  </section>
+
+  <div class="tool-privacy">
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+    Áudio enviado pra Sindi (Gemini) só pra processar — não é armazenado.
+  </div>
+</main>
+
+<script>
+let selectedFile = null;
+let parsedSections = { ata:'', resumo:'', actions:[], transcript:'' };
+let activeTab = 'ata';
+
+ToolFile.setupDropZone({
+  accept: f => /audio\/|video\/mp4|\.(mp3|m4a|wav|ogg|opus|webm|mp4)$/i.test(f.type + ' ' + f.name),
+  onFile: f => { selectedFile = f; ToolUI.setStatus('Pronto pra processar', ''); },
+});
+
+// ===== Gravação pelo navegador (MediaRecorder) =====
+const recBtn = document.getElementById('recBtn');
+const recLabel = document.getElementById('recLabel');
+const recIcon = document.getElementById('recIcon');
+const recDot = document.getElementById('recDot');
+const recTime = document.getElementById('recTime');
+let mediaRecorder = null;
+let mediaStream = null;
+let chunks = [];
+let recStartedAt = 0;
+let recTimer = null;
+
+recBtn.addEventListener('click', async () => {
+  if (mediaRecorder && mediaRecorder.state === 'recording') {
+    mediaRecorder.stop();
+    return;
+  }
+  try {
+    mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  } catch (e) {
+    alert('Permissão de microfone negada ou indisponível. Libera nas configurações do navegador.');
+    return;
+  }
+  const candidates = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg;codecs=opus', ''];
+  let chosen = '';
+  for (const c of candidates) {
+    if (!c || (window.MediaRecorder?.isTypeSupported?.(c))) { chosen = c; break; }
+  }
+  mediaRecorder = chosen ? new MediaRecorder(mediaStream, { mimeType: chosen }) : new MediaRecorder(mediaStream);
+  chunks = [];
+  mediaRecorder.ondataavailable = e => { if (e.data && e.data.size) chunks.push(e.data); };
+  mediaRecorder.onstop = () => {
+    clearInterval(recTimer);
+    try { mediaStream.getTracks().forEach(t => t.stop()); } catch {}
+    recBtn.classList.remove('recording');
+    recDot.style.display = 'none';
+    recTime.hidden = true;
+    recLabel.textContent = 'Gravar pelo navegador';
+    const blob = new Blob(chunks, { type: mediaRecorder.mimeType || 'audio/webm' });
+    if (!blob.size) return;
+    // Vira "arquivo selecionado"
+    const fname = `reuniao-${new Date().toISOString().slice(0,16).replace(/[:T]/g,'-')}.${chosen.includes('mp4') ? 'mp4' : chosen.includes('ogg') ? 'ogg' : 'webm'}`;
+    selectedFile = new File([blob], fname, { type: blob.type });
+    document.getElementById('dropTitle').innerHTML = `<span class="file-selected">${fname} <span style="opacity:0.7;font-weight:400">(${(blob.size/1024/1024).toFixed(1)} MB)</span></span>`;
+    document.getElementById('processBtn').disabled = false;
+    ToolUI.setStatus(`Gravação pronta (${(blob.size/1024/1024).toFixed(1)} MB). Clique em transcrever.`, '');
+  };
+  mediaRecorder.start();
+  recStartedAt = Date.now();
+  recBtn.classList.add('recording');
+  recDot.style.display = 'inline-block';
+  recTime.hidden = false;
+  recLabel.textContent = 'Parar gravação';
+  recTimer = setInterval(() => {
+    const s = Math.floor((Date.now() - recStartedAt) / 1000);
+    const mm = String(Math.floor(s/60)).padStart(2,'0');
+    const ss = String(s%60).padStart(2,'0');
+    recTime.textContent = `${mm}:${ss}`;
+  }, 250);
+});
+
+const MTYPE_PROMPTS = {
+  assembleia: `Reunião é uma ASSEMBLEIA CONDOMINIAL. Gere uma ATA FORMAL no formato jurídico (data, local, quórum, ordem do dia, deliberações votadas com placar quando possível, encerramento).`,
+  interna: `Reunião INTERNA da equipe Sindicompany (administradora condominial). Tom profissional mas direto, foco em decisões e action items pra equipe executar.`,
+  comercial: `Reunião COMERCIAL — prospect ou cliente. Foco em interesse demonstrado, objeções levantadas, próximos passos, oportunidades.`,
+  sindico: `Reunião com SÍNDICO ou MORADOR — chamado/atendimento. Foco no problema relatado, solução combinada, prazos de retorno.`,
+};
+
+function buildPrompt(mtype) {
+  return `Você recebe um áudio em português brasileiro de uma reunião. Sua tarefa é transcrever E ESTRUTURAR.
+
+CONTEXTO: ${MTYPE_PROMPTS[mtype]}
+
+Devolva a saída EXATAMENTE neste formato (use os emojis exatos):
+
+## 📋 Ata
+[Documento estruturado formal de acordo com o tipo de reunião. Use markdown rico. Pra assembleia: formato jurídico. Pras outras: estrutura clara com data, participantes (se identificáveis), pauta, conclusões.]
+
+## ⚡ Resumo executivo
+[3-5 bullets dos pontos MAIS IMPORTANTES da reunião. Cada bullet começa com **negrito**. Tom direto.]
+
+## ✅ Action items
+[Lista numerada. Cada item no formato:
+1. [DESCRIÇÃO DA AÇÃO] — **Responsável**: [pessoa ou cargo] — **Prazo**: [data ou prazo relativo, ex: "até sexta", "essa semana", "indefinido"]
+
+Se não houver responsável claro mencionado, escreve "**Responsável**: a definir". Mesmo pra prazos.]
+
+## 🎯 Decisões tomadas
+[Lista de decisões formais ou informais que ficaram acordadas. Cada uma em 1 linha.]
+
+## 🎙 Transcrição completa
+[Transcrição literal do áudio, com timestamps a cada ~30s no formato [MM:SS] quando possível. Se múltiplos falantes, identificar como "Pessoa 1:", "Pessoa 2:", etc.]
+
+REGRAS:
+- Português brasileiro natural
+- Não invente nada que não esteja no áudio
+- Se algo não for compreensível, marque com [trecho inaudível]
+- Mantenha nomes próprios EXATAMENTE como falados`;
+}
+
+document.getElementById('processBtn').addEventListener('click', async () => {
+  if (!selectedFile) return;
+  const btn = document.getElementById('processBtn');
+  const btnText = document.getElementById('btnText');
+  btn.disabled = true; btnText.textContent = 'Transcrevendo…';
+  ToolUI.hideResult();
+  ToolUI.setProgress(15);
+  ToolUI.setStatus('Enviando áudio pra Sindi…');
+
+  try {
+    const mtype = document.querySelector('input[name=mtype]:checked').value;
+    const prompt = buildPrompt(mtype);
+    ToolUI.setProgress(40);
+    ToolUI.setStatus('Sindi transcrevendo e estruturando…');
+    const data = await ToolAI.callGeminiWithFile(selectedFile, prompt, { mode: 'think' });
+    ToolUI.setProgress(95);
+    if (data.empty || !data.text) {
+      ToolUI.setStatus('Sem resposta.', 'error'); return;
+    }
+    parseAndRender(data.text);
+    ToolUI.setProgress(100);
+    ToolUI.setStatus('Reunião estruturada.', 'success');
+    if (window.trackUsage) trackUsage('sindi-reunioes', { mtype });
+  } catch (e) {
+    ToolUI.setStatus('Erro: ' + e.message, 'error');
+    ToolUI.setProgress(0);
+  } finally {
+    btn.disabled = false; btnText.textContent = 'Transcrever e estruturar';
+  }
+});
+
+function parseAndRender(text) {
+  // Split por ## seções
+  parsedSections = { ata:'', resumo:'', actions:[], decisoes:'', transcript:'' };
+  const sections = text.split(/^##\s+/m).slice(1);
+  for (const s of sections) {
+    const lines = s.split('\n');
+    const title = lines[0].toLowerCase();
+    const body = lines.slice(1).join('\n').trim();
+    if (/ata|formal/i.test(title)) parsedSections.ata = body;
+    else if (/resumo/i.test(title)) parsedSections.resumo = body;
+    else if (/action|tarefas?/i.test(title)) {
+      // Extrai action items numerados
+      const items = body.split(/\n(?=\d+\.\s+)/);
+      parsedSections.actions = items.map(it => {
+        const m = it.match(/^\d+\.\s+(.+?)(?:\s+—\s+\*\*Respons[áa]vel\*\*:\s+([^—]+))?(?:\s+—\s+\*\*Prazo\*\*:\s+(.+))?$/s);
+        if (m) return { text: m[1].trim(), owner: (m[2]||'').trim(), deadline: (m[3]||'').trim() };
+        return { text: it.replace(/^\d+\.\s+/, '').trim() };
+      }).filter(x => x.text);
+    }
+    else if (/decis/i.test(title)) parsedSections.decisoes = body;
+    else if (/transcri/i.test(title)) parsedSections.transcript = body;
+  }
+  // Cria aba "decisões" dinâmica se tiver
+  document.getElementById('result').classList.add('show');
+  renderActiveTab();
+}
+
+const tabsBar = document.getElementById('resTabs');
+tabsBar.addEventListener('click', e => {
+  const btn = e.target.closest('.res-tab');
+  if (!btn) return;
+  tabsBar.querySelectorAll('.res-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  activeTab = btn.dataset.tab;
+  renderActiveTab();
+});
+
+function renderActiveTab() {
+  const body = document.getElementById('resultBody');
+  let html = '';
+  if (activeTab === 'ata') {
+    html = renderMd(parsedSections.ata || '(sem ata gerada)');
+  } else if (activeTab === 'resumo') {
+    html = renderMd(parsedSections.resumo || '(sem resumo)');
+    if (parsedSections.decisoes) html += '<h3 style="margin-top:18px;font-size:13px;color:#a5b4fc;text-transform:uppercase;letter-spacing:0.06em">🎯 Decisões</h3>' + renderMd(parsedSections.decisoes);
+  } else if (activeTab === 'actions') {
+    if (!parsedSections.actions.length) {
+      html = '<p style="color:var(--text-muted)">Nenhum action item identificado.</p>';
+    } else {
+      html = parsedSections.actions.map((a, i) => `
+        <div class="action-item">
+          <div class="action-num">${i+1}</div>
+          <div class="action-body">
+            <div class="action-text">${escapeHtml(a.text)}</div>
+            <div class="action-meta">
+              ${a.owner ? `<span class="action-tag owner">👤 ${escapeHtml(a.owner)}</span>` : ''}
+              ${a.deadline ? `<span class="action-tag deadline">📅 ${escapeHtml(a.deadline)}</span>` : ''}
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+  } else if (activeTab === 'transcript') {
+    html = renderMd(parsedSections.transcript || '(sem transcrição)');
+  }
+  body.innerHTML = html;
+}
+
+function renderMd(text) {
+  return text
+    .split(/\n\n+/)
+    .map(block => {
+      if (/^[-*]\s+/m.test(block)) {
+        const items = block.split('\n').filter(l => /^[-*]\s+/.test(l));
+        return `<ul style="margin:0 0 8px 18px">${items.map(it => `<li style="margin-bottom:5px;line-height:1.55">${formatInline(it.replace(/^[-*]\s+/, ''))}</li>`).join('')}</ul>`;
+      }
+      if (/^\d+\.\s+/m.test(block)) {
+        const items = block.split('\n').filter(l => /^\d+\.\s+/.test(l));
+        return `<ol style="margin:0 0 8px 18px">${items.map(it => `<li style="margin-bottom:5px;line-height:1.55">${formatInline(it.replace(/^\d+\.\s+/, ''))}</li>`).join('')}</ol>`;
+      }
+      return `<p style="margin:0 0 10px;line-height:1.65">${formatInline(block)}</p>`;
+    }).join('');
+}
+function formatInline(t) {
+  return escapeHtml(t)
+    .replace(/\*\*(.+?)\*\*/g, '<strong style="color:var(--text)">$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    .replace(/`([^`]+)`/g, '<code style="background:rgba(0,0,0,0.4);padding:1px 5px;border-radius:4px;font-size:0.9em;color:#fbbf24">$1</code>')
+    .replace(/\[(\d{1,2}:\d{2}(:\d{2})?)\]/g, '<span style="color:#a5b4fc;font-family:monospace;font-size:0.9em">[$1]</span>');
+}
+function escapeHtml(s) {
+  return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
+}
+
+document.getElementById('copyBtn').addEventListener('click', () => {
+  navigator.clipboard.writeText(document.getElementById('resultBody').innerText);
+  document.getElementById('copyBtn').textContent = '✓ Copiado';
+  setTimeout(() => location.reload(), 1500);
+});
+document.getElementById('downloadBtn').addEventListener('click', () => {
+  const md = `# Reunião — ${selectedFile?.name || 'sem nome'}\n\n## Ata\n${parsedSections.ata}\n\n## Resumo\n${parsedSections.resumo}\n\n## Action items\n${parsedSections.actions.map((a,i) => `${i+1}. ${a.text}${a.owner ? ` — Responsável: ${a.owner}` : ''}${a.deadline ? ` — Prazo: ${a.deadline}` : ''}`).join('\n')}\n\n## Decisões\n${parsedSections.decisoes || ''}\n\n## Transcrição\n${parsedSections.transcript}`;
+  const name = (selectedFile?.name || 'reuniao').replace(/\.[^.]+$/i, '') + '.md';
+  ToolFile.download(new Blob([md], { type: 'text/markdown;charset=utf-8' }), name);
+});
+</script>
+</body>
+</html>

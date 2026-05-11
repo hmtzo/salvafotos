@@ -692,6 +692,8 @@ const TOOLS = [
   { slug: 'corretor-texto', cat: 'ai', name: 'Corretor de Texto PT-BR', desc: 'Corrige ortografia, gramática e pontuação. Mantém o tom do texto.', icon: 'pencil', iconClass: 'icon-ai', badge: 'new' },
   { slug: 'resumir-pdf', cat: 'ai', name: 'Resumir PDF com IA', desc: 'Resumos executivo, detalhado, ação ou risco em segundos.', icon: 'sparkles', iconClass: 'icon-ai', badge: 'new' },
   { slug: 'traduzir-pdf', cat: 'ai', name: 'Traduzir PDF com IA', desc: 'Tradução natural multi-idiomas preservando layout.', icon: 'sparkles', iconClass: 'icon-ai', badge: 'new' },
+  { slug: 'auditor-contratos', cat: 'ai', name: 'Auditor de Contratos', desc: 'Sindi analisa contratos e marca cláusulas problemáticas, multas e riscos.', icon: 'shield', iconClass: 'icon-ai', badge: 'new' },
+  { slug: 'sindi-reunioes', cat: 'ai', name: 'Sindi Reuniões', desc: 'Áudio → ata + resumo + action items + transcrição. Tudo em segundos.', icon: 'sparkles', iconClass: 'icon-ai', badge: 'new' },
 
   // === GERADORES ===
   { slug: 'wizard-inadimplencia', cat: 'doc', name: 'Wizard Inadimplência', desc: 'Fluxo guiado de cobrança em 5 passos: dados → cálculo → notificação → cronograma.', icon: 'fileSign', iconClass: 'icon-doc', badge: 'new' },
@@ -734,6 +736,8 @@ const TOOLS = [
   // === DOCUMENTOS / DADOS ===
   { slug: 'whatsapp-fotos', cat: 'doc', name: 'Fotos do WhatsApp', desc: 'Extrai fotos com legenda, data e remetente.', icon: 'message', iconClass: 'icon-doc' },
   { slug: 'ocr', cat: 'doc', name: 'OCR (Texto em Imagem)', desc: 'Extrai texto de fotos e PDFs escaneados (PT/EN/ES).', icon: 'search', iconClass: 'icon-doc' },
+  { slug: 'quick-capture', cat: 'doc', name: 'Quick Capture', desc: 'Foto + categoria + texto → captura rápida em campo (mobile-first).', icon: 'image', iconClass: 'icon-doc', badge: 'new' },
+  { slug: 'mensagens-prontas', cat: 'doc', name: 'Mensagens Prontas', desc: 'Banco de templates de cobrança, comunicados, atendimento. Clica, preenche, copia.', icon: 'fileText', iconClass: 'icon-doc', badge: 'new' },
   { slug: 'digitalizar-pdf', cat: 'doc', name: 'Digitalizar (Câmera)', desc: 'Escaneie documentos físicos pela câmera (em desenvolvimento).', icon: 'image', iconClass: 'icon-doc', badge: 'soon' },
 
   // === SEGURANÇA ===
@@ -744,7 +748,10 @@ const TOOLS = [
   { slug: 'ocultar-pdf', cat: 'secure', name: 'Ocultar PDF', desc: 'Tarja manual irreversível em áreas selecionadas (em desenvolvimento).', icon: 'shield', iconClass: 'icon-secure', badge: 'soon' },
 
   // === AUTOMAÇÃO ===
-  { slug: 'workflows', cat: 'automation', name: 'Fluxos de Trabalho', desc: 'Encadeie ferramentas em sequências automatizadas (em desenvolvimento).', icon: 'sparkles', iconClass: 'icon-ai', badge: 'soon' },
+  { slug: 'lembretes-inteligentes', cat: 'automation', name: 'Lembretes Inteligentes', desc: 'Regras de aviso automático (AVCB vence, inadimplência passa de X dias) (em desenvolvimento).', icon: 'sparkles', iconClass: 'icon-ai', badge: 'soon' },
+  { slug: 'saude-condominio', cat: 'automation', name: 'Saúde do Condomínio', desc: 'Dashboard com inadimplência, chamados, prazos, NPS (em desenvolvimento).', icon: 'chart', iconClass: 'icon-ai', badge: 'soon' },
+  { slug: 'workflow-builder', cat: 'automation', name: 'Workflow Builder', desc: 'Encadeie ferramentas em sequências automatizadas (em desenvolvimento).', icon: 'sparkles', iconClass: 'icon-ai', badge: 'soon' },
+  { slug: 'inbox-unificada', cat: 'automation', name: 'Inbox Unificada', desc: 'Email + WhatsApp + Site num só lugar, Sindi classifica (em desenvolvimento).', icon: 'message', iconClass: 'icon-ai', badge: 'soon' },
 ];
 
 const grid = document.getElementById('toolsGrid');

@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0a0a0c">
+<title>Mensagens Prontas — Sindicompany</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="icon" type="image/png" href="/assets/brand/icon-color.png">
+<link rel="stylesheet" href="/assets/shared.css">
+<script src="/assets/shared.js"></script>
+<style>
+  .msg-search{
+    width:100%;background:rgba(255,255,255,0.04);border:1px solid var(--border);
+    border-radius:12px;padding:12px 16px 12px 42px;color:var(--text);
+    font-family:inherit;font-size:14px;outline:none;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%23a1a1aa' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' viewBox='0 0 24 24'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.3-4.3'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;background-position:14px center;
+    transition:border-color .15s;
+  }
+  .msg-search:focus{border-color:var(--accent-bright)}
+  .msg-search::placeholder{color:var(--text-muted)}
+
+  .msg-cats{
+    display:flex;gap:8px;flex-wrap:wrap;margin:14px 0 8px;
+  }
+  .msg-cat{
+    background:rgba(255,255,255,0.04);border:1px solid var(--border);
+    color:var(--text-dim);font-size:12px;font-weight:600;
+    padding:7px 14px;border-radius:100px;cursor:pointer;
+    transition:all .15s;font-family:inherit;
+  }
+  .msg-cat:hover{background:rgba(255,255,255,0.08);color:var(--text)}
+  .msg-cat.active{background:rgba(99,102,241,0.18);border-color:rgba(99,102,241,0.35);color:#a5b4fc}
+  .msg-cat .count{
+    background:rgba(0,0,0,0.3);padding:1px 6px;border-radius:100px;
+    font-size:10px;margin-left:4px;font-weight:700;
+  }
+
+  .msg-grid{
+    display:grid;grid-template-columns:repeat(auto-fill, minmax(280px, 1fr));gap:12px;
+    margin-top:14px;
+  }
+  .msg-card{
+    background:var(--card);border:1px solid var(--border);border-radius:14px;
+    padding:14px 16px;cursor:pointer;transition:all .15s;position:relative;
+  }
+  .msg-card:hover{border-color:var(--border-bright);transform:translateY(-1px)}
+  .msg-card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:8px}
+  .msg-card-cat{
+    font-size:10px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;
+    color:#a5b4fc;background:rgba(99,102,241,0.15);
+    padding:2px 8px;border-radius:100px;
+  }
+  .msg-card-fav{
+    width:24px;height:24px;border-radius:6px;border:none;background:transparent;
+    cursor:pointer;color:var(--text-muted);display:inline-flex;align-items:center;justify-content:center;
+    transition:color .15s, background .15s;
+  }
+  .msg-card-fav:hover{background:rgba(255,255,255,0.06);color:#fbbf24}
+  .msg-card-fav.is-fav{color:#fbbf24}
+  .msg-card-fav svg{width:14px;height:14px;fill:currentColor}
+  .msg-card h3{font-size:14.5px;font-weight:700;color:var(--text);margin:0 0 6px;letter-spacing:-0.01em;line-height:1.3}
+  .msg-card-preview{
+    font-size:12.5px;color:var(--text-dim);line-height:1.5;
+    display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;
+  }
+
+  /* Modal de preview/edição */
+  .msg-modal{
+    position:fixed;inset:0;background:rgba(0,0,0,0.7);backdrop-filter:blur(6px);
+    display:flex;align-items:center;justify-content:center;padding:20px;
+    z-index:9000;animation:msg-fade .15s ease-out;
+  }
+  .msg-modal[hidden]{display:none}
+  @keyframes msg-fade{from{opacity:0}to{opacity:1}}
+  .msg-modal-card{
+    background:linear-gradient(180deg,#18181f,#13131a);
+    border:1px solid var(--border-bright);border-radius:16px;
+    width:min(640px, 100%);max-height:90vh;display:flex;flex-direction:column;
+    box-shadow:0 24px 60px rgba(0,0,0,0.6);overflow:hidden;
+    animation:msg-rise .2s cubic-bezier(0.16,1,0.3,1);
+  }
+  @keyframes msg-rise{from{transform:translateY(20px);opacity:0}to{transform:none;opacity:1}}
+  .msg-modal-head{
+    display:flex;align-items:center;justify-content:space-between;gap:12px;
+    padding:18px 20px;border-bottom:1px solid var(--border);
+  }
+  .msg-modal-title{flex:1;min-width:0}
+  .msg-modal-title h2{font-size:17px;font-weight:700;color:var(--text);margin:0 0 2px;letter-spacing:-0.01em}
+  .msg-modal-title .cat{font-size:11px;color:#a5b4fc;font-weight:600;letter-spacing:0.05em;text-transform:uppercase}
+  .msg-modal-close{
+    width:32px;height:32px;border-radius:8px;border:none;background:transparent;
+    color:var(--text-dim);cursor:pointer;font-size:20px;line-height:1;
+    display:inline-flex;align-items:center;justify-content:center;
+  }
+  .msg-modal-close:hover{background:rgba(255,255,255,0.06);color:var(--text)}
+
+  .msg-modal-body{padding:18px 20px;overflow-y:auto;flex:1}
+  .msg-vars{
+    display:flex;flex-direction:column;gap:10px;margin-bottom:14px;
+  }
+  .msg-var{display:flex;flex-direction:column;gap:4px}
+  .msg-var label{font-size:11px;font-weight:600;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.06em}
+  .msg-var input{
+    background:rgba(255,255,255,0.04);border:1px solid var(--border);
+    border-radius:8px;padding:9px 12px;color:var(--text);
+    font-family:inherit;font-size:13.5px;outline:none;
+  }
+  .msg-var input:focus{border-color:var(--accent-bright)}
+
+  .msg-preview{
+    background:rgba(255,255,255,0.025);border:1px solid var(--border);
+    border-radius:10px;padding:14px 16px;
+    font-size:13.5px;color:var(--text);line-height:1.6;white-space:pre-wrap;
+    margin-bottom:14px;max-height:300px;overflow-y:auto;
+  }
+  .msg-preview-label{
+    font-size:11px;font-weight:600;color:var(--text-dim);
+    text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;
+  }
+
+  .msg-modal-foot{
+    display:flex;align-items:center;gap:10px;justify-content:flex-end;
+    padding:14px 20px;border-top:1px solid var(--border);
+    background:rgba(0,0,0,0.18);
+  }
+  .msg-btn-secondary{
+    background:rgba(255,255,255,0.05);border:1px solid var(--border);color:var(--text);
+    padding:9px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;
+    font-family:inherit;transition:background .15s;
+  }
+  .msg-btn-secondary:hover{background:rgba(255,255,255,0.08)}
+  .msg-btn-primary{
+    background:var(--accent);color:#fff;border:none;
+    padding:9px 18px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;
+    font-family:inherit;transition:background .15s;
+    display:inline-flex;align-items:center;gap:6px;
+  }
+  .msg-btn-primary:hover{background:var(--accent-bright)}
+  .msg-btn-primary svg{width:14px;height:14px}
+  .msg-btn-primary.copied{background:#10b981}
+
+  @media (max-width:600px){
+    .msg-grid{grid-template-columns:1fr}
+    .msg-cats{overflow-x:auto;flex-wrap:nowrap;padding-bottom:4px}
+    .msg-cat{flex-shrink:0}
+  }
+</style>
+</head>
+<body>
+<div id="app-nav"></div>
+
+<main class="tool-container">
+  <header class="tool-hero">
+    <span class="tool-eyebrow"><span class="dot"></span> Atendimento · Templates</span>
+    <h1>Mensagens prontas</h1>
+    <p>Banco de mensagens prontas pra reusar todo dia: cobrança, comunicados, atendimento, comercial. Clica, preenche o nome/condomínio, copia. Pronto.</p>
+  </header>
+
+  <section class="tool-config">
+    <input type="search" class="msg-search" id="searchInput" placeholder="Buscar mensagem... (nome, palavra-chave, exemplo: 'multa', 'AVCB')">
+    <div class="msg-cats" id="catsBar"></div>
+    <div class="msg-grid" id="grid"></div>
+  </section>
+</main>
+
+<!-- Modal de uso da mensagem -->
+<div id="modal" class="msg-modal" hidden>
+  <div class="msg-modal-card">
+    <header class="msg-modal-head">
+      <div class="msg-modal-title">
+        <div class="cat" id="modalCat">—</div>
+        <h2 id="modalTitle">—</h2>
+      </div>
+      <button class="msg-modal-close" type="button" id="modalClose" aria-label="Fechar">×</button>
+    </header>
+    <div class="msg-modal-body">
+      <div class="msg-vars" id="modalVars"></div>
+      <div class="msg-preview-label">Mensagem final</div>
+      <div class="msg-preview" id="modalPreview"></div>
+    </div>
+    <footer class="msg-modal-foot">
+      <button class="msg-btn-secondary" type="button" id="btnFav">★ Favoritar</button>
+      <button class="msg-btn-primary" type="button" id="btnCopy">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+        Copiar mensagem
+      </button>
+    </footer>
+  </div>
+</div>
+
+<script>
+// =====================================================================
+// Banco de mensagens — categorias + templates com variáveis {{nome}} etc
+// =====================================================================
+const MESSAGES = [
+  // ============ COBRANÇA ============
+  { id:'cob-amigavel', cat:'cobranca', title:'Cobrança amigável (1º contato)',
+    body:`Olá, {{nome}}, tudo bem?\n\nPassando pra avisar que o boleto da taxa condominial do {{condo}}, com vencimento em {{data_vencimento}}, ainda não foi compensado no nosso sistema.\n\nProvavelmente é só uma questão de prazo bancário, mas se quiser podemos te enviar a 2ª via.\n\nQualquer dúvida, é só responder aqui.\n\nAtenciosamente,\nEquipe Sindicompany`,
+    vars:['nome','condo','data_vencimento'] },
+  { id:'cob-formal', cat:'cobranca', title:'Cobrança formal (após 1ª lembrança)',
+    body:`Prezado(a) {{nome}},\n\nIdentificamos que o boleto da taxa condominial referente ao {{condo}}, com vencimento em {{data_vencimento}}, está em aberto até a presente data.\n\nO valor atualizado com juros e correção é de {{valor}}.\n\nPedimos que regularize o pagamento até {{prazo}} pra evitar o envio do título a protesto extrajudicial conforme previsto no art. 1.336 do Código Civil.\n\nPara solicitar 2ª via ou negociar parcelamento, basta responder este e-mail.\n\nAtenciosamente,\nSindicompany`,
+    vars:['nome','condo','data_vencimento','valor','prazo'] },
+  { id:'cob-acordo', cat:'cobranca', title:'Proposta de acordo (parcelamento)',
+    body:`Olá, {{nome}}, tudo bem?\n\nRecebemos seu contato sobre a regularização do débito.\n\nProposta de acordo:\n• Valor total atualizado: {{valor_total}}\n• Entrada: {{entrada}}\n• Saldo em {{parcelas}}x de {{valor_parcela}}\n\nSe estiver de acordo, basta responder este e-mail confirmando e enviamos o termo de confissão de dívida pra assinatura digital.\n\nQualquer outra contraproposta, é só nos sinalizar.\n\nAtenciosamente,\nSindicompany`,
+    vars:['nome','valor_total','entrada','parcelas','valor_parcela'] },
+
+  // ============ COMUNICADO ============
+  { id:'com-manutencao', cat:'comunicado', title:'Aviso de manutenção',
+    body:`Prezados condôminos do {{condo}},\n\nInformamos que será realizada manutenção {{tipo_manutencao}} no dia {{data}}, das {{hora_inicio}} às {{hora_fim}}.\n\nDurante esse período, {{detalhes}}.\n\nPedimos a compreensão de todos.\n\nQualquer dúvida ou imprevisto, entre em contato com a administração.\n\nSindicompany`,
+    vars:['condo','tipo_manutencao','data','hora_inicio','hora_fim','detalhes'] },
+  { id:'com-assembleia', cat:'comunicado', title:'Convocação de assembleia',
+    body:`CONVOCAÇÃO DE ASSEMBLEIA {{tipo_assembleia}}\n\nPrezados condôminos do {{condo}},\n\nFicam convocados para a Assembleia {{tipo_assembleia}} a ser realizada em {{data}}, às {{hora_primeira}} em primeira convocação e às {{hora_segunda}} em segunda convocação (com qualquer número de presentes).\n\nLocal: {{local}}\n\nORDEM DO DIA:\n{{pauta}}\n\nDocumentos referentes à pauta estarão disponíveis na administração.\n\n{{cidade}}, {{data_envio}}\n\nSíndico do {{condo}}`,
+    vars:['tipo_assembleia','condo','data','hora_primeira','hora_segunda','local','pauta','cidade','data_envio'] },
+  { id:'com-falta-agua', cat:'comunicado', title:'Falta de água/energia (urgente)',
+    body:`⚠ AVISO URGENTE — {{condo}}\n\nIdentificamos {{problema}} no condomínio. Já acionamos {{providencia}} e a previsão de normalização é {{previsao}}.\n\nO que fazer agora:\n{{orientacoes}}\n\nMantemos vocês informados conforme houver atualização. Pedimos paciência.\n\nAdministração`,
+    vars:['condo','problema','providencia','previsao','orientacoes'] },
+
+  // ============ ATENDIMENTO ============
+  { id:'at-reclamacao', cat:'atendimento', title:'Resposta a reclamação',
+    body:`Olá, {{nome}}, obrigado por entrar em contato.\n\nRecebemos sua manifestação sobre {{assunto}} e estamos verificando junto à equipe responsável.\n\nVamos te dar retorno até {{prazo}} com as providências cabíveis.\n\nSe quiser adicionar alguma informação que possa ajudar, é só responder este e-mail.\n\nAtenciosamente,\nSindicompany`,
+    vars:['nome','assunto','prazo'] },
+  { id:'at-elogio', cat:'atendimento', title:'Agradecimento por elogio',
+    body:`Olá, {{nome}}!\n\nMuito obrigada pelas palavras — vamos compartilhar com a equipe responsável, que vai adorar saber.\n\nA gente trabalha justamente pra que o {{condo}} (e cada morador) tenha a melhor experiência possível.\n\nSeguimos à disposição pra o que precisar.\n\nUm abraço,\nSindicompany`,
+    vars:['nome','condo'] },
+  { id:'at-segunda-via', cat:'atendimento', title:'Envio de 2ª via de boleto',
+    body:`Olá, {{nome}},\n\nSegue a 2ª via do boleto solicitado:\n\n• Referência: {{referencia}}\n• Vencimento original: {{venc_original}}\n• Novo vencimento: {{novo_venc}}\n• Valor: {{valor}}\n\nLink/anexo: {{link}}\n\nQualquer outra coisa, é só responder este e-mail.\n\nAtenciosamente,\nSindicompany`,
+    vars:['nome','referencia','venc_original','novo_venc','valor','link'] },
+
+  // ============ COMERCIAL ============
+  { id:'com-prospect', cat:'comercial', title:'Apresentação inicial (prospect)',
+    body:`Olá, {{nome}}, prazer!\n\nMeu nome é {{seu_nome}}, sou da Sindicompany — administradora condominial com {{anos_atuacao}} anos de mercado e foco em gestão moderna, tecnologia integrada e atendimento humanizado.\n\nEntendi que vocês estão procurando uma nova administradora pro {{condo}}, e ficaria muito feliz em apresentar nossa proposta.\n\nAlguns diferenciais que valem destacar:\n• {{diferencial_1}}\n• {{diferencial_2}}\n• {{diferencial_3}}\n\nDá pra agendar uma reunião na {{semana_proposta}}? Pode ser presencial ou online, como ficar melhor pra você.\n\nFico à disposição,\n{{seu_nome}}\nSindicompany`,
+    vars:['nome','seu_nome','anos_atuacao','condo','diferencial_1','diferencial_2','diferencial_3','semana_proposta'] },
+  { id:'com-proposta', cat:'comercial', title:'Envio de proposta comercial',
+    body:`Olá, {{nome}}, espero que esteja bem!\n\nConforme combinamos, segue em anexo a proposta da Sindicompany para administração do {{condo}}.\n\nResumo dos pontos principais:\n• Modelo: {{modelo}}\n• Taxa de administração: {{taxa}}\n• Início previsto: {{inicio}}\n\nQualquer dúvida ou ajuste, é só me sinalizar — fica fácil acertar os detalhes.\n\nAguardo seu retorno!\n{{seu_nome}}\nSindicompany`,
+    vars:['nome','condo','modelo','taxa','inicio','seu_nome'] },
+
+  // ============ MANUTENÇÃO / OPERACIONAL ============
+  { id:'man-orcamento', cat:'manutencao', title:'Solicitar orçamento de fornecedor',
+    body:`Olá, {{empresa}}, tudo bem?\n\nSomos da Sindicompany, administradora condominial. Gostaríamos de solicitar orçamento para {{servico}} no {{condo}}.\n\nDetalhes:\n• Local: {{endereco}}\n• Escopo: {{escopo}}\n• Prazo desejado: {{prazo}}\n\nPodem nos enviar até {{prazo_resposta}}?\n\nQualquer dúvida ou pra agendar uma visita técnica, é só responder.\n\nAtenciosamente,\nSindicompany`,
+    vars:['empresa','servico','condo','endereco','escopo','prazo','prazo_resposta'] },
+  { id:'man-avcb', cat:'manutencao', title:'Aviso de vencimento AVCB',
+    body:`Prezado síndico do {{condo}},\n\nIdentificamos que o AVCB (Auto de Vistoria do Corpo de Bombeiros) do condomínio vence em {{data_vencimento}}.\n\nProvidências necessárias:\n1. Renovação dos extintores: {{status_extintores}}\n2. Vistoria da rede hidráulica de incêndio\n3. Manutenção da iluminação de emergência\n4. Solicitação de nova vistoria junto ao CB\n\nPodemos agendar uma reunião pra alinhar o cronograma?\n\nSindicompany`,
+    vars:['condo','data_vencimento','status_extintores'] },
+
+  // ============ JURÍDICO ============
+  { id:'jur-notif-barulho', cat:'juridico', title:'Notificação de barulho (1ª)',
+    body:`NOTIFICAÇÃO EXTRAJUDICIAL\n\nAo morador da unidade {{unidade}}\n{{condo}}\n\nPrezado(a),\n\nServe a presente para comunicar que recebemos reclamações formais quanto a barulhos vindos da sua unidade nos dias {{datas_reclamacao}}, especialmente em horário de silêncio noturno (das 22h às 7h), em desacordo com o art. 1.336, IV do Código Civil e com o {{art_convencao}} da convenção do condomínio.\n\nSolicitamos cessação imediata da conduta e seu enquadramento às normas internas.\n\nA reincidência sujeitará a multa de até 5x o valor da taxa condominial, conforme art. 1.336 §2º CC.\n\nFica facultado o exercício do contraditório no prazo de {{prazo_defesa}} dias úteis, perante a administração.\n\nAtenciosamente,\nSíndico — {{condo}}`,
+    vars:['unidade','condo','datas_reclamacao','art_convencao','prazo_defesa'] },
+  { id:'jur-inadimplencia', cat:'juridico', title:'Aviso pré-judicial (inadimplência)',
+    body:`AVISO PRÉ-JUDICIAL\n\nUnidade {{unidade}} — {{condo}}\n\nPrezado(a) {{nome}},\n\nComunicamos que a unidade {{unidade}} apresenta débito condominial em atraso desde {{primeiro_atraso}}, totalizando {{valor_total}} (com juros e correção), referente a {{meses}} mensalidades.\n\nNa ausência de regularização ou proposta de acordo até {{prazo_final}}, será iniciada ação de cobrança judicial junto ao foro competente, conforme art. 1.336, §1º do Código Civil, com pedido de:\n• Cobrança do principal + juros + correção + multa\n• Honorários advocatícios\n• Eventual penhora do imóvel\n\nReforçamos que a negociação amigável é sempre o caminho preferencial. Estamos à disposição.\n\nAtenciosamente,\nSindicompany`,
+    vars:['unidade','condo','nome','primeiro_atraso','valor_total','meses','prazo_final'] },
+];
+
+// Categorias com label e cor
+const CATEGORIES = {
+  cobranca:    { label: 'Cobrança',     emoji: '💸' },
+  comunicado:  { label: 'Comunicado',   emoji: '📢' },
+  atendimento: { label: 'Atendimento',  emoji: '💬' },
+  comercial:   { label: 'Comercial',    emoji: '🤝' },
+  manutencao:  { label: 'Manutenção',   emoji: '🔧' },
+  juridico:    { label: 'Jurídico',     emoji: '⚖️' },
+};
+
+const FAV_KEY = 'sf_mensagens_favs';
+function getFavs() {
+  try { return new Set(JSON.parse(localStorage.getItem(FAV_KEY) || '[]')); }
+  catch { return new Set(); }
+}
+function setFavs(set) {
+  try { localStorage.setItem(FAV_KEY, JSON.stringify([...set])); } catch {}
+}
+
+const grid = document.getElementById('grid');
+const catsBar = document.getElementById('catsBar');
+const searchInput = document.getElementById('searchInput');
+let activeCat = 'all';
+let activeQuery = '';
+
+function escapeHtml(s) {
+  return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
+}
+
+function render() {
+  // Filtra
+  const favs = getFavs();
+  let items = MESSAGES.filter(m => {
+    if (activeCat === 'favs') return favs.has(m.id);
+    if (activeCat !== 'all' && m.cat !== activeCat) return false;
+    if (activeQuery) {
+      const q = activeQuery.toLowerCase();
+      const hay = `${m.title} ${m.body} ${m.cat}`.toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  });
+
+  // Categorias bar
+  const cats = ['all', 'favs', ...Object.keys(CATEGORIES)];
+  catsBar.innerHTML = cats.map(c => {
+    const isAll = c === 'all';
+    const isFavs = c === 'favs';
+    const label = isAll ? 'Todas' : isFavs ? '★ Favoritas' : `${CATEGORIES[c].emoji} ${CATEGORIES[c].label}`;
+    const count = isAll
+      ? MESSAGES.length
+      : isFavs
+        ? favs.size
+        : MESSAGES.filter(m => m.cat === c).length;
+    return `<button class="msg-cat${c === activeCat ? ' active' : ''}" data-cat="${c}">${label}<span class="count">${count}</span></button>`;
+  }).join('');
+
+  // Grid
+  if (!items.length) {
+    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text-muted)">Nenhuma mensagem encontrada.</div>';
+    return;
+  }
+  grid.innerHTML = items.map(m => {
+    const cat = CATEGORIES[m.cat];
+    const isFav = favs.has(m.id);
+    return `
+      <div class="msg-card" data-id="${m.id}">
+        <div class="msg-card-head">
+          <span class="msg-card-cat">${cat.emoji} ${cat.label}</span>
+          <button class="msg-card-fav${isFav ? ' is-fav' : ''}" type="button" data-fav-id="${m.id}" aria-label="Favoritar">
+            <svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01z"/></svg>
+          </button>
+        </div>
+        <h3>${escapeHtml(m.title)}</h3>
+        <div class="msg-card-preview">${escapeHtml(m.body.slice(0, 200))}…</div>
+      </div>
+    `;
+  }).join('');
+}
+
+// Eventos
+catsBar.addEventListener('click', e => {
+  const btn = e.target.closest('[data-cat]');
+  if (!btn) return;
+  activeCat = btn.dataset.cat;
+  render();
+});
+searchInput.addEventListener('input', e => {
+  activeQuery = e.target.value.trim();
+  render();
+});
+
+grid.addEventListener('click', e => {
+  // Favoritar (não abre modal)
+  const fav = e.target.closest('[data-fav-id]');
+  if (fav) {
+    e.stopPropagation();
+    const id = fav.dataset.favId;
+    const favs = getFavs();
+    if (favs.has(id)) favs.delete(id); else favs.add(id);
+    setFavs(favs);
+    render();
+    return;
+  }
+  // Abre modal
+  const card = e.target.closest('[data-id]');
+  if (card) openModal(card.dataset.id);
+});
+
+// ===== Modal =====
+const modal = document.getElementById('modal');
+const modalCat = document.getElementById('modalCat');
+const modalTitle = document.getElementById('modalTitle');
+const modalVars = document.getElementById('modalVars');
+const modalPreview = document.getElementById('modalPreview');
+const btnCopy = document.getElementById('btnCopy');
+const btnFav = document.getElementById('btnFav');
+let currentMsg = null;
+let currentValues = {};
+
+function openModal(id) {
+  const m = MESSAGES.find(x => x.id === id);
+  if (!m) return;
+  currentMsg = m;
+  currentValues = {};
+  const cat = CATEGORIES[m.cat];
+  modalCat.textContent = `${cat.emoji} ${cat.label}`;
+  modalTitle.textContent = m.title;
+  // Renderiza inputs pras variáveis
+  modalVars.innerHTML = m.vars.map(v => `
+    <div class="msg-var">
+      <label for="var-${v}">${v.replace(/_/g,' ')}</label>
+      <input type="text" id="var-${v}" data-var="${v}" placeholder="Ex: ${v === 'nome' ? 'Felipe Santos' : v === 'condo' ? 'Edifício Vista' : v.includes('valor') ? 'R$ 250,00' : v.includes('data') ? '20/05/2026' : '...'}">
+    </div>
+  `).join('');
+  updatePreview();
+  updateFavBtn();
+  modal.hidden = false;
+}
+function updatePreview() {
+  if (!currentMsg) return;
+  let out = currentMsg.body;
+  currentMsg.vars.forEach(v => {
+    const val = currentValues[v] || `{{${v}}}`;
+    out = out.replace(new RegExp(`\\{\\{\\s*${v}\\s*\\}\\}`, 'g'), val);
+  });
+  modalPreview.textContent = out;
+}
+function updateFavBtn() {
+  const favs = getFavs();
+  btnFav.textContent = favs.has(currentMsg.id) ? '★ Favorita' : '☆ Favoritar';
+  btnFav.style.color = favs.has(currentMsg.id) ? '#fbbf24' : '';
+}
+modalVars.addEventListener('input', e => {
+  const inp = e.target.closest('[data-var]');
+  if (!inp) return;
+  currentValues[inp.dataset.var] = inp.value;
+  updatePreview();
+});
+document.getElementById('modalClose').addEventListener('click', () => { modal.hidden = true; });
+modal.addEventListener('click', e => { if (e.target === modal) modal.hidden = true; });
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && !modal.hidden) modal.hidden = true; });
+
+btnCopy.addEventListener('click', async () => {
+  const text = modalPreview.textContent;
+  try {
+    await navigator.clipboard.writeText(text);
+    btnCopy.classList.add('copied');
+    btnCopy.innerHTML = '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Copiado!';
+    setTimeout(() => {
+      btnCopy.classList.remove('copied');
+      btnCopy.innerHTML = '<svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg> Copiar mensagem';
+    }, 2000);
+    if (window.trackUsage) trackUsage('mensagens-prontas', { template: currentMsg.id });
+  } catch (e) {
+    alert('Erro ao copiar — sua mensagem aparece na caixa de preview, copie manualmente.');
+  }
+});
+btnFav.addEventListener('click', () => {
+  const favs = getFavs();
+  if (favs.has(currentMsg.id)) favs.delete(currentMsg.id); else favs.add(currentMsg.id);
+  setFavs(favs);
+  updateFavBtn();
+  render();
+});
+
+render();
+</script>
+</body>
+</html>
