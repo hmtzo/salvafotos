@@ -6,15 +6,40 @@
 // =====================================================================
 
 const DEFAULT_PASSWORD = '123Mudar@@2026';
+// Equipe Sindicompany (cadastro oficial via /Users/.../sindicompany.xlsx)
+// Mantém também mkt@ como acesso administrativo (não está no XLSX mas é a conta
+// usada pra gerenciar o painel).
 const USERS = new Set([
-  'luciane@sindicompany.com.br',
-  'juliana@sindicompany.com.br',
-  'raquel@sindicompany.com.br',
-  'mkt@sindicompany.com.br',
-  'junior@sindicompany.com.br',
+  // Pessoas
+  'amanda@sindicompany.com.br',
+  'corina@sindicompany.com.br',
+  'diego@sindicompany.com.br',
+  'eduardo@sindicompany.com.br',
   'felipe.fernandes@sindicompany.com.br',
+  'isabella@sindicompany.com.br',
+  'junior@sindicompany.com.br',
+  'luciane.barco@sindicompany.com.br',
+  'marcia@sindicompany.com.br',
+  'marcio@sindicompany.com.br',
+  'miriam@sindicompany.com.br',
+  'raquel@sindicompany.com.br',
+  'rose@sindicompany.com.br',
+  // Áreas / contas operacionais
+  'arquitetura@sindicompany.com.br',
+  'atendimento@sindicompany.com.br',
+  'atendimento2@sindicompany.com.br',
   'comercial@sindicompany.com.br',
-  'orcamentos@sindicompany.com.br',
+  'contasapagar@sindicompany.com.br',
+  'engenharia@sindicompany.com.br',
+  'engenharia1@sindicompany.com.br',
+  'engenharia2@sindicompany.com.br',
+  'jornal@sindicompany.com.br',
+  'operacional@sindicompany.com.br',
+  'operacional2@sindicompany.com.br',
+  'operacional3@sindicompany.com.br',
+  'orcamento@sindicompany.com.br',
+  // Administrativo do painel
+  'mkt@sindicompany.com.br',
 ]);
 
 export const config = {

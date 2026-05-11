@@ -134,17 +134,69 @@ export function escapeHtml(s) {
 /**
  * Lista oficial de funcionários (mesma do middleware).
  * Mantém em sincronia se mudar.
+ * Fonte: /Users/.../sindicompany.xlsx (cadastro oficial da equipe).
  */
 export const TEAM_EMAILS = [
-  'luciane@sindicompany.com.br',
-  'juliana@sindicompany.com.br',
-  'raquel@sindicompany.com.br',
-  'mkt@sindicompany.com.br',
-  'junior@sindicompany.com.br',
-  'felipe.fernandes@sindicompany.com.br',
+  'amanda@sindicompany.com.br',
+  'arquitetura@sindicompany.com.br',
+  'atendimento@sindicompany.com.br',
+  'atendimento2@sindicompany.com.br',
   'comercial@sindicompany.com.br',
-  'orcamentos@sindicompany.com.br',
+  'contasapagar@sindicompany.com.br',
+  'corina@sindicompany.com.br',
+  'diego@sindicompany.com.br',
+  'eduardo@sindicompany.com.br',
+  'engenharia@sindicompany.com.br',
+  'engenharia1@sindicompany.com.br',
+  'engenharia2@sindicompany.com.br',
+  'felipe.fernandes@sindicompany.com.br',
+  'isabella@sindicompany.com.br',
+  'jornal@sindicompany.com.br',
+  'junior@sindicompany.com.br',
+  'luciane.barco@sindicompany.com.br',
+  'marcia@sindicompany.com.br',
+  'marcio@sindicompany.com.br',
+  'miriam@sindicompany.com.br',
+  'operacional@sindicompany.com.br',
+  'operacional2@sindicompany.com.br',
+  'operacional3@sindicompany.com.br',
+  'orcamento@sindicompany.com.br',
+  'raquel@sindicompany.com.br',
+  'rose@sindicompany.com.br',
 ];
+
+/**
+ * Mapa email → nome real do cadastro oficial. Tem preferência sobre o
+ * fallback heurístico de nameFromEmail() quando não houver perfil salvo no KV.
+ */
+export const TEAM_NAMES = {
+  'amanda@sindicompany.com.br': 'Amanda Queiroz',
+  'arquitetura@sindicompany.com.br': 'equipe Arquitetura',
+  'atendimento@sindicompany.com.br': 'equipe SAC',
+  'atendimento2@sindicompany.com.br': 'Henrique Nogueira',
+  'comercial@sindicompany.com.br': 'By Sindicompany',
+  'contasapagar@sindicompany.com.br': 'equipe Contas a Pagar',
+  'corina@sindicompany.com.br': 'Corina Abreu',
+  'diego@sindicompany.com.br': 'Diego Leite',
+  'eduardo@sindicompany.com.br': 'Eduardo Ribeiro',
+  'engenharia@sindicompany.com.br': 'equipe Engenharia',
+  'engenharia1@sindicompany.com.br': 'Vitor Porto',
+  'engenharia2@sindicompany.com.br': 'Vitor Porto',
+  'felipe.fernandes@sindicompany.com.br': 'Felipe Fernandes',
+  'isabella@sindicompany.com.br': 'Isabella Nascimento',
+  'jornal@sindicompany.com.br': 'equipe Mídias',
+  'junior@sindicompany.com.br': 'Rommel Júnior',
+  'luciane.barco@sindicompany.com.br': 'Luciane Barco',
+  'marcia@sindicompany.com.br': 'Márcia',
+  'marcio@sindicompany.com.br': 'Marcio Reis',
+  'miriam@sindicompany.com.br': 'Miriam Diamantino',
+  'operacional@sindicompany.com.br': 'equipe Operacional',
+  'operacional2@sindicompany.com.br': 'Bruno (Operacional)',
+  'operacional3@sindicompany.com.br': 'Silvanio (Operacional)',
+  'orcamento@sindicompany.com.br': 'equipe Orçamentos',
+  'raquel@sindicompany.com.br': 'Raquel Moura',
+  'rose@sindicompany.com.br': 'Rose Brandão',
+};
 
 /**
  * Pega nome amigável a partir do email (heurística). Se houver perfil cadastrado
@@ -182,8 +234,13 @@ const GENERIC_LOCAL_LABEL = {
 };
 
 export function nameFromEmail(email) {
-  const local = String(email || '').split('@')[0].toLowerCase();
+  const e = String(email || '').toLowerCase();
+  // 1) Mapa oficial da equipe (preferência máxima)
+  if (TEAM_NAMES[e]) return TEAM_NAMES[e];
+  // 2) Email institucional/cargo genérico
+  const local = e.split('@')[0];
   if (GENERIC_LOCAL_LABEL[local]) return GENERIC_LOCAL_LABEL[local];
+  // 3) Fallback heurístico
   return local
     .replace(/[._-]+/g, ' ')
     .replace(/\b\w/g, c => c.toUpperCase());
