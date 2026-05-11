@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#0a0a0c">
 <title>Ocultar PDF — Sindicompany</title>
-<meta name="description" content="Apague permanentemente trechos sensíveis de PDFs com tarja preta irreversível.">
 <meta name="robots" content="noindex, nofollow">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -13,28 +12,298 @@
 <link rel="icon" type="image/png" href="/assets/brand/icon-color.png">
 <link rel="stylesheet" href="/assets/shared.css">
 <script src="/assets/shared.js"></script>
+<script src="/assets/tool-helpers.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+<style>
+  .redact-pages{display:grid;gap:20px;margin-top:14px}
+  .redact-page{
+    position:relative;background:#1a1a1f;border-radius:10px;padding:8px;border:1px solid var(--border);
+    overflow:hidden;
+  }
+  .redact-page-head{
+    display:flex;justify-content:space-between;align-items:center;padding:6px 8px;
+    font-size:12px;color:var(--text-dim);font-weight:600;letter-spacing:0.05em;text-transform:uppercase;
+  }
+  .redact-canvas-wrap{position:relative;display:inline-block;max-width:100%}
+  .redact-canvas-wrap canvas{display:block;max-width:100%;height:auto;background:#fff;cursor:crosshair;touch-action:none}
+  .redact-rect{position:absolute;background:rgba(0,0,0,0.85);border:1px dashed #fff;pointer-events:auto;cursor:move}
+  .redact-rect::after{
+    content:'×';position:absolute;top:-8px;right:-8px;width:18px;height:18px;border-radius:50%;
+    background:#fff;color:#000;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center;
+    cursor:pointer;line-height:1;
+  }
+  .redact-help{
+    padding:10px 14px;background:rgba(245,158,11,0.08);border-left:3px solid #fbbf24;border-radius:8px;
+    font-size:12.5px;color:var(--text-dim);line-height:1.55;
+  }
+</style>
 </head>
 <body>
 <div id="app-nav"></div>
+
 <main class="tool-container">
   <header class="tool-hero">
     <span class="tool-eyebrow"><span class="dot"></span> Segurança · Redaction</span>
     <h1>Ocultar PDF</h1>
-    <p>Apague permanentemente trechos sensíveis de PDFs com tarja preta irreversível.</p>
+    <p>Desenhe tarjas pretas irreversíveis sobre áreas do PDF. Diferente da Redigir LGPD (que detecta CPF/email automaticamente), aqui você seleciona à mão o que quer apagar.</p>
   </header>
 
-  <div class="tool-coming-soon">
-    <div class="tool-coming-soon-icon">
-      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4 M21 12c-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7z M3 3l18 18"/></svg>
+  <label for="fileInput" id="dropZone" class="tool-drop-card">
+    <div class="tool-drop-icon">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7zM3 3l18 18"/></svg>
     </div>
-    <h3>Em desenvolvimento</h3>
-    <p>Seleção visual de áreas pra apagar com tarja preta — diferente da Redigir LGPD (que tarja por padrão CPF/RG/email automaticamente). Por agora, use Redigir LGPD pra dados pessoais.</p>
-    <span class="tool-coming-soon-tag">Em breve</span>
-  </div>
+    <div class="tool-drop-title" id="dropTitle">Solte o PDF aqui</div>
+    <div class="tool-drop-sub">ou clique para selecionar &nbsp;·&nbsp; até <kbd>15 MB</kbd></div>
+  </label>
+  <input type="file" id="fileInput" accept="application/pdf" hidden>
 
-  <div class="tool-privacy" style="margin-top:18px">
-    <a href="/hub.html" style="color:var(--text-dim);text-decoration:none">← Voltar ao Hub</a>
+  <section class="tool-config" id="configBox" style="display:none">
+    <div class="redact-help">
+      <strong>Como usar:</strong> arraste com o mouse (ou dedo) sobre o trecho a ocultar. Pra remover uma tarja, clique no × dela. Pode adicionar várias por página.
+    </div>
+
+    <div class="redact-pages" id="pagesBox"></div>
+
+    <button class="tool-process" id="processBtn" style="margin-top:18px">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      <span id="btnText">Aplicar tarjas</span>
+    </button>
+
+    <div class="tool-status" id="status">
+      <div class="tool-status-text" id="statusText">Aguardando…</div>
+      <div class="tool-progress"><div class="tool-progress-bar" id="progressBar"></div></div>
+    </div>
+
+    <div class="tool-result" id="result">
+      <div class="tool-result-head">
+        <div class="tool-result-title">PDF com tarjas</div>
+        <div class="tool-result-actions">
+          <button class="tool-result-action" id="downloadBtn" type="button">Baixar PDF</button>
+        </div>
+      </div>
+      <div class="tool-result-body" id="resultBody"></div>
+    </div>
+  </section>
+
+  <div class="tool-privacy">
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+    Tarjas pretas são desenhadas sobre o conteúdo. Pra remoção 100% irrecuperável do texto subjacente, abra no Acrobat e faça "Salvar Otimizado".
   </div>
 </main>
+
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+const { PDFDocument, rgb } = PDFLib;
+
+let selectedFile = null;
+let pageRects = {}; // { pageIdx: [{x,y,w,h}] } em coordenadas do canvas
+let pageRender = {}; // { pageIdx: { canvasW, canvasH, pdfW, pdfH } }
+let lastPdfBytes = null;
+
+ToolFile.setupDropZone({
+  accept: f => /pdf$/i.test(f.type) || /\.pdf$/i.test(f.name),
+  onFile: async f => {
+    selectedFile = f;
+    pageRects = {};
+    pageRender = {};
+    await loadAndRender();
+  },
+});
+
+async function loadAndRender() {
+  ToolUI.hideResult();
+  ToolUI.setStatus('Renderizando páginas…');
+  document.getElementById('configBox').style.display = 'block';
+  document.getElementById('pagesBox').innerHTML = '';
+
+  const buf = await selectedFile.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: buf.slice(0) }).promise;
+
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i);
+    const vpRaw = page.getViewport({ scale: 1 });
+    const scale = Math.min(800, vpRaw.width * 1.5) / vpRaw.width;
+    const vp = page.getViewport({ scale });
+    const canvas = document.createElement('canvas');
+    canvas.width = vp.width; canvas.height = vp.height;
+    await page.render({ canvasContext: canvas.getContext('2d'), viewport: vp }).promise;
+
+    pageRender[i-1] = { canvasW: vp.width, canvasH: vp.height, pdfW: vpRaw.width, pdfH: vpRaw.height };
+
+    const wrap = document.createElement('div');
+    wrap.className = 'redact-page';
+    wrap.innerHTML = `
+      <div class="redact-page-head">
+        <span>Página ${i}</span>
+        <span data-rect-count="${i-1}">0 tarjas</span>
+      </div>
+      <div class="redact-canvas-wrap" data-page="${i-1}"></div>
+    `;
+    wrap.querySelector('.redact-canvas-wrap').appendChild(canvas);
+    document.getElementById('pagesBox').appendChild(wrap);
+    bindDraw(wrap.querySelector('.redact-canvas-wrap'), canvas, i-1);
+  }
+  ToolUI.hideStatus();
+}
+
+function bindDraw(wrap, canvas, pageIdx) {
+  let startX, startY, drawingEl = null;
+
+  function getPos(e) {
+    const rect = canvas.getBoundingClientRect();
+    const t = e.touches ? e.touches[0] : e;
+    return { x: t.clientX - rect.left, y: t.clientY - rect.top, rect };
+  }
+
+  function start(e) {
+    e.preventDefault();
+    const { x, y } = getPos(e);
+    startX = x; startY = y;
+    drawingEl = document.createElement('div');
+    drawingEl.className = 'redact-rect';
+    const scale = canvas.clientWidth / canvas.width;
+    drawingEl.style.left = (x) + 'px';
+    drawingEl.style.top = (y) + 'px';
+    drawingEl.style.width = '0px'; drawingEl.style.height = '0px';
+    wrap.appendChild(drawingEl);
+  }
+  function move(e) {
+    if (!drawingEl) return;
+    e.preventDefault();
+    const { x, y } = getPos(e);
+    const left = Math.min(x, startX), top = Math.min(y, startY);
+    const w = Math.abs(x - startX), h = Math.abs(y - startY);
+    drawingEl.style.left = left + 'px';
+    drawingEl.style.top = top + 'px';
+    drawingEl.style.width = w + 'px';
+    drawingEl.style.height = h + 'px';
+  }
+  function end() {
+    if (!drawingEl) return;
+    const w = parseFloat(drawingEl.style.width);
+    const h = parseFloat(drawingEl.style.height);
+    if (w < 6 || h < 6) {
+      drawingEl.remove();
+    } else {
+      const scaleX = canvas.width / canvas.clientWidth;
+      const scaleY = canvas.height / canvas.clientHeight;
+      const rect = {
+        x: parseFloat(drawingEl.style.left) * scaleX,
+        y: parseFloat(drawingEl.style.top) * scaleY,
+        w: w * scaleX,
+        h: h * scaleY,
+      };
+      pageRects[pageIdx] = pageRects[pageIdx] || [];
+      pageRects[pageIdx].push(rect);
+      const idxInPage = pageRects[pageIdx].length - 1;
+      drawingEl.dataset.idx = idxInPage;
+      drawingEl.addEventListener('click', e => {
+        if (e.target === drawingEl) return;
+      });
+      const after = document.createElement('span');
+      drawingEl.addEventListener('mousedown', e => {
+        if (e.offsetX > drawingEl.offsetWidth - 18 && e.offsetY < 18) {
+          // delete via × area
+          const i = Number(drawingEl.dataset.idx);
+          pageRects[pageIdx].splice(i, 1);
+          drawingEl.remove();
+          updateRectIndices(pageIdx, wrap);
+          updateCount(pageIdx);
+        }
+      });
+      updateCount(pageIdx);
+    }
+    drawingEl = null;
+  }
+
+  canvas.addEventListener('mousedown', start);
+  window.addEventListener('mousemove', move);
+  window.addEventListener('mouseup', end);
+  canvas.addEventListener('touchstart', start, { passive: false });
+  window.addEventListener('touchmove', move, { passive: false });
+  window.addEventListener('touchend', end);
+}
+
+function updateRectIndices(pageIdx, wrap) {
+  wrap.querySelectorAll('.redact-rect').forEach((el, i) => el.dataset.idx = i);
+}
+function updateCount(pageIdx) {
+  const n = (pageRects[pageIdx] || []).length;
+  const tag = document.querySelector(`[data-rect-count="${pageIdx}"]`);
+  if (tag) tag.textContent = n + (n === 1 ? ' tarja' : ' tarjas');
+}
+
+document.getElementById('processBtn').addEventListener('click', async () => {
+  if (!selectedFile) return;
+  const total = Object.values(pageRects).reduce((s, a) => s + a.length, 0);
+  if (!total) {
+    ToolUI.setStatus('Desenhe pelo menos uma tarja primeiro.', 'error');
+    return;
+  }
+  const btn = document.getElementById('processBtn');
+  const btnText = document.getElementById('btnText');
+  btn.disabled = true; btnText.textContent = 'Aplicando…';
+  ToolUI.hideResult();
+  ToolUI.setProgress(20);
+  ToolUI.setStatus('Aplicando tarjas no PDF…');
+
+  try {
+    const buf = await selectedFile.arrayBuffer();
+    const pdfDoc = await PDFDocument.load(buf);
+    const pages = pdfDoc.getPages();
+
+    for (const idxStr of Object.keys(pageRects)) {
+      const idx = Number(idxStr);
+      const page = pages[idx];
+      const r = pageRender[idx];
+      const { width: pw, height: ph } = page.getSize();
+      const sx = pw / r.canvasW;
+      const sy = ph / r.canvasH;
+      for (const rect of pageRects[idx]) {
+        page.drawRectangle({
+          x: rect.x * sx,
+          y: ph - (rect.y + rect.h) * sy,
+          width: rect.w * sx,
+          height: rect.h * sy,
+          color: rgb(0, 0, 0),
+          borderWidth: 0,
+        });
+      }
+    }
+    lastPdfBytes = await pdfDoc.save();
+    ToolUI.setProgress(100);
+    ToolUI.setStatus(`${total} tarja${total>1?'s':''} aplicada${total>1?'s':''}.`, 'success');
+    document.getElementById('resultBody').innerHTML = `
+      <div style="display:flex;gap:14px;align-items:center;padding:14px;background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.25);border-radius:10px">
+        <div style="width:44px;height:44px;background:rgba(99,102,241,0.15);border-radius:10px;display:flex;align-items:center;justify-content:center;flex:0 0 44px">
+          <svg fill="none" stroke="#a5b4fc" stroke-width="2" viewBox="0 0 24 24" style="width:22px;height:22px"><path stroke-linecap="round" stroke-linejoin="round" d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        </div>
+        <div style="flex:1">
+          <div style="font-weight:600;font-size:14.5px;color:var(--text)">${escapeHtml((selectedFile.name||'documento.pdf').replace(/\.pdf$/i, '_tarjado.pdf'))}</div>
+          <div style="font-size:12px;color:var(--text-dim)">${(lastPdfBytes.length/1024).toFixed(0)} KB · ${total} tarja${total>1?'s':''}</div>
+        </div>
+      </div>`;
+    document.getElementById('result').classList.add('show');
+    if (window.trackUsage) trackUsage('ocultar-pdf', { rects: total });
+  } catch (e) {
+    ToolUI.setStatus('Erro: ' + e.message, 'error');
+    ToolUI.setProgress(0);
+  } finally {
+    btn.disabled = false;
+    btnText.textContent = 'Aplicar tarjas';
+  }
+});
+
+document.getElementById('downloadBtn').addEventListener('click', () => {
+  if (!lastPdfBytes) return;
+  const name = (selectedFile?.name || 'documento.pdf').replace(/\.pdf$/i, '') + '_tarjado.pdf';
+  ToolFile.download(new Blob([lastPdfBytes], { type: 'application/pdf' }), name);
+});
+
+function escapeHtml(s) {
+  return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
+}
+</script>
 </body>
 </html>

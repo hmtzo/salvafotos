@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#0a0a0c">
 <title>Lembretes Inteligentes — Sindicompany</title>
-<meta name="description" content="Crie regras simples que disparam ações no momento certo: "avise se taxa atrasou 5 dias", "lembrar do AVCB 60 dias antes".">
 <meta name="robots" content="noindex, nofollow">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -13,26 +12,320 @@
 <link rel="icon" type="image/png" href="/assets/brand/icon-color.png">
 <link rel="stylesheet" href="/assets/shared.css">
 <script src="/assets/shared.js"></script>
+<script src="/assets/tool-helpers.js"></script>
+<style>
+  .lemb-form{
+    display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+    padding:18px;background:rgba(255,255,255,0.02);border:1px solid var(--border);border-radius:12px;margin-bottom:18px;
+  }
+  .lemb-form label{display:flex;flex-direction:column;gap:5px;font-size:11px;font-weight:700;color:var(--text-dim);letter-spacing:0.05em;text-transform:uppercase}
+  .lemb-form input, .lemb-form select, .lemb-form textarea{
+    padding:10px 12px;background:rgba(255,255,255,0.04);border:1px solid var(--border);
+    border-radius:8px;color:var(--text);font-family:inherit;font-size:13.5px;font-weight:400;text-transform:none;letter-spacing:0;
+  }
+  .lemb-form textarea{resize:vertical;min-height:60px}
+  .lemb-form .full{grid-column:1/-1}
+  .lemb-list{display:grid;gap:10px}
+  .lemb-card{
+    padding:14px 16px;background:rgba(255,255,255,0.03);border:1px solid var(--border);
+    border-radius:10px;display:grid;gap:6px;
+  }
+  .lemb-card.urgent{border-color:rgba(239,68,68,0.35);background:rgba(239,68,68,0.06)}
+  .lemb-card.soon{border-color:rgba(245,158,11,0.35);background:rgba(245,158,11,0.06)}
+  .lemb-card.future{}
+  .lemb-card.done{opacity:0.4}
+  .lemb-card-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+  .lemb-card-title{font-size:14.5px;font-weight:600;color:var(--text);flex:1}
+  .lemb-card-date{
+    font-size:11px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;
+    padding:3px 8px;border-radius:100px;background:rgba(255,255,255,0.06);color:var(--text-dim);white-space:nowrap;
+  }
+  .lemb-card.urgent .lemb-card-date{background:rgba(239,68,68,0.18);color:#fca5a5}
+  .lemb-card.soon .lemb-card-date{background:rgba(245,158,11,0.18);color:#fbbf24}
+  .lemb-card-notes{font-size:13px;color:var(--text-dim);line-height:1.5}
+  .lemb-card-actions{display:flex;gap:6px;margin-top:6px;flex-wrap:wrap}
+  .lemb-card-actions button{
+    padding:6px 10px;background:rgba(255,255,255,0.04);border:1px solid var(--border);
+    border-radius:6px;color:var(--text-dim);font-family:inherit;font-size:11.5px;font-weight:500;cursor:pointer;
+    display:flex;align-items:center;gap:5px;
+  }
+  .lemb-card-actions button:hover{background:rgba(255,255,255,0.08);color:var(--text)}
+  .lemb-empty{text-align:center;padding:36px 18px;color:var(--text-dim);font-size:14px}
+  .lemb-templates{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+  .lemb-template{
+    padding:8px 12px;background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.3);
+    border-radius:100px;color:#a5b4fc;font-size:12px;cursor:pointer;font-weight:500;
+  }
+  .lemb-template:hover{background:rgba(99,102,241,0.15)}
+</style>
 </head>
 <body>
 <div id="app-nav"></div>
+
 <main class="tool-container">
   <header class="tool-hero">
     <span class="tool-eyebrow"><span class="dot"></span> Automação · Lembretes</span>
     <h1>Lembretes Inteligentes</h1>
-    <p>Crie regras simples que disparam ações no momento certo: "avise se taxa atrasou 5 dias", "lembrar do AVCB 60 dias antes".</p>
+    <p>Cadastre vencimentos que você não quer esquecer (AVCB, seguro, contratos, vistorias). Mostra contagem regressiva, alerta no navegador e exporta pra calendário.</p>
   </header>
-  <div class="tool-coming-soon">
-    <div class="tool-coming-soon-icon">
-      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+
+  <section class="tool-config">
+    <div class="tool-config-head"><h2>Novo lembrete</h2></div>
+
+    <div class="lemb-templates">
+      <span class="lemb-template" data-tpl="avcb">AVCB do edifício</span>
+      <span class="lemb-template" data-tpl="seguro">Renovação seguro</span>
+      <span class="lemb-template" data-tpl="assembleia">Assembleia ordinária</span>
+      <span class="lemb-template" data-tpl="vistoria">Vistoria semestral</span>
+      <span class="lemb-template" data-tpl="contrato">Vencimento de contrato</span>
+      <span class="lemb-template" data-tpl="inadim">Inadimplência crítica</span>
     </div>
-    <h3>Em desenvolvimento</h3>
-    <p>Painel de regras condicionais com gatilhos (data, condição, evento) e ações (email, WhatsApp via Poli, criar tarefa). Vai usar o cron já existente. Casos típicos: lembrete antes de vencer AVCB/seguro, aviso quando inadimplente passar X dias, follow-up automático com prospect, lembrete de assembleia 7 dias antes.</p>
-    <span class="tool-coming-soon-tag">Em breve</span>
-  </div>
-  <div class="tool-privacy" style="margin-top:18px">
-    <a href="/hub.html" style="color:var(--text-dim);text-decoration:none">← Voltar ao Hub</a>
+
+    <div class="lemb-form">
+      <label>Título<input type="text" id="f-title" placeholder="Ex: AVCB Ed. Aurora vence"></label>
+      <label>Data<input type="date" id="f-date"></label>
+      <label>Alerta antes de <select id="f-warn">
+        <option value="30">30 dias antes</option>
+        <option value="14">14 dias antes</option>
+        <option value="7" selected>7 dias antes</option>
+        <option value="3">3 dias antes</option>
+        <option value="1">1 dia antes</option>
+      </select></label>
+      <label>Recorrência<select id="f-recur">
+        <option value="none" selected>Uma vez</option>
+        <option value="month">Mensal</option>
+        <option value="quarter">Trimestral</option>
+        <option value="year">Anual</option>
+      </select></label>
+      <label class="full">Notas (opcional)<textarea id="f-notes" placeholder="Ex: contato bombeiros 11 9999-9999, contratar revisão até 30 dias antes"></textarea></label>
+    </div>
+
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <button class="tool-process" id="addBtn" style="flex:1;min-width:200px">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+        <span>Adicionar lembrete</span>
+      </button>
+      <button class="tool-result-action" id="notifyBtn" type="button" style="padding:14px 18px">Ativar avisos do navegador</button>
+    </div>
+  </section>
+
+  <section class="tool-config" style="margin-top:18px">
+    <div class="tool-config-head" style="display:flex;justify-content:space-between;align-items:center">
+      <h2>Próximos lembretes</h2>
+      <div style="display:flex;gap:8px">
+        <button class="tool-result-action" id="exportBtn" type="button">Exportar .ics</button>
+        <button class="tool-result-action" id="clearDoneBtn" type="button">Limpar concluídos</button>
+      </div>
+    </div>
+    <div class="lemb-list" id="list"></div>
+  </section>
+
+  <div class="tool-privacy">
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+    Salvos no seu navegador. Importe o .ics no Google Calendar / Outlook pra ter avisos sincronizados em todos os dispositivos.
   </div>
 </main>
+
+<script>
+const STORE = 'sindi-lembretes-v1';
+const TEMPLATES = {
+  avcb: { title: 'AVCB — renovação', warn: 30, recur: 'year', notes: 'Contratar empresa de bombeiros 30 dias antes. Documentos: planta, laudo elétrico.' },
+  seguro: { title: 'Renovação seguro condomínio', warn: 30, recur: 'year', notes: 'Pegar 3 cotações antes do vencimento. Comparar coberturas.' },
+  assembleia: { title: 'Assembleia ordinária', warn: 14, recur: 'year', notes: 'Convocação por edital com 8 dias de antecedência. Preparar: prestação contas, orçamento.' },
+  vistoria: { title: 'Vistoria semestral', warn: 7, recur: 'month', notes: 'Verificar elevador, gerador, hidrantes, escadas, telhado.' },
+  contrato: { title: 'Vencimento de contrato', warn: 30, recur: 'none', notes: 'Avaliar renovação. Pesquisar 2-3 alternativas pra negociação.' },
+  inadim: { title: 'Inadimplência crítica', warn: 1, recur: 'month', notes: 'Acionar Wizard Inadimplência. Verificar moradores com 90+ dias de atraso.' },
+};
+
+function load() {
+  try { return JSON.parse(localStorage.getItem(STORE)) || []; } catch { return []; }
+}
+function save(items) {
+  localStorage.setItem(STORE, JSON.stringify(items));
+}
+
+document.querySelectorAll('.lemb-template').forEach(t => {
+  t.addEventListener('click', () => {
+    const tpl = TEMPLATES[t.dataset.tpl];
+    if (!tpl) return;
+    document.getElementById('f-title').value = tpl.title;
+    document.getElementById('f-warn').value = String(tpl.warn);
+    document.getElementById('f-recur').value = tpl.recur;
+    document.getElementById('f-notes').value = tpl.notes;
+    document.getElementById('f-date').focus();
+  });
+});
+
+document.getElementById('addBtn').addEventListener('click', () => {
+  const title = document.getElementById('f-title').value.trim();
+  const date = document.getElementById('f-date').value;
+  if (!title || !date) {
+    alert('Preencha título e data');
+    return;
+  }
+  const items = load();
+  items.push({
+    id: 'lemb-' + Date.now(),
+    title,
+    date,
+    warn: Number(document.getElementById('f-warn').value),
+    recur: document.getElementById('f-recur').value,
+    notes: document.getElementById('f-notes').value.trim(),
+    done: false,
+    created: new Date().toISOString(),
+  });
+  save(items);
+  document.getElementById('f-title').value = '';
+  document.getElementById('f-date').value = '';
+  document.getElementById('f-notes').value = '';
+  render();
+  if (window.trackUsage) trackUsage('lembretes-inteligentes', { action: 'add' });
+});
+
+document.getElementById('clearDoneBtn').addEventListener('click', () => {
+  const items = load().filter(i => !i.done);
+  save(items);
+  render();
+});
+
+document.getElementById('notifyBtn').addEventListener('click', async () => {
+  if (!('Notification' in window)) {
+    alert('Seu navegador não suporta notificações');
+    return;
+  }
+  const perm = await Notification.requestPermission();
+  if (perm === 'granted') {
+    new Notification('Sindi · lembretes ativos', { body: 'Vou avisar quando algum prazo se aproximar 🔔', icon: '/assets/brand/icon-color.png' });
+    document.getElementById('notifyBtn').textContent = '✓ Avisos ativos';
+  }
+});
+
+document.getElementById('exportBtn').addEventListener('click', () => {
+  const items = load().filter(i => !i.done);
+  if (!items.length) return;
+  const ics = buildIcs(items);
+  ToolFile.download(new Blob([ics], { type: 'text/calendar' }), 'sindi_lembretes.ics');
+});
+
+function buildIcs(items) {
+  const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Sindicompany//Hub//PT', 'CALSCALE:GREGORIAN'];
+  for (const it of items) {
+    const date = it.date.replace(/-/g, '');
+    const rrule = it.recur === 'year' ? 'RRULE:FREQ=YEARLY'
+                : it.recur === 'month' ? 'RRULE:FREQ=MONTHLY'
+                : it.recur === 'quarter' ? 'RRULE:FREQ=MONTHLY;INTERVAL=3'
+                : '';
+    lines.push('BEGIN:VEVENT');
+    lines.push(`UID:${it.id}@sindicompany`);
+    lines.push(`DTSTAMP:${new Date().toISOString().replace(/[-:]/g,'').slice(0,15)}Z`);
+    lines.push(`DTSTART;VALUE=DATE:${date}`);
+    lines.push(`DTEND;VALUE=DATE:${date}`);
+    lines.push(`SUMMARY:${escapeIcs(it.title)}`);
+    if (it.notes) lines.push(`DESCRIPTION:${escapeIcs(it.notes)}`);
+    if (rrule) lines.push(rrule);
+    lines.push(`BEGIN:VALARM`);
+    lines.push(`TRIGGER:-P${it.warn}D`);
+    lines.push(`ACTION:DISPLAY`);
+    lines.push(`DESCRIPTION:${escapeIcs('Sindi · ' + it.title)}`);
+    lines.push(`END:VALARM`);
+    lines.push('END:VEVENT');
+  }
+  lines.push('END:VCALENDAR');
+  return lines.join('\r\n');
+}
+function escapeIcs(s) {
+  return String(s||'').replace(/\\/g, '\\\\').replace(/\n/g, '\\n').replace(/,/g, '\\,').replace(/;/g, '\\;');
+}
+
+function daysBetween(a, b) {
+  return Math.round((new Date(b) - new Date(a)) / 86400000);
+}
+
+function render() {
+  const items = load();
+  const list = document.getElementById('list');
+  if (!items.length) {
+    list.innerHTML = '<div class="lemb-empty">Nenhum lembrete ainda. Crie o primeiro acima.</div>';
+    return;
+  }
+  const today = new Date().toISOString().slice(0, 10);
+  items.sort((a, b) => a.date.localeCompare(b.date));
+  list.innerHTML = items.map(it => {
+    const days = daysBetween(today, it.date);
+    let cls = 'future';
+    if (it.done) cls = 'done';
+    else if (days < 0) cls = 'urgent';
+    else if (days <= it.warn) cls = 'soon';
+    const dateLabel = it.done ? 'Concluído'
+      : days < 0 ? `Atrasado ${-days}d`
+      : days === 0 ? 'Hoje'
+      : days === 1 ? 'Amanhã'
+      : days < 7 ? `Em ${days} dias`
+      : `${new Date(it.date + 'T12:00:00').toLocaleDateString('pt-BR')}`;
+    return `
+      <div class="lemb-card ${cls}" data-id="${it.id}">
+        <div class="lemb-card-head">
+          <div class="lemb-card-title">${escapeHtml(it.title)}</div>
+          <div class="lemb-card-date">${dateLabel}</div>
+        </div>
+        ${it.notes ? `<div class="lemb-card-notes">${escapeHtml(it.notes)}</div>` : ''}
+        <div style="font-size:11px;color:var(--text-dim);opacity:0.7">${recurLabel(it.recur)} · alerta ${it.warn}d antes</div>
+        <div class="lemb-card-actions">
+          <button data-act="done" data-id="${it.id}">${it.done ? '↺ Reabrir' : '✓ Concluir'}</button>
+          <button data-act="del" data-id="${it.id}">Apagar</button>
+        </div>
+      </div>`;
+  }).join('');
+
+  list.querySelectorAll('button[data-act]').forEach(b => {
+    b.addEventListener('click', () => {
+      const id = b.dataset.id;
+      let items = load();
+      if (b.dataset.act === 'del') items = items.filter(i => i.id !== id);
+      else if (b.dataset.act === 'done') items = items.map(i => i.id === id ? { ...i, done: !i.done } : i);
+      save(items);
+      render();
+    });
+  });
+}
+
+function recurLabel(r) {
+  return r === 'year' ? 'Anual' : r === 'month' ? 'Mensal' : r === 'quarter' ? 'Trimestral' : 'Único';
+}
+function escapeHtml(s) {
+  return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
+}
+
+function checkNotifications() {
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+  const items = load().filter(i => !i.done);
+  const today = new Date().toISOString().slice(0, 10);
+  const seenKey = 'sindi-lembretes-seen';
+  const seen = JSON.parse(localStorage.getItem(seenKey) || '{}');
+  const todayKey = today;
+  for (const it of items) {
+    const days = daysBetween(today, it.date);
+    if (days <= it.warn && days >= 0) {
+      const k = `${it.id}-${todayKey}`;
+      if (!seen[k]) {
+        new Notification('Sindi · lembrete chegando', {
+          body: `${it.title} — ${days === 0 ? 'hoje' : 'em ' + days + ' dia' + (days>1?'s':'')}`,
+          icon: '/assets/brand/icon-color.png',
+          tag: it.id,
+        });
+        seen[k] = true;
+      }
+    }
+  }
+  // Compact seen → keep only today's keys
+  const compact = {};
+  Object.keys(seen).filter(k => k.includes(todayKey)).forEach(k => compact[k] = true);
+  localStorage.setItem(seenKey, JSON.stringify(compact));
+}
+
+render();
+checkNotifications();
+setInterval(checkNotifications, 60000);
+</script>
 </body>
 </html>

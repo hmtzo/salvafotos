@@ -13,28 +13,182 @@
 <link rel="icon" type="image/png" href="/assets/brand/icon-color.png">
 <link rel="stylesheet" href="/assets/shared.css">
 <script src="/assets/shared.js"></script>
+<script src="/assets/tool-helpers.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html-docx-js-typescript@0.1.5/dist/html-docx.umd.js"></script>
 </head>
 <body>
 <div id="app-nav"></div>
+
 <main class="tool-container">
   <header class="tool-hero">
     <span class="tool-eyebrow"><span class="dot"></span> Conversão · Word</span>
     <h1>PDF para Word</h1>
-    <p>Converta PDFs para .docx editável preservando texto, parágrafos e estrutura.</p>
+    <p>Sindi lê o PDF e gera um .docx editável preservando títulos, parágrafos, listas e tabelas. Use no Word, Google Docs ou LibreOffice.</p>
   </header>
 
-  <div class="tool-coming-soon">
-    <div class="tool-coming-soon-icon">
-      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V7.5L14.5 2z M14 2v6h6 M16 13H8 M16 17H8 M10 9H8"/></svg>
+  <label for="fileInput" id="dropZone" class="tool-drop-card">
+    <div class="tool-drop-icon">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z M14 2v6h6 M16 13H8 M16 17H8 M10 9H8"/></svg>
     </div>
-    <h3>Implementação em andamento</h3>
-    <p>Conversão fiel de PDF para .docx usando IA pra preservar layout, parágrafos e tabelas. Vai usar Gemini multimodal pra extrair conteúdo estruturado e gerar Word editável.</p>
-    <span class="tool-coming-soon-tag">Em breve</span>
-  </div>
+    <div class="tool-drop-title" id="dropTitle">Solte o PDF aqui</div>
+    <div class="tool-drop-sub">ou clique para selecionar &nbsp;·&nbsp; até <kbd>15 MB</kbd></div>
+  </label>
+  <input type="file" id="fileInput" accept="application/pdf" hidden>
 
-  <div class="tool-privacy" style="margin-top:18px">
-    <a href="/hub.html" style="color:var(--text-dim);text-decoration:none">← Voltar ao Hub</a>
+  <section class="tool-config">
+    <div class="tool-config-head"><h2>Modo de extração</h2></div>
+    <div class="tool-options">
+      <label class="tool-toggle">
+        <input type="radio" name="mode" value="fiel" checked>
+        <span class="tool-toggle-switch"></span>
+        <span class="tool-toggle-label"><strong>Fiel ao original</strong><span>preserva títulos, listas, tabelas, ordem exata</span></span>
+      </label>
+      <label class="tool-toggle">
+        <input type="radio" name="mode" value="limpo">
+        <span class="tool-toggle-switch"></span>
+        <span class="tool-toggle-label"><strong>Texto limpo</strong><span>remove cabeçalho/rodapé/numeração de página</span></span>
+      </label>
+    </div>
+
+    <button class="tool-process" id="processBtn" disabled>
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+      <span id="btnText">Converter para Word</span>
+    </button>
+
+    <div class="tool-status" id="status">
+      <div class="tool-status-text" id="statusText">Aguardando…</div>
+      <div class="tool-progress"><div class="tool-progress-bar" id="progressBar"></div></div>
+    </div>
+
+    <div class="tool-result" id="result">
+      <div class="tool-result-head">
+        <div class="tool-result-title">Documento gerado</div>
+        <div class="tool-result-actions">
+          <button class="tool-result-action" id="downloadBtn" type="button">Baixar .docx</button>
+        </div>
+      </div>
+      <div class="tool-result-body" id="resultBody"></div>
+    </div>
+  </section>
+
+  <div class="tool-privacy">
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+    PDF processado pela Sindi (Gemini) e descartado. Conversão fiel depende da qualidade do PDF original.
   </div>
 </main>
+
+<script>
+let selectedFile = null;
+let lastDocxBlob = null;
+
+ToolFile.setupDropZone({
+  accept: f => /pdf$/i.test(f.type) || /\.pdf$/i.test(f.name),
+  onFile: f => { selectedFile = f; ToolUI.setStatus('Pronto pra converter', ''); ToolUI.hideResult(); },
+});
+
+function buildPrompt(mode) {
+  const cleanRules = mode === 'limpo'
+    ? '\n- REMOVA cabeçalhos, rodapés, números de página, marcas d\'água repetitivas.\n- Junte parágrafos quebrados por mudança de página.'
+    : '\n- PRESERVE a estrutura original (títulos, ordem, hierarquia).\n- Mantenha cabeçalhos/rodapés se forem parte do conteúdo.';
+
+  return `Extraia TODO o conteúdo textual do PDF anexado e devolva como HTML semântico limpo.
+
+REGRAS DE EXTRAÇÃO:
+- Use <h1>, <h2>, <h3> pra títulos hierárquicos (baseado no tamanho/peso da fonte).
+- Use <p> pra parágrafos normais.
+- Use <ul><li> pra listas com marcadores; <ol><li> pra numeradas.
+- Use <table><tr><td> pra tabelas reais (com bordas/colunas).
+- Use <strong> pra negrito; <em> pra itálico.
+- Use <br> só pra quebras intencionais (poemas, endereços).
+- Separe parágrafos com linha em branco.${cleanRules}
+- NÃO invente conteúdo. Se algo é ilegível, marque como [ilegível].
+- NÃO use CSS, classes, IDs, estilos inline. Só tags semânticas.
+- Devolva APENAS o HTML, começando com <h1> ou <p>. Sem <html>, <body>, sem markdown, sem comentários.
+
+Saída esperada: HTML cru, pronto pra colar dentro de um <body>.`;
+}
+
+document.getElementById('processBtn').addEventListener('click', async () => {
+  if (!selectedFile) return;
+  if (selectedFile.size > 15 * 1024 * 1024) {
+    ToolUI.setStatus('PDF maior que 15 MB. Comprima primeiro em Comprimir PDF.', 'error');
+    return;
+  }
+  const btn = document.getElementById('processBtn');
+  const btnText = document.getElementById('btnText');
+  btn.disabled = true; btnText.textContent = 'Convertendo…';
+  ToolUI.hideResult();
+  ToolUI.setProgress(15);
+  ToolUI.setStatus('Sindi lendo o PDF…');
+
+  try {
+    const mode = document.querySelector('input[name=mode]:checked').value;
+    const prompt = buildPrompt(mode);
+    ToolUI.setProgress(40);
+    ToolUI.setStatus('Extraindo conteúdo estruturado…');
+    const data = await ToolAI.callGeminiWithFile(selectedFile, prompt, { mode: 'flash' });
+    if (data.empty || !data.text) throw new Error('Sindi não conseguiu ler o PDF');
+
+    ToolUI.setProgress(75);
+    ToolUI.setStatus('Montando arquivo .docx…');
+    let html = data.text.trim();
+    html = html.replace(/^```html\s*/i, '').replace(/```$/, '').trim();
+    if (!/<(h1|h2|h3|p|ul|ol|table)/i.test(html)) {
+      html = html.split(/\n\n+/).map(b => `<p>${escapeHtml(b)}</p>`).join('\n');
+    }
+
+    const fullHtml = `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
+      body{font-family:'Calibri','Arial',sans-serif;font-size:11pt;line-height:1.5;color:#000}
+      h1{font-size:18pt;margin:18pt 0 8pt;font-weight:700}
+      h2{font-size:14pt;margin:14pt 0 6pt;font-weight:700}
+      h3{font-size:12pt;margin:12pt 0 4pt;font-weight:700}
+      p{margin:6pt 0}
+      table{border-collapse:collapse;margin:8pt 0;width:100%}
+      td,th{border:1px solid #444;padding:5pt 7pt;vertical-align:top}
+      ul,ol{margin:6pt 0 6pt 24pt}
+      li{margin:2pt 0}
+    </style></head><body>${html}</body></html>`;
+
+    const docxBlob = await window.htmlDocx.asBlob(fullHtml, { orientation: 'portrait', margins: { top: 720, right: 720, bottom: 720, left: 720 } });
+    lastDocxBlob = docxBlob;
+    ToolUI.setProgress(100);
+    ToolUI.setStatus('Conversão concluída.', 'success');
+
+    const sizeKb = (docxBlob.size / 1024).toFixed(0);
+    document.getElementById('resultBody').innerHTML = `
+      <div style="display:flex;gap:14px;align-items:center;padding:14px;background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.25);border-radius:10px">
+        <div style="width:44px;height:44px;background:rgba(99,102,241,0.15);border-radius:10px;display:flex;align-items:center;justify-content:center;flex:0 0 44px">
+          <svg fill="none" stroke="#a5b4fc" stroke-width="2" viewBox="0 0 24 24" style="width:22px;height:22px"><path stroke-linecap="round" stroke-linejoin="round" d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z M14 2v6h6"/></svg>
+        </div>
+        <div style="flex:1">
+          <div style="font-weight:600;font-size:14.5px;color:var(--text)">${escapeHtml(selectedFile.name.replace(/\.pdf$/i, '.docx'))}</div>
+          <div style="font-size:12px;color:var(--text-dim)">${sizeKb} KB · pronto pra baixar</div>
+        </div>
+      </div>
+      <details style="margin-top:14px">
+        <summary style="cursor:pointer;color:var(--text-dim);font-size:13px;padding:6px 0">Ver prévia do conteúdo extraído</summary>
+        <div style="margin-top:10px;padding:16px;background:#fff;color:#000;border-radius:8px;max-height:400px;overflow:auto;font-family:Calibri,Arial,sans-serif;font-size:13px;line-height:1.55">${html}</div>
+      </details>`;
+    document.getElementById('result').classList.add('show');
+    if (window.trackUsage) trackUsage('pdf-para-word', { mode });
+  } catch (e) {
+    ToolUI.setStatus('Erro: ' + e.message, 'error');
+    ToolUI.setProgress(0);
+  } finally {
+    btn.disabled = false;
+    btnText.textContent = 'Converter para Word';
+  }
+});
+
+document.getElementById('downloadBtn').addEventListener('click', () => {
+  if (!lastDocxBlob) return;
+  const name = (selectedFile?.name || 'documento.pdf').replace(/\.pdf$/i, '') + '.docx';
+  ToolFile.download(lastDocxBlob, name);
+});
+
+function escapeHtml(s) {
+  return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
+}
+</script>
 </body>
 </html>

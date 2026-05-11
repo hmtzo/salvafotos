@@ -4,8 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#0a0a0c">
-<title>Digitalizar e transformar em PDF — Sindicompany</title>
-<meta name="description" content="Use a câmera do celular pra escanear documentos físicos direto pro PDF.">
+<title>Digitalizar (Câmera) — Sindicompany</title>
 <meta name="robots" content="noindex, nofollow">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -13,28 +12,332 @@
 <link rel="icon" type="image/png" href="/assets/brand/icon-color.png">
 <link rel="stylesheet" href="/assets/shared.css">
 <script src="/assets/shared.js"></script>
+<script src="/assets/tool-helpers.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+<style>
+  .scan-stage{
+    display:grid;gap:14px;
+  }
+  .scan-cam{
+    position:relative;background:#000;border-radius:14px;overflow:hidden;
+    aspect-ratio:3/4;max-height:60vh;border:1px solid var(--border);
+  }
+  .scan-cam video{width:100%;height:100%;object-fit:cover;display:block}
+  .scan-cam .cam-empty{
+    position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    color:var(--text-dim);font-size:13.5px;gap:10px;padding:20px;text-align:center;
+  }
+  .scan-controls{display:flex;gap:10px;flex-wrap:wrap}
+  .scan-controls button{
+    flex:1;min-width:120px;padding:14px;border-radius:12px;
+    background:rgba(255,255,255,0.04);border:1px solid var(--border);
+    color:var(--text);font-family:inherit;font-size:13.5px;font-weight:600;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;gap:8px;
+  }
+  .scan-controls button:hover{background:rgba(255,255,255,0.07)}
+  .scan-controls button.primary{
+    background:linear-gradient(135deg,#6366f1,#8b5cf6);border-color:transparent;color:#fff;
+  }
+  .scan-controls button svg{width:18px;height:18px}
+  .scan-thumbs{
+    display:flex;gap:10px;overflow-x:auto;padding:6px 2px;
+  }
+  .scan-thumb{
+    position:relative;flex:0 0 80px;height:108px;border-radius:8px;overflow:hidden;
+    border:2px solid var(--border);background:#000;cursor:grab;
+  }
+  .scan-thumb img{width:100%;height:100%;object-fit:cover}
+  .scan-thumb .thumb-num{
+    position:absolute;top:4px;left:4px;background:rgba(0,0,0,0.7);color:#fff;
+    font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;
+  }
+  .scan-thumb .thumb-rm{
+    position:absolute;top:4px;right:4px;width:22px;height:22px;border-radius:50%;
+    background:rgba(0,0,0,0.7);color:#fff;border:none;cursor:pointer;font-size:13px;line-height:1;
+  }
+  .scan-filter-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+  .scan-filter-row label{
+    display:flex;align-items:center;gap:6px;padding:8px 12px;border-radius:8px;
+    background:rgba(255,255,255,0.03);border:1px solid var(--border);cursor:pointer;font-size:12.5px;
+  }
+  .scan-filter-row label.active{background:rgba(99,102,241,0.15);border-color:rgba(99,102,241,0.4);color:#a5b4fc}
+  .scan-filter-row input{display:none}
+</style>
 </head>
 <body>
 <div id="app-nav"></div>
+
 <main class="tool-container">
   <header class="tool-hero">
     <span class="tool-eyebrow"><span class="dot"></span> Captura · Câmera</span>
-    <h1>Digitalizar e transformar em PDF</h1>
-    <p>Use a câmera do celular pra escanear documentos físicos direto pro PDF.</p>
+    <h1>Digitalizar (Câmera)</h1>
+    <p>Use a câmera do celular pra escanear documentos físicos direto pro PDF. Várias páginas, com filtros de leitura.</p>
   </header>
 
-  <div class="tool-coming-soon">
-    <div class="tool-coming-soon-icon">
-      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="14" rx="2" /><circle cx="12" cy="13" r="3"/></svg>
-    </div>
-    <h3>Em desenvolvimento</h3>
-    <p>Integração com câmera do dispositivo para escanear páginas, com correção de perspectiva, contraste e geração de PDF multipágina. Por enquanto, use o app de escaner do seu celular e envie o PDF gerado.</p>
-    <span class="tool-coming-soon-tag">Em breve</span>
-  </div>
+  <section class="tool-config">
+    <div class="scan-stage">
+      <div class="scan-cam" id="camStage">
+        <div class="cam-empty" id="camEmpty">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" style="width:34px;height:34px;opacity:0.4"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M3 9a2 2 0 012-2h.93a2 2 0 001.66-.9l.81-1.2A2 2 0 0110.07 4h3.86a2 2 0 011.67.9l.81 1.2a2 2 0 001.66.9H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z M12 17a4 4 0 100-8 4 4 0 000 8z"/></svg>
+          <span>Toque em <strong>Abrir câmera</strong> pra começar</span>
+        </div>
+        <video id="video" playsinline muted style="display:none"></video>
+      </div>
 
-  <div class="tool-privacy" style="margin-top:18px">
-    <a href="/hub.html" style="color:var(--text-dim);text-decoration:none">← Voltar ao Hub</a>
+      <div class="scan-controls">
+        <button id="openCamBtn">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.66-.9l.81-1.2A2 2 0 0110.07 4h3.86a2 2 0 011.67.9l.81 1.2a2 2 0 001.66.9H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z M12 17a4 4 0 100-8 4 4 0 000 8z"/></svg>
+          <span>Abrir câmera</span>
+        </button>
+        <button id="snapBtn" class="primary" disabled>
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" stroke-width="2"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.66-.9l.81-1.2A2 2 0 0110.07 4h3.86a2 2 0 011.67.9l.81 1.2a2 2 0 001.66.9H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/></svg>
+          <span>Capturar página</span>
+        </button>
+        <button id="flipBtn" disabled>
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-3-6.7M21 4v5h-5"/></svg>
+          <span>Virar</span>
+        </button>
+        <button id="uploadBtn">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2 M7 10l5-5 5 5 M12 5v12"/></svg>
+          <span>Foto da galeria</span>
+        </button>
+        <input type="file" id="fileInput" accept="image/*" hidden multiple>
+      </div>
+
+      <div class="scan-filter-row" id="filterRow">
+        <label><input type="radio" name="filter" value="auto" checked> Auto</label>
+        <label><input type="radio" name="filter" value="bw"> Preto e branco</label>
+        <label><input type="radio" name="filter" value="boost"> Contraste +</label>
+        <label><input type="radio" name="filter" value="color"> Cor original</label>
+      </div>
+
+      <div id="thumbsBox" style="display:none">
+        <div style="font-size:11px;color:var(--text-dim);font-weight:700;letter-spacing:0.05em;text-transform:uppercase;margin-bottom:8px" id="pagesLabel">0 páginas</div>
+        <div class="scan-thumbs" id="thumbs"></div>
+      </div>
+    </div>
+
+    <button class="tool-process" id="processBtn" disabled style="margin-top:18px">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4"/></svg>
+      <span id="btnText">Gerar PDF</span>
+    </button>
+
+    <div class="tool-status" id="status">
+      <div class="tool-status-text" id="statusText">Aguardando…</div>
+      <div class="tool-progress"><div class="tool-progress-bar" id="progressBar"></div></div>
+    </div>
+
+    <div class="tool-result" id="result">
+      <div class="tool-result-head">
+        <div class="tool-result-title">PDF digitalizado</div>
+        <div class="tool-result-actions">
+          <button class="tool-result-action" id="downloadBtn" type="button">Baixar PDF</button>
+        </div>
+      </div>
+      <div class="tool-result-body" id="resultBody"></div>
+    </div>
+  </section>
+
+  <div class="tool-privacy">
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+    Câmera abre só no seu navegador. Nada sai do dispositivo até você baixar o PDF.
   </div>
 </main>
+
+<script>
+const { PDFDocument } = PDFLib;
+let stream = null;
+let facing = 'environment';
+let pages = []; // [{ dataUrl, filter }]
+let lastPdfBytes = null;
+
+const video = document.getElementById('video');
+const camEmpty = document.getElementById('camEmpty');
+
+document.getElementById('openCamBtn').addEventListener('click', async () => {
+  await startCamera();
+});
+document.getElementById('flipBtn').addEventListener('click', async () => {
+  facing = facing === 'environment' ? 'user' : 'environment';
+  await startCamera();
+});
+document.getElementById('snapBtn').addEventListener('click', snap);
+document.getElementById('uploadBtn').addEventListener('click', () => document.getElementById('fileInput').click());
+document.getElementById('fileInput').addEventListener('change', async e => {
+  for (const f of e.target.files) await addImageFromFile(f);
+  e.target.value = '';
+});
+
+document.querySelectorAll('input[name=filter]').forEach(r => {
+  r.addEventListener('change', () => {
+    document.querySelectorAll('#filterRow label').forEach(l => l.classList.toggle('active', l.querySelector('input').checked));
+  });
+});
+document.querySelector('#filterRow label').classList.add('active');
+
+async function startCamera() {
+  try {
+    if (stream) stream.getTracks().forEach(t => t.stop());
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: { ideal: facing }, width: { ideal: 1920 }, height: { ideal: 1080 } },
+      audio: false,
+    });
+    video.srcObject = stream;
+    await video.play();
+    video.style.display = 'block';
+    camEmpty.style.display = 'none';
+    document.getElementById('snapBtn').disabled = false;
+    document.getElementById('flipBtn').disabled = false;
+  } catch (e) {
+    ToolUI.setStatus('Câmera bloqueada: ' + e.message, 'error');
+  }
+}
+
+function applyFilter(canvas, kind) {
+  if (kind === 'color') return canvas;
+  const ctx = canvas.getContext('2d');
+  const img = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const d = img.data;
+  if (kind === 'bw') {
+    for (let i = 0; i < d.length; i += 4) {
+      const gray = d[i]*0.3 + d[i+1]*0.59 + d[i+2]*0.11;
+      const v = gray > 145 ? 255 : (gray < 80 ? 0 : Math.round((gray - 80) * 255 / 65));
+      d[i] = d[i+1] = d[i+2] = v;
+    }
+  } else if (kind === 'boost') {
+    for (let i = 0; i < d.length; i += 4) {
+      d[i]   = Math.min(255, Math.max(0, (d[i]   - 128) * 1.5 + 128 + 8));
+      d[i+1] = Math.min(255, Math.max(0, (d[i+1] - 128) * 1.5 + 128 + 8));
+      d[i+2] = Math.min(255, Math.max(0, (d[i+2] - 128) * 1.5 + 128 + 8));
+    }
+  } else if (kind === 'auto') {
+    let min = 255, max = 0;
+    for (let i = 0; i < d.length; i += 4) {
+      const g = d[i]*0.3 + d[i+1]*0.59 + d[i+2]*0.11;
+      if (g < min) min = g;
+      if (g > max) max = g;
+    }
+    const range = Math.max(1, max - min);
+    for (let i = 0; i < d.length; i += 4) {
+      d[i]   = Math.min(255, Math.max(0, (d[i]   - min) * 255 / range));
+      d[i+1] = Math.min(255, Math.max(0, (d[i+1] - min) * 255 / range));
+      d[i+2] = Math.min(255, Math.max(0, (d[i+2] - min) * 255 / range));
+    }
+  }
+  ctx.putImageData(img, 0, 0);
+  return canvas;
+}
+
+function getFilter() {
+  return document.querySelector('input[name=filter]:checked').value;
+}
+
+function snap() {
+  const canvas = document.createElement('canvas');
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  canvas.getContext('2d').drawImage(video, 0, 0);
+  applyFilter(canvas, getFilter());
+  const dataUrl = canvas.toDataURL('image/jpeg', 0.88);
+  pages.push({ dataUrl, filter: getFilter() });
+  renderThumbs();
+}
+
+async function addImageFromFile(file) {
+  const url = URL.createObjectURL(file);
+  const img = new Image();
+  await new Promise((res, rej) => { img.onload = res; img.onerror = rej; img.src = url; });
+  const canvas = document.createElement('canvas');
+  const max = 2000;
+  const r = Math.min(max / img.width, max / img.height, 1);
+  canvas.width = img.width * r;
+  canvas.height = img.height * r;
+  canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+  applyFilter(canvas, getFilter());
+  const dataUrl = canvas.toDataURL('image/jpeg', 0.88);
+  pages.push({ dataUrl, filter: getFilter() });
+  URL.revokeObjectURL(url);
+  renderThumbs();
+}
+
+function renderThumbs() {
+  const box = document.getElementById('thumbsBox');
+  const list = document.getElementById('thumbs');
+  box.style.display = pages.length ? 'block' : 'none';
+  document.getElementById('pagesLabel').textContent = `${pages.length} ${pages.length === 1 ? 'página' : 'páginas'}`;
+  list.innerHTML = pages.map((p, i) => `
+    <div class="scan-thumb">
+      <img src="${p.dataUrl}" alt="página ${i+1}">
+      <span class="thumb-num">${i+1}</span>
+      <button class="thumb-rm" data-i="${i}" type="button">×</button>
+    </div>
+  `).join('');
+  list.querySelectorAll('.thumb-rm').forEach(b => {
+    b.addEventListener('click', () => {
+      pages.splice(Number(b.dataset.i), 1);
+      renderThumbs();
+    });
+  });
+  document.getElementById('processBtn').disabled = pages.length === 0;
+}
+
+document.getElementById('processBtn').addEventListener('click', async () => {
+  if (!pages.length) return;
+  const btn = document.getElementById('processBtn');
+  const btnText = document.getElementById('btnText');
+  btn.disabled = true; btnText.textContent = 'Montando…';
+  ToolUI.hideResult();
+  ToolUI.setProgress(20);
+  ToolUI.setStatus('Compondo PDF…');
+
+  try {
+    const pdfDoc = await PDFDocument.create();
+    for (let i = 0; i < pages.length; i++) {
+      ToolUI.setProgress(20 + Math.floor((i / pages.length) * 70));
+      const jpgBytes = Uint8Array.from(atob(pages[i].dataUrl.split(',')[1]), c => c.charCodeAt(0));
+      const img = await pdfDoc.embedJpg(jpgBytes);
+      const ratio = img.width / img.height;
+      const isLandscape = ratio > 1;
+      const pageW = isLandscape ? 842 : 595;
+      const pageH = isLandscape ? 595 : 842;
+      const page = pdfDoc.addPage([pageW, pageH]);
+      const margin = 24;
+      const maxW = pageW - margin * 2;
+      const maxH = pageH - margin * 2;
+      const fit = Math.min(maxW / img.width, maxH / img.height);
+      const w = img.width * fit, h = img.height * fit;
+      page.drawImage(img, { x: (pageW - w) / 2, y: (pageH - h) / 2, width: w, height: h });
+    }
+    lastPdfBytes = await pdfDoc.save();
+    ToolUI.setProgress(100);
+    ToolUI.setStatus(`PDF gerado com ${pages.length} página${pages.length>1?'s':''}.`, 'success');
+    document.getElementById('resultBody').innerHTML = `
+      <div style="display:flex;gap:14px;align-items:center;padding:14px;background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.25);border-radius:10px">
+        <div style="width:44px;height:44px;background:rgba(99,102,241,0.15);border-radius:10px;display:flex;align-items:center;justify-content:center;flex:0 0 44px">
+          <svg fill="none" stroke="#a5b4fc" stroke-width="2" viewBox="0 0 24 24" style="width:22px;height:22px"><path stroke-linecap="round" stroke-linejoin="round" d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z M14 2v6h6"/></svg>
+        </div>
+        <div style="flex:1">
+          <div style="font-weight:600;font-size:14.5px;color:var(--text)">documento_digitalizado.pdf</div>
+          <div style="font-size:12px;color:var(--text-dim)">${(lastPdfBytes.length/1024).toFixed(0)} KB · ${pages.length} página${pages.length>1?'s':''}</div>
+        </div>
+      </div>`;
+    document.getElementById('result').classList.add('show');
+    if (window.trackUsage) trackUsage('digitalizar-pdf', { pages: pages.length });
+  } catch (e) {
+    ToolUI.setStatus('Erro: ' + e.message, 'error');
+    ToolUI.setProgress(0);
+  } finally {
+    btn.disabled = false;
+    btnText.textContent = 'Gerar PDF';
+  }
+});
+
+document.getElementById('downloadBtn').addEventListener('click', () => {
+  if (!lastPdfBytes) return;
+  ToolFile.download(new Blob([lastPdfBytes], { type: 'application/pdf' }), 'documento_digitalizado.pdf');
+});
+
+window.addEventListener('beforeunload', () => { if (stream) stream.getTracks().forEach(t => t.stop()); });
+</script>
 </body>
 </html>

@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#0a0a0c">
 <title>Saúde do Condomínio — Sindicompany</title>
-<meta name="description" content="Dashboard com visão geral de cada condomínio: inadimplência, chamados, vencimentos, próxima assembleia. Tudo em uma tela.">
 <meta name="robots" content="noindex, nofollow">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -13,26 +12,251 @@
 <link rel="icon" type="image/png" href="/assets/brand/icon-color.png">
 <link rel="stylesheet" href="/assets/shared.css">
 <script src="/assets/shared.js"></script>
+<script src="/assets/tool-helpers.js"></script>
+<style>
+  .scondo-picker{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}
+  .scondo-picker button{
+    padding:8px 14px;background:rgba(255,255,255,0.04);border:1px solid var(--border);
+    border-radius:100px;color:var(--text-dim);font-family:inherit;font-size:12.5px;cursor:pointer;font-weight:500;
+  }
+  .scondo-picker button.active{background:rgba(99,102,241,0.18);border-color:rgba(99,102,241,0.4);color:#a5b4fc}
+  .scondo-picker .add{background:rgba(34,197,94,0.1);border-color:rgba(34,197,94,0.3);color:#86efac}
+
+  .scondo-cards{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));margin-bottom:18px}
+  .scondo-stat{
+    padding:16px 18px;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:12px;
+  }
+  .scondo-stat .label{font-size:11px;font-weight:700;color:var(--text-dim);letter-spacing:0.05em;text-transform:uppercase;margin-bottom:6px}
+  .scondo-stat .value{font-size:24px;font-weight:800;color:var(--text);line-height:1.1;font-variant-numeric:tabular-nums}
+  .scondo-stat .sub{font-size:11.5px;color:var(--text-dim);margin-top:4px}
+  .scondo-stat.health-good{border-color:rgba(34,197,94,0.3);background:rgba(34,197,94,0.06)}
+  .scondo-stat.health-warn{border-color:rgba(245,158,11,0.3);background:rgba(245,158,11,0.06)}
+  .scondo-stat.health-bad{border-color:rgba(239,68,68,0.3);background:rgba(239,68,68,0.06)}
+  .scondo-stat.health-good .value{color:#86efac}
+  .scondo-stat.health-warn .value{color:#fbbf24}
+  .scondo-stat.health-bad .value{color:#fca5a5}
+
+  .scondo-bar{height:6px;background:rgba(255,255,255,0.08);border-radius:3px;overflow:hidden;margin-top:8px}
+  .scondo-bar-fill{height:100%;background:linear-gradient(90deg,#6366f1,#a5b4fc);transition:width 0.6s}
+
+  .scondo-form{
+    display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+    padding:18px;background:rgba(255,255,255,0.02);border:1px solid var(--border);border-radius:12px;
+  }
+  .scondo-form label{display:flex;flex-direction:column;gap:5px;font-size:11px;font-weight:700;color:var(--text-dim);letter-spacing:0.05em;text-transform:uppercase}
+  .scondo-form input{
+    padding:10px 12px;background:rgba(255,255,255,0.04);border:1px solid var(--border);
+    border-radius:8px;color:var(--text);font-family:inherit;font-size:13.5px;text-transform:none;letter-spacing:0;font-weight:400;
+  }
+  .scondo-form .full{grid-column:1/-1}
+</style>
 </head>
 <body>
 <div id="app-nav"></div>
+
 <main class="tool-container">
   <header class="tool-hero">
     <span class="tool-eyebrow"><span class="dot"></span> Gestão · Dashboard</span>
     <h1>Saúde do Condomínio</h1>
-    <p>Dashboard com visão geral de cada condomínio: inadimplência, chamados, vencimentos, próxima assembleia. Tudo em uma tela.</p>
+    <p>Dashboard rápido por condomínio: inadimplência, chamados, prazos críticos, NPS. Atualize manualmente — leva 1 min e dá visão semanal de risco.</p>
   </header>
-  <div class="tool-coming-soon">
-    <div class="tool-coming-soon-icon">
-      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 16V9M12 16V5M17 16v-7"/></svg>
+
+  <div class="scondo-picker" id="picker"></div>
+
+  <section class="tool-config" id="dashbox" style="display:none">
+    <div class="tool-config-head">
+      <h2 id="condoTitle">Condomínio</h2>
+      <button class="tool-result-action" id="renameBtn" type="button">Renomear</button>
     </div>
-    <h3>Em desenvolvimento</h3>
-    <p>Seletor de condomínio com cards: taxa de inadimplência (% e valor), chamados abertos (com SLA), prazos críticos (AVCB, seguro, fiscalização), próxima assembleia, last contato com síndico, NPS dos moradores. Integra com a Poli pra puxar chamados e com o backend financeiro pra inadimplência.</p>
-    <span class="tool-coming-soon-tag">Em breve</span>
-  </div>
-  <div class="tool-privacy" style="margin-top:18px">
-    <a href="/hub.html" style="color:var(--text-dim);text-decoration:none">← Voltar ao Hub</a>
+
+    <div class="scondo-cards" id="statsCards"></div>
+
+    <div class="tool-config-head" style="margin-top:8px"><h2>Atualizar números</h2></div>
+    <div class="scondo-form" id="form">
+      <label>Unidades total<input type="number" id="f-units" min="0" placeholder="120"></label>
+      <label>Unidades inadimplentes<input type="number" id="f-overdue" min="0" placeholder="8"></label>
+      <label>Valor em aberto (R$)<input type="number" id="f-debt" min="0" step="100" placeholder="14500"></label>
+      <label>Chamados abertos<input type="number" id="f-tickets" min="0" placeholder="3"></label>
+      <label>Chamados SLA estourado<input type="number" id="f-sla" min="0" placeholder="0"></label>
+      <label>NPS (-100 a 100)<input type="number" id="f-nps" min="-100" max="100" placeholder="45"></label>
+      <label>AVCB vence em (dias)<input type="number" id="f-avcb" placeholder="180"></label>
+      <label>Seguro vence em (dias)<input type="number" id="f-seguro" placeholder="90"></label>
+      <label>Próx. assembleia (dias)<input type="number" id="f-asm" placeholder="60"></label>
+      <label class="full">Observações da semana<input type="text" id="f-notes" placeholder="Ex: 2 reclamações de barulho no apto 502"></label>
+    </div>
+
+    <button class="tool-process" id="saveBtn" style="margin-top:18px">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+      <span>Salvar atualização</span>
+    </button>
+
+    <button class="tool-result-action" id="removeBtn" type="button" style="margin-top:12px;width:100%;padding:10px;color:#fca5a5">Remover este condomínio</button>
+  </section>
+
+  <div class="tool-privacy">
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+    Salvo localmente neste dispositivo. Pra compartilhar entre síndicos, abra a mesma rota no celular/desktop do operador responsável.
   </div>
 </main>
+
+<script>
+const STORE = 'sindi-saude-v1';
+let current = null;
+
+function load() {
+  try { return JSON.parse(localStorage.getItem(STORE)) || { condos: [], active: null }; }
+  catch { return { condos: [], active: null }; }
+}
+function save(state) {
+  localStorage.setItem(STORE, JSON.stringify(state));
+}
+
+function renderPicker() {
+  const state = load();
+  const picker = document.getElementById('picker');
+  picker.innerHTML = state.condos.map(c => `
+    <button data-id="${c.id}" class="${state.active === c.id ? 'active' : ''}">${escapeHtml(c.name)}</button>
+  `).join('') + `<button class="add" id="addCondoBtn">+ Adicionar condomínio</button>`;
+
+  picker.querySelectorAll('[data-id]').forEach(b => {
+    b.addEventListener('click', () => {
+      const s = load();
+      s.active = b.dataset.id;
+      save(s);
+      renderAll();
+    });
+  });
+  document.getElementById('addCondoBtn').addEventListener('click', () => {
+    const name = prompt('Nome do condomínio:');
+    if (!name?.trim()) return;
+    const s = load();
+    const id = 'condo-' + Date.now();
+    s.condos.push({ id, name: name.trim(), data: emptyData() });
+    s.active = id;
+    save(s);
+    renderAll();
+  });
+}
+
+function emptyData() {
+  return { units: 0, overdue: 0, debt: 0, tickets: 0, sla: 0, nps: 0, avcb: null, seguro: null, asm: null, notes: '', updated: null };
+}
+
+function getActive() {
+  const s = load();
+  return s.condos.find(c => c.id === s.active);
+}
+
+function renderDashboard() {
+  const c = getActive();
+  if (!c) {
+    document.getElementById('dashbox').style.display = 'none';
+    return;
+  }
+  document.getElementById('dashbox').style.display = 'block';
+  document.getElementById('condoTitle').textContent = c.name;
+  const d = c.data || emptyData();
+
+  document.getElementById('f-units').value = d.units || '';
+  document.getElementById('f-overdue').value = d.overdue || '';
+  document.getElementById('f-debt').value = d.debt || '';
+  document.getElementById('f-tickets').value = d.tickets || '';
+  document.getElementById('f-sla').value = d.sla || '';
+  document.getElementById('f-nps').value = (d.nps != null && d.nps !== 0) ? d.nps : '';
+  document.getElementById('f-avcb').value = d.avcb == null ? '' : d.avcb;
+  document.getElementById('f-seguro').value = d.seguro == null ? '' : d.seguro;
+  document.getElementById('f-asm').value = d.asm == null ? '' : d.asm;
+  document.getElementById('f-notes').value = d.notes || '';
+
+  const overduePct = d.units > 0 ? (d.overdue / d.units * 100) : 0;
+  const inadimHealth = overduePct > 10 ? 'health-bad' : overduePct > 5 ? 'health-warn' : 'health-good';
+  const slaHealth = d.sla > 0 ? 'health-bad' : d.tickets > 5 ? 'health-warn' : 'health-good';
+  const npsHealth = d.nps >= 50 ? 'health-good' : d.nps >= 0 ? 'health-warn' : 'health-bad';
+  const avcbHealth = d.avcb == null ? '' : d.avcb < 30 ? 'health-bad' : d.avcb < 90 ? 'health-warn' : 'health-good';
+  const seguroHealth = d.seguro == null ? '' : d.seguro < 30 ? 'health-bad' : d.seguro < 60 ? 'health-warn' : 'health-good';
+
+  const cards = [
+    { label: 'Inadimplência', value: overduePct.toFixed(1) + '%', sub: `${d.overdue}/${d.units} unidades`, cls: inadimHealth, bar: overduePct },
+    { label: 'Valor em aberto', value: 'R$ ' + (d.debt||0).toLocaleString('pt-BR'), sub: 'a receber', cls: '' },
+    { label: 'Chamados', value: d.tickets || '0', sub: d.sla ? `${d.sla} fora do SLA` : 'todos no prazo', cls: slaHealth },
+    { label: 'NPS', value: (d.nps == null || d.nps === 0) ? '–' : (d.nps > 0 ? '+' : '') + d.nps, sub: d.nps >= 50 ? 'zona de promotores' : d.nps >= 0 ? 'zona neutra' : 'zona crítica', cls: npsHealth },
+    d.avcb != null ? { label: 'AVCB', value: d.avcb + 'd', sub: d.avcb < 30 ? 'renovar urgente' : 'pra renovar', cls: avcbHealth } : null,
+    d.seguro != null ? { label: 'Seguro', value: d.seguro + 'd', sub: 'pra renovar', cls: seguroHealth } : null,
+    d.asm != null ? { label: 'Próx. assembleia', value: d.asm + 'd', sub: d.asm < 14 ? 'preparar pauta' : '', cls: '' } : null,
+  ].filter(Boolean);
+
+  document.getElementById('statsCards').innerHTML = cards.map(c => `
+    <div class="scondo-stat ${c.cls}">
+      <div class="label">${c.label}</div>
+      <div class="value">${c.value}</div>
+      <div class="sub">${c.sub || ''}</div>
+      ${c.bar != null ? `<div class="scondo-bar"><div class="scondo-bar-fill" style="width:${Math.min(100, c.bar*3)}%"></div></div>` : ''}
+    </div>
+  `).join('') + (d.notes ? `
+    <div class="scondo-stat" style="grid-column:1/-1">
+      <div class="label">Observações da semana</div>
+      <div style="font-size:13.5px;color:var(--text);line-height:1.55;margin-top:4px">${escapeHtml(d.notes)}</div>
+      ${d.updated ? `<div class="sub" style="margin-top:8px">atualizado em ${new Date(d.updated).toLocaleString('pt-BR')}</div>` : ''}
+    </div>` : '');
+}
+
+function renderAll() {
+  renderPicker();
+  renderDashboard();
+}
+
+document.getElementById('saveBtn').addEventListener('click', () => {
+  const c = getActive();
+  if (!c) return;
+  c.data = {
+    units: Number(document.getElementById('f-units').value) || 0,
+    overdue: Number(document.getElementById('f-overdue').value) || 0,
+    debt: Number(document.getElementById('f-debt').value) || 0,
+    tickets: Number(document.getElementById('f-tickets').value) || 0,
+    sla: Number(document.getElementById('f-sla').value) || 0,
+    nps: Number(document.getElementById('f-nps').value) || 0,
+    avcb: document.getElementById('f-avcb').value === '' ? null : Number(document.getElementById('f-avcb').value),
+    seguro: document.getElementById('f-seguro').value === '' ? null : Number(document.getElementById('f-seguro').value),
+    asm: document.getElementById('f-asm').value === '' ? null : Number(document.getElementById('f-asm').value),
+    notes: document.getElementById('f-notes').value.trim(),
+    updated: new Date().toISOString(),
+  };
+  const s = load();
+  s.condos = s.condos.map(x => x.id === c.id ? c : x);
+  save(s);
+  renderDashboard();
+  if (window.trackUsage) trackUsage('saude-condominio', { condo: c.name });
+});
+
+document.getElementById('renameBtn').addEventListener('click', () => {
+  const c = getActive(); if (!c) return;
+  const name = prompt('Novo nome:', c.name);
+  if (!name?.trim()) return;
+  c.name = name.trim();
+  const s = load();
+  s.condos = s.condos.map(x => x.id === c.id ? c : x);
+  save(s);
+  renderAll();
+});
+
+document.getElementById('removeBtn').addEventListener('click', () => {
+  const c = getActive(); if (!c) return;
+  if (!confirm(`Remover "${c.name}"? Histórico se perde.`)) return;
+  const s = load();
+  s.condos = s.condos.filter(x => x.id !== c.id);
+  s.active = s.condos[0]?.id || null;
+  save(s);
+  renderAll();
+});
+
+function escapeHtml(s) {
+  return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
+}
+
+renderAll();
+if (!load().condos.length) {
+  document.getElementById('picker').innerHTML += '<span style="font-size:12.5px;color:var(--text-dim);align-self:center">Comece adicionando seu primeiro condomínio →</span>';
+}
+</script>
 </body>
 </html>

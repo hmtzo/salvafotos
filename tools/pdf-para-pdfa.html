@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#0a0a0c">
 <title>PDF para PDF/A — Sindicompany</title>
-<meta name="description" content="Converta para o padrão PDF/A de arquivamento de longo prazo (ISO 19005).">
 <meta name="robots" content="noindex, nofollow">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -13,28 +12,217 @@
 <link rel="icon" type="image/png" href="/assets/brand/icon-color.png">
 <link rel="stylesheet" href="/assets/shared.css">
 <script src="/assets/shared.js"></script>
+<script src="/assets/tool-helpers.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
 </head>
 <body>
 <div id="app-nav"></div>
+
 <main class="tool-container">
   <header class="tool-hero">
     <span class="tool-eyebrow"><span class="dot"></span> Conformidade · ISO</span>
     <h1>PDF para PDF/A</h1>
-    <p>Converta para o padrão PDF/A de arquivamento de longo prazo (ISO 19005).</p>
+    <p>Marca o PDF com metadados XMP de conformidade PDF/A-3b para arquivamento legal/contábil. Útil pra documentos que precisam durar décadas.</p>
   </header>
 
-  <div class="tool-coming-soon">
-    <div class="tool-coming-soon-icon">
-      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+  <label for="fileInput" id="dropZone" class="tool-drop-card">
+    <div class="tool-drop-icon">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
     </div>
-    <h3>Em desenvolvimento</h3>
-    <p>Conversão para o padrão PDF/A com fontes embutidas, metadados XMP e perfil ICC. Necessário para arquivamento legal e processos jurídicos.</p>
-    <span class="tool-coming-soon-tag">Em breve</span>
-  </div>
+    <div class="tool-drop-title" id="dropTitle">Solte o PDF aqui</div>
+    <div class="tool-drop-sub">ou clique para selecionar &nbsp;·&nbsp; até <kbd>50 MB</kbd></div>
+  </label>
+  <input type="file" id="fileInput" accept="application/pdf" hidden>
 
-  <div class="tool-privacy" style="margin-top:18px">
-    <a href="/hub.html" style="color:var(--text-dim);text-decoration:none">← Voltar ao Hub</a>
+  <section class="tool-config">
+    <div class="tool-config-head"><h2>Metadados do documento</h2></div>
+    <div class="tool-options" style="display:grid;gap:12px;grid-template-columns:1fr 1fr">
+      <label style="grid-column:1/-1">
+        <div style="font-size:12px;color:var(--text-dim);font-weight:600;margin-bottom:4px;letter-spacing:0.04em;text-transform:uppercase">Título</div>
+        <input type="text" id="meta-title" placeholder="Ex: Contrato de prestação · 2026" style="width:100%;padding:10px 12px;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:13.5px">
+      </label>
+      <label>
+        <div style="font-size:12px;color:var(--text-dim);font-weight:600;margin-bottom:4px;letter-spacing:0.04em;text-transform:uppercase">Autor</div>
+        <input type="text" id="meta-author" placeholder="Sindicompany" style="width:100%;padding:10px 12px;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:13.5px">
+      </label>
+      <label>
+        <div style="font-size:12px;color:var(--text-dim);font-weight:600;margin-bottom:4px;letter-spacing:0.04em;text-transform:uppercase">Assunto</div>
+        <input type="text" id="meta-subject" placeholder="Arquivo permanente" style="width:100%;padding:10px 12px;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:inherit;font-size:13.5px">
+      </label>
+    </div>
+
+    <div class="tool-options" style="margin-top:14px">
+      <label class="tool-toggle">
+        <input type="radio" name="conformance" value="3b" checked>
+        <span class="tool-toggle-switch"></span>
+        <span class="tool-toggle-label"><strong>PDF/A-3b (recomendado)</strong><span>permite anexos e atende maioria dos requisitos</span></span>
+      </label>
+      <label class="tool-toggle">
+        <input type="radio" name="conformance" value="2b">
+        <span class="tool-toggle-switch"></span>
+        <span class="tool-toggle-label"><strong>PDF/A-2b</strong><span>compatível com PDF 1.7</span></span>
+      </label>
+    </div>
+
+    <button class="tool-process" id="processBtn" disabled>
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4 m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+      <span id="btnText">Marcar como PDF/A</span>
+    </button>
+
+    <div class="tool-status" id="status">
+      <div class="tool-status-text" id="statusText">Aguardando…</div>
+      <div class="tool-progress"><div class="tool-progress-bar" id="progressBar"></div></div>
+    </div>
+
+    <div class="tool-result" id="result">
+      <div class="tool-result-head">
+        <div class="tool-result-title">PDF/A gerado</div>
+        <div class="tool-result-actions">
+          <button class="tool-result-action" id="downloadBtn" type="button">Baixar PDF</button>
+        </div>
+      </div>
+      <div class="tool-result-body" id="resultBody"></div>
+    </div>
+  </section>
+
+  <div class="tool-privacy">
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+    Marca metadados XMP de conformidade PDF/A. Validação plena (com fontes embutidas e ICC) exige Adobe Acrobat Pro — esta ferramenta cuida da marcação semântica que cobre o caso típico de arquivamento Sindicompany.
   </div>
 </main>
+
+<script>
+const { PDFDocument, PDFName, PDFString, PDFRawStream, PDFDict, PDFArray, decodePDFRawStream } = PDFLib;
+let selectedFile = null;
+let lastPdfBytes = null;
+let lastFilename = '';
+
+ToolFile.setupDropZone({
+  accept: f => /pdf$/i.test(f.type) || /\.pdf$/i.test(f.name),
+  onFile: f => {
+    selectedFile = f;
+    ToolUI.setStatus('Pronto pra marcar', '');
+    ToolUI.hideResult();
+    const t = document.getElementById('meta-title');
+    if (!t.value) t.value = f.name.replace(/\.pdf$/i, '');
+  },
+});
+
+function escapeXml(s) {
+  return String(s || '').replace(/[<>&'"]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;',"'":'&apos;','"':'&quot;'}[c]));
+}
+
+function buildXmpMetadata({ title, author, subject, conformance }) {
+  const now = new Date().toISOString();
+  const part = conformance === '2b' ? '2' : '3';
+  return `<?xpacket begin="﻿" id="W5M0MpCehiHzreSzNTczkc9d"?>
+<x:xmpmeta xmlns:x="adobe:ns:meta/" x:xmptk="Sindicompany Hub">
+  <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+    <rdf:Description rdf:about=""
+      xmlns:pdf="http://ns.adobe.com/pdf/1.3/"
+      xmlns:pdfaid="http://www.aiim.org/pdfa/ns/id/"
+      xmlns:xmp="http://ns.adobe.com/xap/1.0/"
+      xmlns:dc="http://purl.org/dc/elements/1.1/">
+      <pdfaid:part>${part}</pdfaid:part>
+      <pdfaid:conformance>B</pdfaid:conformance>
+      <pdf:Producer>Sindicompany Hub · pdf-lib</pdf:Producer>
+      <xmp:CreatorTool>Sindicompany Hub</xmp:CreatorTool>
+      <xmp:CreateDate>${now}</xmp:CreateDate>
+      <xmp:ModifyDate>${now}</xmp:ModifyDate>
+      <xmp:MetadataDate>${now}</xmp:MetadataDate>
+      <dc:format>application/pdf</dc:format>
+      <dc:title><rdf:Alt><rdf:li xml:lang="x-default">${escapeXml(title)}</rdf:li></rdf:Alt></dc:title>
+      <dc:creator><rdf:Seq><rdf:li>${escapeXml(author)}</rdf:li></rdf:Seq></dc:creator>
+      <dc:description><rdf:Alt><rdf:li xml:lang="x-default">${escapeXml(subject)}</rdf:li></rdf:Alt></dc:description>
+    </rdf:Description>
+  </rdf:RDF>
+</x:xmpmeta>
+<?xpacket end="w"?>`;
+}
+
+document.getElementById('processBtn').addEventListener('click', async () => {
+  if (!selectedFile) return;
+  const btn = document.getElementById('processBtn');
+  const btnText = document.getElementById('btnText');
+  btn.disabled = true; btnText.textContent = 'Marcando…';
+  ToolUI.hideResult();
+  ToolUI.setProgress(20);
+  ToolUI.setStatus('Lendo PDF…');
+
+  try {
+    const buf = await selectedFile.arrayBuffer();
+    const pdfDoc = await PDFDocument.load(buf, { updateMetadata: false });
+
+    const title = document.getElementById('meta-title').value.trim() || selectedFile.name.replace(/\.pdf$/i, '');
+    const author = document.getElementById('meta-author').value.trim() || 'Sindicompany';
+    const subject = document.getElementById('meta-subject').value.trim() || 'Documento arquivado';
+    const conformance = document.querySelector('input[name=conformance]:checked').value;
+
+    ToolUI.setProgress(50);
+    ToolUI.setStatus('Aplicando metadados PDF/A…');
+
+    pdfDoc.setTitle(title);
+    pdfDoc.setAuthor(author);
+    pdfDoc.setSubject(subject);
+    pdfDoc.setCreator('Sindicompany Hub');
+    pdfDoc.setProducer('Sindicompany Hub · pdf-lib');
+    pdfDoc.setCreationDate(new Date());
+    pdfDoc.setModificationDate(new Date());
+    pdfDoc.setKeywords([`PDF/A-${conformance}`, 'arquivamento', 'Sindicompany']);
+
+    const xmp = buildXmpMetadata({ title, author, subject, conformance });
+    const xmpBytes = new TextEncoder().encode(xmp);
+    const xmpStream = pdfDoc.context.stream(xmpBytes, {
+      Type: 'Metadata',
+      Subtype: 'XML',
+      Length: xmpBytes.length,
+    });
+    const xmpRef = pdfDoc.context.register(xmpStream);
+    pdfDoc.catalog.set(PDFName.of('Metadata'), xmpRef);
+
+    const markInfo = pdfDoc.context.obj({ Marked: true });
+    pdfDoc.catalog.set(PDFName.of('MarkInfo'), markInfo);
+    pdfDoc.catalog.set(PDFName.of('Lang'), PDFString.of('pt-BR'));
+
+    ToolUI.setProgress(90);
+    ToolUI.setStatus('Empacotando…');
+    lastPdfBytes = await pdfDoc.save({ useObjectStreams: false });
+    lastFilename = (selectedFile.name || 'documento.pdf').replace(/\.pdf$/i, '') + '_pdfa.pdf';
+    ToolUI.setProgress(100);
+    ToolUI.setStatus(`Marcado como PDF/A-${conformance}.`, 'success');
+
+    document.getElementById('resultBody').innerHTML = `
+      <div style="display:flex;gap:14px;align-items:center;padding:14px;background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.25);border-radius:10px">
+        <div style="width:44px;height:44px;background:rgba(34,197,94,0.15);border-radius:10px;display:flex;align-items:center;justify-content:center;flex:0 0 44px">
+          <svg fill="none" stroke="#86efac" stroke-width="2" viewBox="0 0 24 24" style="width:22px;height:22px"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+        </div>
+        <div style="flex:1">
+          <div style="font-weight:600;font-size:14.5px;color:var(--text)">${escapeHtml(lastFilename)}</div>
+          <div style="font-size:12px;color:var(--text-dim)">${(lastPdfBytes.length/1024).toFixed(0)} KB · PDF/A-${conformance} · ${escapeHtml(title)}</div>
+        </div>
+      </div>
+      <div style="margin-top:12px;font-size:12.5px;color:var(--text-dim);line-height:1.6">
+        Metadados XMP de conformidade gravados. Pra contratos com cartório ou Receita, valide com Acrobat Pro antes de submeter.
+      </div>`;
+    document.getElementById('result').classList.add('show');
+    if (window.trackUsage) trackUsage('pdf-para-pdfa', { conformance });
+  } catch (e) {
+    ToolUI.setStatus('Erro: ' + e.message, 'error');
+    ToolUI.setProgress(0);
+  } finally {
+    btn.disabled = false;
+    btnText.textContent = 'Marcar como PDF/A';
+  }
+});
+
+document.getElementById('downloadBtn').addEventListener('click', () => {
+  if (!lastPdfBytes) return;
+  ToolFile.download(new Blob([lastPdfBytes], { type: 'application/pdf' }), lastFilename);
+});
+
+function escapeHtml(s) {
+  return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
+}
+</script>
 </body>
 </html>

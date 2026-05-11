@@ -4,8 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#0a0a0c">
-<title>Construtor de Workflows — Sindicompany</title>
-<meta name="description" content="Encadeie ferramentas em sequências automatizadas. Exemplo: "comprimir PDF → marca d'água → assinar → enviar por email".">
+<title>Workflow Builder — Sindicompany</title>
 <meta name="robots" content="noindex, nofollow">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -13,26 +12,357 @@
 <link rel="icon" type="image/png" href="/assets/brand/icon-color.png">
 <link rel="stylesheet" href="/assets/shared.css">
 <script src="/assets/shared.js"></script>
+<script src="/assets/tool-helpers.js"></script>
+<style>
+  .wf-grid{display:grid;grid-template-columns:280px 1fr;gap:18px;margin-top:14px}
+  @media (max-width:780px){.wf-grid{grid-template-columns:1fr}}
+  .wf-flow-list{
+    background:rgba(255,255,255,0.02);border:1px solid var(--border);border-radius:12px;
+    padding:14px;display:flex;flex-direction:column;gap:8px;
+  }
+  .wf-flow-item{
+    padding:10px 12px;border-radius:8px;background:rgba(255,255,255,0.03);
+    border:1px solid var(--border);cursor:pointer;font-size:13px;font-weight:500;
+    display:flex;justify-content:space-between;align-items:center;
+  }
+  .wf-flow-item.active{background:rgba(99,102,241,0.18);border-color:rgba(99,102,241,0.4)}
+  .wf-flow-item .badge{font-size:10.5px;color:var(--text-dim);padding:2px 8px;background:rgba(0,0,0,0.3);border-radius:100px}
+  .wf-new{
+    margin-top:4px;padding:10px 12px;border-radius:8px;background:rgba(34,197,94,0.08);
+    border:1px dashed rgba(34,197,94,0.4);cursor:pointer;font-size:13px;color:#86efac;text-align:center;font-weight:500;
+  }
+
+  .wf-editor{
+    background:rgba(255,255,255,0.02);border:1px solid var(--border);border-radius:12px;padding:18px;
+  }
+  .wf-editor-empty{padding:60px 20px;text-align:center;color:var(--text-dim);font-size:14px}
+  .wf-editor h3{font-size:16px;font-weight:700;margin:0 0 14px;display:flex;justify-content:space-between;align-items:center;gap:10px}
+  .wf-editor h3 input{
+    background:transparent;border:none;color:var(--text);font:inherit;font-size:18px;font-weight:700;
+    border-bottom:1px solid var(--border);padding:4px 0;flex:1;outline:none;
+  }
+  .wf-editor h3 input:focus{border-color:#6366f1}
+
+  .wf-steps{display:flex;flex-direction:column;gap:8px;margin-bottom:14px}
+  .wf-step{
+    display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;
+    padding:10px 12px;background:rgba(255,255,255,0.04);border:1px solid var(--border);border-radius:8px;
+  }
+  .wf-step-num{
+    width:26px;height:26px;border-radius:50%;background:rgba(99,102,241,0.18);
+    display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#a5b4fc;
+  }
+  .wf-step-name{font-size:13.5px;font-weight:500}
+  .wf-step-desc{font-size:11.5px;color:var(--text-dim);margin-top:2px}
+  .wf-step-actions{display:flex;gap:4px}
+  .wf-step-actions button{
+    width:26px;height:26px;border:1px solid var(--border);background:transparent;
+    border-radius:6px;cursor:pointer;color:var(--text-dim);font-size:13px;display:flex;align-items:center;justify-content:center;
+  }
+
+  .wf-add-step{
+    padding:10px 12px;background:transparent;border:1px dashed var(--border-bright);
+    border-radius:8px;color:var(--text-dim);cursor:pointer;font-size:13px;font-weight:500;width:100%;
+  }
+  .wf-add-step:hover{color:var(--text);border-color:#6366f1}
+
+  .wf-picker{
+    margin-top:8px;padding:14px;background:rgba(0,0,0,0.2);border-radius:10px;
+    display:none;
+  }
+  .wf-picker.show{display:block}
+  .wf-picker input[type=search]{
+    width:100%;padding:8px 12px;background:rgba(255,255,255,0.06);border:1px solid var(--border);
+    border-radius:8px;color:var(--text);font-family:inherit;font-size:13px;margin-bottom:10px;
+  }
+  .wf-picker-list{display:grid;gap:4px;max-height:260px;overflow-y:auto}
+  .wf-picker-item{
+    padding:8px 10px;border-radius:6px;cursor:pointer;font-size:12.5px;
+    display:flex;justify-content:space-between;align-items:center;gap:8px;
+  }
+  .wf-picker-item:hover{background:rgba(99,102,241,0.12)}
+  .wf-picker-item .cat{font-size:10px;color:var(--text-dim);padding:1px 6px;background:rgba(0,0,0,0.4);border-radius:100px;text-transform:uppercase;letter-spacing:0.05em;font-weight:700}
+</style>
 </head>
 <body>
 <div id="app-nav"></div>
+
 <main class="tool-container">
   <header class="tool-hero">
     <span class="tool-eyebrow"><span class="dot"></span> Automação · Workflow</span>
-    <h1>Construtor de Workflows</h1>
-    <p>Encadeie ferramentas em sequências automatizadas. Exemplo: "comprimir PDF → marca d'água → assinar → enviar por email".</p>
+    <h1>Workflow Builder</h1>
+    <p>Encadeie ferramentas em sequência salva. Toque "Executar" e o builder abre cada ferramenta na ordem certa, sem você precisar lembrar todos os passos.</p>
   </header>
-  <div class="tool-coming-soon">
-    <div class="tool-coming-soon-icon">
-      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="3"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="18" r="3"/><path d="M9 6h6M6 9v6M18 9v6M9 18h6"/></svg>
-    </div>
-    <h3>Em desenvolvimento</h3>
-    <p>Editor visual drag-and-drop pra conectar ferramentas do hub em sequências (pipes). Salva como receita reutilizável. Casos típicos: "PDF de cobrança" (gerar boleto → adicionar marca dágua → enviar email com Sindi escrevendo o corpo), "vistoria semanal" (criar formulário → coletar fotos → gerar relatório → distribuir pra equipe).</p>
-    <span class="tool-coming-soon-tag">Em breve</span>
+
+  <div class="wf-grid">
+    <div class="wf-flow-list" id="flowList"></div>
+    <div class="wf-editor" id="editor"></div>
   </div>
+
   <div class="tool-privacy" style="margin-top:18px">
-    <a href="/hub.html" style="color:var(--text-dim);text-decoration:none">← Voltar ao Hub</a>
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+    Workflows salvos no seu navegador. Cada passo abre em aba nova com instrução do contexto pra você não perder o fio.
   </div>
 </main>
+
+<script>
+const STORE = 'sindi-workflows-v1';
+const RUN_STORE = 'sindi-workflow-run';
+
+const TOOLS = [
+  { slug: 'sindi', cat: 'AI', name: 'Sindi · chat' },
+  { slug: 'auditor-contratos', cat: 'AI', name: 'Auditor de Contratos' },
+  { slug: 'corretor-texto', cat: 'AI', name: 'Corretor de Texto' },
+  { slug: 'resumir-pdf', cat: 'AI', name: 'Resumir PDF' },
+  { slug: 'traduzir-pdf', cat: 'AI', name: 'Traduzir PDF' },
+  { slug: 'sindi-reunioes', cat: 'AI', name: 'Sindi Reuniões' },
+  { slug: 'gerador-contrato', cat: 'DOC', name: 'Gerador de Contrato' },
+  { slug: 'gerador-ata', cat: 'DOC', name: 'Gerador de Ata' },
+  { slug: 'gerador-notificacao', cat: 'DOC', name: 'Gerador de Notificação' },
+  { slug: 'wizard-inadimplencia', cat: 'DOC', name: 'Wizard Inadimplência' },
+  { slug: 'mensagens-prontas', cat: 'DOC', name: 'Mensagens Prontas' },
+  { slug: 'quick-capture', cat: 'DOC', name: 'Quick Capture' },
+  { slug: 'calculadoras', cat: 'CALC', name: 'Calculadoras' },
+  { slug: 'word-para-pdf', cat: 'CONV', name: 'Word → PDF' },
+  { slug: 'excel-para-pdf', cat: 'CONV', name: 'Excel → PDF' },
+  { slug: 'pdf-para-excel', cat: 'CONV', name: 'PDF → Excel' },
+  { slug: 'pdf-para-word', cat: 'CONV', name: 'PDF → Word' },
+  { slug: 'pdf-para-powerpoint', cat: 'CONV', name: 'PDF → PowerPoint' },
+  { slug: 'powerpoint-para-pdf', cat: 'CONV', name: 'PowerPoint → PDF' },
+  { slug: 'pdf-para-pdfa', cat: 'CONV', name: 'PDF → PDF/A' },
+  { slug: 'html-para-pdf', cat: 'CONV', name: 'HTML → PDF' },
+  { slug: 'conversor-imagens', cat: 'CONV', name: 'Conversor Imagens' },
+  { slug: 'pdf-para-jpg', cat: 'CONV', name: 'PDF → JPG' },
+  { slug: 'jpg-para-pdf', cat: 'CONV', name: 'JPG → PDF' },
+  { slug: 'comprimir-pdf', cat: 'PDF', name: 'Comprimir PDF' },
+  { slug: 'juntar-pdf', cat: 'PDF', name: 'Juntar PDF' },
+  { slug: 'dividir-pdf', cat: 'PDF', name: 'Dividir PDF' },
+  { slug: 'organizar-pdf', cat: 'PDF', name: 'Organizar páginas' },
+  { slug: 'numerar-paginas', cat: 'PDF', name: 'Numerar páginas' },
+  { slug: 'girar-pdf', cat: 'PDF', name: 'Girar PDF' },
+  { slug: 'recortar-pdf', cat: 'PDF', name: 'Recortar PDF' },
+  { slug: 'comparar-pdf', cat: 'PDF', name: 'Comparar PDFs' },
+  { slug: 'editor-pdf', cat: 'PDF', name: 'Editor PDF' },
+  { slug: 'reparar-pdf', cat: 'PDF', name: 'Reparar PDF' },
+  { slug: 'formularios-pdf', cat: 'PDF', name: 'Formulários PDF' },
+  { slug: 'digitalizar-pdf', cat: 'PDF', name: 'Digitalizar (Câmera)' },
+  { slug: 'ocr', cat: 'PDF', name: 'OCR' },
+  { slug: 'marca-dagua', cat: 'PDF', name: 'Marca d\'água' },
+  { slug: 'proteger-pdf', cat: 'SEC', name: 'Proteger com senha' },
+  { slug: 'desbloquear-pdf', cat: 'SEC', name: 'Remover senha' },
+  { slug: 'redigir-lgpd', cat: 'SEC', name: 'Redigir LGPD' },
+  { slug: 'ocultar-pdf', cat: 'SEC', name: 'Ocultar PDF' },
+  { slug: 'assinatura', cat: 'SEC', name: 'Assinatura' },
+  { slug: 'lembretes-inteligentes', cat: 'AUTO', name: 'Lembretes' },
+  { slug: 'saude-condominio', cat: 'AUTO', name: 'Saúde Condomínio' },
+  { slug: 'inbox-unificada', cat: 'AUTO', name: 'Inbox Unificada' },
+];
+
+const TEMPLATES = [
+  { name: 'Cobrança de inadimplência completa', steps: ['wizard-inadimplencia', 'gerador-notificacao', 'word-para-pdf', 'proteger-pdf', 'assinatura', 'mensagens-prontas'] },
+  { name: 'Auditoria de contrato novo', steps: ['auditor-contratos', 'redigir-lgpd', 'assinatura'] },
+  { name: 'Ata de assembleia (áudio → PDF assinado)', steps: ['sindi-reunioes', 'corretor-texto', 'gerador-ata', 'word-para-pdf', 'assinatura'] },
+  { name: 'Digitalizar e arquivar', steps: ['digitalizar-pdf', 'ocr', 'comprimir-pdf', 'pdf-para-pdfa'] },
+];
+
+let current = null;
+
+function load() {
+  try { return JSON.parse(localStorage.getItem(STORE)) || []; } catch { return []; }
+}
+function save(items) { localStorage.setItem(STORE, JSON.stringify(items)); }
+
+function renderList() {
+  const items = load();
+  const list = document.getElementById('flowList');
+  list.innerHTML = items.map(f => `
+    <div class="wf-flow-item ${current === f.id ? 'active' : ''}" data-id="${f.id}">
+      <span>${escapeHtml(f.name)}</span>
+      <span class="badge">${f.steps.length}p</span>
+    </div>
+  `).join('') + `<div class="wf-new" id="newFlowBtn">+ Novo workflow</div>` + (items.length === 0 ? `
+    <div style="margin-top:14px;font-size:11px;color:var(--text-dim);font-weight:700;letter-spacing:0.05em;text-transform:uppercase">Modelos prontos</div>
+    ${TEMPLATES.map((t, i) => `<div class="wf-flow-item" data-tpl="${i}"><span>${escapeHtml(t.name)}</span><span class="badge">${t.steps.length}p</span></div>`).join('')}` : '');
+
+  list.querySelectorAll('[data-id]').forEach(el => el.addEventListener('click', () => {
+    current = el.dataset.id;
+    renderAll();
+  }));
+  list.querySelectorAll('[data-tpl]').forEach(el => el.addEventListener('click', () => {
+    const tpl = TEMPLATES[Number(el.dataset.tpl)];
+    const items = load();
+    const id = 'wf-' + Date.now();
+    items.push({ id, name: tpl.name, steps: tpl.steps.slice() });
+    save(items);
+    current = id;
+    renderAll();
+  }));
+  document.getElementById('newFlowBtn').addEventListener('click', () => {
+    const items = load();
+    const id = 'wf-' + Date.now();
+    items.push({ id, name: 'Novo workflow', steps: [] });
+    save(items);
+    current = id;
+    renderAll();
+  });
+}
+
+function renderEditor() {
+  const items = load();
+  const flow = items.find(f => f.id === current);
+  const ed = document.getElementById('editor');
+  if (!flow) {
+    ed.innerHTML = `<div class="wf-editor-empty">Crie ou escolha um workflow à esquerda pra começar.</div>`;
+    return;
+  }
+
+  ed.innerHTML = `
+    <h3>
+      <input type="text" id="flow-name" value="${escapeHtml(flow.name)}">
+      <button class="tool-result-action" id="delFlowBtn">Apagar</button>
+    </h3>
+
+    <div class="wf-steps" id="stepsBox">
+      ${flow.steps.map((s, i) => {
+        const tool = TOOLS.find(t => t.slug === s) || { name: s, cat: '?' };
+        return `<div class="wf-step" data-i="${i}">
+          <div class="wf-step-num">${i+1}</div>
+          <div>
+            <div class="wf-step-name">${escapeHtml(tool.name)}</div>
+            <div class="wf-step-desc">/tools/${escapeHtml(s)} · ${tool.cat}</div>
+          </div>
+          <div class="wf-step-actions">
+            <button data-act="up" title="Subir">↑</button>
+            <button data-act="down" title="Descer">↓</button>
+            <button data-act="del" title="Remover">×</button>
+          </div>
+        </div>`;
+      }).join('')}
+    </div>
+
+    <button class="wf-add-step" id="addStepBtn">+ Adicionar passo</button>
+    <div class="wf-picker" id="picker">
+      <input type="search" id="picker-search" placeholder="Filtrar ferramenta…">
+      <div class="wf-picker-list" id="picker-list"></div>
+    </div>
+
+    <button class="tool-process" id="runBtn" style="margin-top:18px" ${flow.steps.length === 0 ? 'disabled' : ''}>
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      <span>Executar workflow (passo a passo)</span>
+    </button>
+  `;
+
+  document.getElementById('flow-name').addEventListener('change', e => {
+    const items = load();
+    const f = items.find(x => x.id === current);
+    if (f) { f.name = e.target.value.trim() || 'Sem nome'; save(items); renderList(); }
+  });
+
+  document.getElementById('delFlowBtn').addEventListener('click', () => {
+    if (!confirm('Apagar este workflow?')) return;
+    save(load().filter(x => x.id !== current));
+    current = null;
+    renderAll();
+  });
+
+  document.getElementById('stepsBox').querySelectorAll('.wf-step-actions button').forEach(b => {
+    b.addEventListener('click', () => {
+      const step = b.closest('.wf-step');
+      const i = Number(step.dataset.i);
+      const items = load();
+      const f = items.find(x => x.id === current);
+      if (b.dataset.act === 'del') f.steps.splice(i, 1);
+      else if (b.dataset.act === 'up' && i > 0) { [f.steps[i-1], f.steps[i]] = [f.steps[i], f.steps[i-1]]; }
+      else if (b.dataset.act === 'down' && i < f.steps.length - 1) { [f.steps[i+1], f.steps[i]] = [f.steps[i], f.steps[i+1]]; }
+      save(items); renderAll();
+    });
+  });
+
+  const picker = document.getElementById('picker');
+  document.getElementById('addStepBtn').addEventListener('click', () => {
+    picker.classList.toggle('show');
+    renderPickerList('');
+    document.getElementById('picker-search').focus();
+  });
+  document.getElementById('picker-search').addEventListener('input', e => renderPickerList(e.target.value));
+
+  document.getElementById('runBtn').addEventListener('click', () => {
+    const items = load();
+    const f = items.find(x => x.id === current);
+    if (!f || !f.steps.length) return;
+    localStorage.setItem(RUN_STORE, JSON.stringify({ id: f.id, name: f.name, steps: f.steps, current: 0, started: Date.now() }));
+    if (window.trackUsage) trackUsage('workflow-builder', { run: f.name, steps: f.steps.length });
+    window.open('/tools/' + f.steps[0] + '.html?wf=' + f.id, '_blank');
+    showRunner(f);
+  });
+
+  function renderPickerList(q) {
+    const filtered = TOOLS.filter(t => !q || t.name.toLowerCase().includes(q.toLowerCase()) || t.slug.includes(q.toLowerCase()));
+    const list = document.getElementById('picker-list');
+    list.innerHTML = filtered.map(t => `
+      <div class="wf-picker-item" data-slug="${t.slug}"><span>${escapeHtml(t.name)}</span><span class="cat">${t.cat}</span></div>
+    `).join('');
+    list.querySelectorAll('[data-slug]').forEach(el => el.addEventListener('click', () => {
+      const items = load();
+      const f = items.find(x => x.id === current);
+      f.steps.push(el.dataset.slug);
+      save(items);
+      picker.classList.remove('show');
+      renderEditor();
+    }));
+  }
+}
+
+function showRunner(flow) {
+  const ed = document.getElementById('editor');
+  let runner = document.getElementById('runner');
+  if (!runner) {
+    runner = document.createElement('div');
+    runner.id = 'runner';
+    runner.style.cssText = 'margin-top:14px;padding:14px;background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.3);border-radius:10px';
+    ed.appendChild(runner);
+  }
+  const run = JSON.parse(localStorage.getItem(RUN_STORE) || 'null');
+  if (!run) { runner.remove(); return; }
+  runner.innerHTML = `
+    <div style="font-size:12px;color:#a5b4fc;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;margin-bottom:8px">Execução em andamento · passo ${run.current + 1}/${run.steps.length}</div>
+    <div style="font-size:14px;color:var(--text);font-weight:600;margin-bottom:10px">${escapeHtml((TOOLS.find(t => t.slug === run.steps[run.current]) || {name: run.steps[run.current]}).name)}</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      ${run.current < run.steps.length - 1 ? `<button class="tool-result-action" id="nextStepBtn" style="background:rgba(99,102,241,0.2);color:#a5b4fc">Próximo passo →</button>` : `<button class="tool-result-action" id="finishBtn" style="background:rgba(34,197,94,0.2);color:#86efac">Concluir workflow</button>`}
+      <button class="tool-result-action" id="cancelRunBtn">Cancelar</button>
+    </div>`;
+  document.getElementById('nextStepBtn')?.addEventListener('click', () => {
+    run.current += 1;
+    localStorage.setItem(RUN_STORE, JSON.stringify(run));
+    window.open('/tools/' + run.steps[run.current] + '.html?wf=' + run.id + '&step=' + (run.current+1), '_blank');
+    showRunner(flow);
+  });
+  document.getElementById('finishBtn')?.addEventListener('click', () => {
+    localStorage.removeItem(RUN_STORE);
+    runner.remove();
+  });
+  document.getElementById('cancelRunBtn')?.addEventListener('click', () => {
+    localStorage.removeItem(RUN_STORE);
+    runner.remove();
+  });
+}
+
+function renderAll() {
+  renderList();
+  renderEditor();
+  const run = JSON.parse(localStorage.getItem(RUN_STORE) || 'null');
+  if (run && run.id === current) {
+    showRunner();
+  }
+}
+
+function escapeHtml(s) {
+  return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
+}
+
+const existing = load();
+if (existing.length) current = existing[0].id;
+renderAll();
+</script>
 </body>
 </html>

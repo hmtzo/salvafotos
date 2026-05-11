@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#0a0a0c">
 <title>Formulários PDF — Sindicompany</title>
-<meta name="description" content="Detecte campos automaticamente, preencha PDFs interativos ou crie formulários do zero.">
 <meta name="robots" content="noindex, nofollow">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -13,28 +12,237 @@
 <link rel="icon" type="image/png" href="/assets/brand/icon-color.png">
 <link rel="stylesheet" href="/assets/shared.css">
 <script src="/assets/shared.js"></script>
+<script src="/assets/tool-helpers.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+<style>
+  .form-fields{display:grid;gap:10px;margin-top:14px}
+  .form-field-row{
+    display:grid;grid-template-columns:200px 1fr auto;gap:10px;align-items:center;
+    padding:10px 12px;background:rgba(255,255,255,0.02);border:1px solid var(--border);border-radius:8px;
+  }
+  .form-field-row .ff-label{font-size:12.5px;color:var(--text);font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .form-field-row .ff-type{font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.05em;font-weight:700;padding:3px 8px;border-radius:100px;background:rgba(99,102,241,0.15);color:#a5b4fc}
+  .form-field-row .ff-type.checkbox{background:rgba(34,197,94,0.15);color:#86efac}
+  .form-field-row .ff-type.radio{background:rgba(245,158,11,0.15);color:#fbbf24}
+  .form-field-row .ff-type.dropdown,.form-field-row .ff-type.optionlist{background:rgba(168,85,247,0.15);color:#d8b4fe}
+  .form-field-row input[type=text],.form-field-row select{
+    padding:7px 10px;background:rgba(255,255,255,0.04);border:1px solid var(--border);
+    border-radius:6px;color:var(--text);font-family:inherit;font-size:12.5px;width:100%;
+  }
+  .form-field-row input[type=checkbox]{width:18px;height:18px;margin:0;cursor:pointer}
+  @media (max-width: 640px){
+    .form-field-row{grid-template-columns:1fr;gap:6px}
+    .form-field-row .ff-type{justify-self:start}
+  }
+</style>
 </head>
 <body>
 <div id="app-nav"></div>
+
 <main class="tool-container">
   <header class="tool-hero">
     <span class="tool-eyebrow"><span class="dot"></span> Documento · Formulário</span>
     <h1>Formulários PDF</h1>
-    <p>Detecte campos automaticamente, preencha PDFs interativos ou crie formulários do zero.</p>
+    <p>Detecta campos preenchíveis (texto, checkbox, radio, lista) de um PDF AcroForm, preenche e exporta de volta. Útil pra contratos com campos editáveis.</p>
   </header>
 
-  <div class="tool-coming-soon">
-    <div class="tool-coming-soon-icon">
-      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z M14 2v6h6 M9 13l2 2 4-4"/></svg>
+  <label for="fileInput" id="dropZone" class="tool-drop-card">
+    <div class="tool-drop-icon">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z M14 2v6h6 M9 13l2 2 4-4"/></svg>
     </div>
-    <h3>Em desenvolvimento</h3>
-    <p>Detecção automática de campos em PDFs (texto, checkbox, dropdown), preenchimento interativo e criação de formulários novos. Vai usar pdf-lib forms.</p>
-    <span class="tool-coming-soon-tag">Em breve</span>
+    <div class="tool-drop-title" id="dropTitle">Solte o PDF com formulário aqui</div>
+    <div class="tool-drop-sub">ou clique para selecionar &nbsp;·&nbsp; só PDFs com AcroForm preenchível</div>
+  </label>
+  <input type="file" id="fileInput" accept="application/pdf" hidden>
+
+  <section class="tool-config" id="configBox" style="display:none">
+    <div class="tool-config-head">
+      <h2>Campos detectados</h2>
+      <span id="fieldsCount" style="font-size:12px;color:var(--text-dim);font-weight:500"></span>
+    </div>
+    <div class="form-fields" id="fieldsList"></div>
+
+    <div style="display:flex;gap:10px;margin-top:18px;flex-wrap:wrap">
+      <button class="tool-process" id="processBtn" style="flex:1;min-width:200px">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+        <span id="btnText">Gerar PDF preenchido</span>
+      </button>
+      <button class="tool-result-action" id="flattenBtn" type="button" style="padding:14px 20px">Achatar (não-editável)</button>
+    </div>
+
+    <div class="tool-status" id="status">
+      <div class="tool-status-text" id="statusText">Aguardando…</div>
+      <div class="tool-progress"><div class="tool-progress-bar" id="progressBar"></div></div>
+    </div>
+
+    <div class="tool-result" id="result">
+      <div class="tool-result-head">
+        <div class="tool-result-title">PDF preenchido</div>
+        <div class="tool-result-actions">
+          <button class="tool-result-action" id="downloadBtn" type="button">Baixar PDF</button>
+        </div>
+      </div>
+      <div class="tool-result-body" id="resultBody"></div>
+    </div>
+  </section>
+
+  <div id="emptyState" style="display:none;text-align:center;padding:40px 20px;color:var(--text-dim);font-size:14px">
+    Este PDF não tem campos de formulário interativos (AcroForm). Use o <a href="/tools/editor-pdf.html" style="color:#a5b4fc">Editor de PDF</a> pra adicionar texto sobre o documento.
   </div>
 
-  <div class="tool-privacy" style="margin-top:18px">
-    <a href="/hub.html" style="color:var(--text-dim);text-decoration:none">← Voltar ao Hub</a>
+  <div class="tool-privacy">
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+    Tudo no seu navegador. Achatar deixa o PDF não-editável (preserva preenchimento).
   </div>
 </main>
+
+<script>
+const { PDFDocument } = PDFLib;
+let selectedFile = null;
+let loadedDoc = null;
+let detectedFields = [];
+let lastPdfBytes = null;
+let lastFilename = '';
+
+ToolFile.setupDropZone({
+  accept: f => /pdf$/i.test(f.type) || /\.pdf$/i.test(f.name),
+  onFile: async f => {
+    selectedFile = f;
+    await loadAndDetect();
+  },
+});
+
+async function loadAndDetect() {
+  ToolUI.hideResult();
+  ToolUI.setStatus('Detectando campos…');
+  document.getElementById('emptyState').style.display = 'none';
+  document.getElementById('configBox').style.display = 'none';
+  try {
+    const buf = await selectedFile.arrayBuffer();
+    loadedDoc = await PDFDocument.load(buf, { updateMetadata: false });
+    const form = loadedDoc.getForm();
+    const fields = form.getFields();
+    detectedFields = fields.map(f => {
+      const type = f.constructor.name.replace('PDF', '').replace('Field', '').toLowerCase();
+      return { name: f.getName(), type, ref: f };
+    });
+
+    if (!detectedFields.length) {
+      document.getElementById('emptyState').style.display = 'block';
+      ToolUI.hideStatus();
+      return;
+    }
+
+    renderFields();
+    document.getElementById('configBox').style.display = 'block';
+    document.getElementById('fieldsCount').textContent = `${detectedFields.length} ${detectedFields.length === 1 ? 'campo' : 'campos'}`;
+    ToolUI.setStatus(`${detectedFields.length} campo${detectedFields.length > 1 ? 's' : ''} detectado${detectedFields.length > 1 ? 's' : ''}.`, 'success');
+  } catch (e) {
+    ToolUI.setStatus('Erro lendo PDF: ' + e.message, 'error');
+  }
+}
+
+function renderFields() {
+  const list = document.getElementById('fieldsList');
+  list.innerHTML = detectedFields.map((f, i) => {
+    let control = '';
+    if (f.type === 'checkbox') {
+      control = `<input type="checkbox" data-i="${i}">`;
+    } else if (f.type === 'radiogroup' || f.type === 'optionlist' || f.type === 'dropdown') {
+      let opts = [];
+      try { opts = f.ref.getOptions(); } catch {}
+      control = `<select data-i="${i}"><option value="">— escolher —</option>${opts.map(o => `<option value="${escapeHtml(o)}">${escapeHtml(o)}</option>`).join('')}</select>`;
+    } else {
+      let current = '';
+      try { current = f.ref.getText() || ''; } catch {}
+      control = `<input type="text" data-i="${i}" value="${escapeHtml(current)}" placeholder="(vazio)">`;
+    }
+    return `<div class="form-field-row">
+      <div class="ff-label" title="${escapeHtml(f.name)}">${escapeHtml(f.name)}</div>
+      ${control}
+      <span class="ff-type ${f.type}">${f.type}</span>
+    </div>`;
+  }).join('');
+}
+
+async function fillForm(flatten) {
+  if (!loadedDoc) return;
+  const inputs = document.querySelectorAll('#fieldsList [data-i]');
+  for (const inp of inputs) {
+    const i = Number(inp.dataset.i);
+    const f = detectedFields[i];
+    try {
+      if (f.type === 'checkbox') {
+        if (inp.checked) f.ref.check(); else f.ref.uncheck();
+      } else if (f.type === 'radiogroup') {
+        if (inp.value) f.ref.select(inp.value);
+      } else if (f.type === 'dropdown' || f.type === 'optionlist') {
+        if (inp.value) f.ref.select(inp.value);
+      } else {
+        if (inp.value != null) f.ref.setText(String(inp.value));
+      }
+    } catch (e) { console.warn('Falha preenchendo', f.name, e); }
+  }
+  const form = loadedDoc.getForm();
+  if (flatten) form.flatten();
+  lastPdfBytes = await loadedDoc.save();
+  lastFilename = (selectedFile.name || 'formulario.pdf').replace(/\.pdf$/i, '') + (flatten ? '_preenchido_flat.pdf' : '_preenchido.pdf');
+}
+
+document.getElementById('processBtn').addEventListener('click', async () => {
+  await doFill(false);
+});
+document.getElementById('flattenBtn').addEventListener('click', async () => {
+  await doFill(true);
+});
+
+async function doFill(flatten) {
+  const btn = document.getElementById('processBtn');
+  const flat = document.getElementById('flattenBtn');
+  btn.disabled = true; flat.disabled = true;
+  ToolUI.hideResult();
+  ToolUI.setProgress(40);
+  ToolUI.setStatus(flatten ? 'Achatando formulário…' : 'Preenchendo formulário…');
+  try {
+    const buf = await selectedFile.arrayBuffer();
+    loadedDoc = await PDFDocument.load(buf, { updateMetadata: false });
+    const form = loadedDoc.getForm();
+    detectedFields = form.getFields().map(f => ({
+      name: f.getName(),
+      type: f.constructor.name.replace('PDF', '').replace('Field', '').toLowerCase(),
+      ref: f,
+    }));
+    await fillForm(flatten);
+    ToolUI.setProgress(100);
+    ToolUI.setStatus(flatten ? 'PDF achatado (não-editável).' : 'PDF preenchido (campos ainda editáveis).', 'success');
+    document.getElementById('resultBody').innerHTML = `
+      <div style="display:flex;gap:14px;align-items:center;padding:14px;background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.25);border-radius:10px">
+        <div style="width:44px;height:44px;background:rgba(99,102,241,0.15);border-radius:10px;display:flex;align-items:center;justify-content:center;flex:0 0 44px">
+          <svg fill="none" stroke="#a5b4fc" stroke-width="2" viewBox="0 0 24 24" style="width:22px;height:22px"><path stroke-linecap="round" stroke-linejoin="round" d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z M14 2v6h6"/></svg>
+        </div>
+        <div style="flex:1">
+          <div style="font-weight:600;font-size:14.5px;color:var(--text)">${escapeHtml(lastFilename)}</div>
+          <div style="font-size:12px;color:var(--text-dim)">${(lastPdfBytes.length/1024).toFixed(0)} KB · ${detectedFields.length} campo${detectedFields.length>1?'s':''} ${flatten ? 'achatado' : 'preenchido'}${flatten && detectedFields.length>1?'s':''}</div>
+        </div>
+      </div>`;
+    document.getElementById('result').classList.add('show');
+    if (window.trackUsage) trackUsage('formularios-pdf', { fields: detectedFields.length, flatten });
+  } catch (e) {
+    ToolUI.setStatus('Erro: ' + e.message, 'error');
+    ToolUI.setProgress(0);
+  } finally {
+    btn.disabled = false; flat.disabled = false;
+  }
+}
+
+document.getElementById('downloadBtn').addEventListener('click', () => {
+  if (!lastPdfBytes) return;
+  ToolFile.download(new Blob([lastPdfBytes], { type: 'application/pdf' }), lastFilename);
+});
+
+function escapeHtml(s) {
+  return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
+}
+</script>
 </body>
 </html>

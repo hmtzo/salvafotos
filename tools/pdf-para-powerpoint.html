@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#0a0a0c">
 <title>PDF para PowerPoint — Sindicompany</title>
-<meta name="description" content="Converta apresentações PDF de volta para .pptx editável.">
 <meta name="robots" content="noindex, nofollow">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -13,28 +12,173 @@
 <link rel="icon" type="image/png" href="/assets/brand/icon-color.png">
 <link rel="stylesheet" href="/assets/shared.css">
 <script src="/assets/shared.js"></script>
+<script src="/assets/tool-helpers.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
 </head>
 <body>
 <div id="app-nav"></div>
+
 <main class="tool-container">
   <header class="tool-hero">
     <span class="tool-eyebrow"><span class="dot"></span> Conversão · PowerPoint</span>
     <h1>PDF para PowerPoint</h1>
-    <p>Converta apresentações PDF de volta para .pptx editável.</p>
+    <p>Cada página vira um slide. Útil pra reabrir um PDF de apresentação no PowerPoint/Keynote e editar.</p>
   </header>
 
-  <div class="tool-coming-soon">
-    <div class="tool-coming-soon-icon">
-      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2" /><line x1="8" y1="21" x2="16" y2="21" /><line x1="12" y1="17" x2="12" y2="21"/></svg>
+  <label for="fileInput" id="dropZone" class="tool-drop-card">
+    <div class="tool-drop-icon">
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z M14 2v6h6"/></svg>
     </div>
-    <h3>Implementação em andamento</h3>
-    <p>Conversão de PDF para apresentação PowerPoint editável. Cada página vira um slide com texto, imagens e elementos extraídos via IA.</p>
-    <span class="tool-coming-soon-tag">Em breve</span>
-  </div>
+    <div class="tool-drop-title" id="dropTitle">Solte o PDF aqui</div>
+    <div class="tool-drop-sub">ou clique para selecionar &nbsp;·&nbsp; até <kbd>20 MB</kbd> &nbsp;·&nbsp; até <kbd>50 páginas</kbd></div>
+  </label>
+  <input type="file" id="fileInput" accept="application/pdf" hidden>
 
-  <div class="tool-privacy" style="margin-top:18px">
-    <a href="/hub.html" style="color:var(--text-dim);text-decoration:none">← Voltar ao Hub</a>
+  <section class="tool-config">
+    <div class="tool-config-head"><h2>Formato dos slides</h2></div>
+    <div class="tool-options">
+      <label class="tool-toggle">
+        <input type="radio" name="layout" value="16x9" checked>
+        <span class="tool-toggle-switch"></span>
+        <span class="tool-toggle-label"><strong>Widescreen 16:9</strong><span>padrão moderno · 13.3" × 7.5"</span></span>
+      </label>
+      <label class="tool-toggle">
+        <input type="radio" name="layout" value="4x3">
+        <span class="tool-toggle-switch"></span>
+        <span class="tool-toggle-label"><strong>Padrão 4:3</strong><span>clássico · 10" × 7.5"</span></span>
+      </label>
+      <label class="tool-toggle">
+        <input type="radio" name="layout" value="auto">
+        <span class="tool-toggle-switch"></span>
+        <span class="tool-toggle-label"><strong>Manter dimensão do PDF</strong><span>preserva proporção original de cada página</span></span>
+      </label>
+    </div>
+
+    <button class="tool-process" id="processBtn" disabled>
+      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+      <span id="btnText">Converter para PowerPoint</span>
+    </button>
+
+    <div class="tool-status" id="status">
+      <div class="tool-status-text" id="statusText">Aguardando…</div>
+      <div class="tool-progress"><div class="tool-progress-bar" id="progressBar"></div></div>
+    </div>
+
+    <div class="tool-result" id="result">
+      <div class="tool-result-head">
+        <div class="tool-result-title">Apresentação gerada</div>
+        <div class="tool-result-actions">
+          <button class="tool-result-action" id="downloadBtn" type="button">Baixar .pptx</button>
+        </div>
+      </div>
+      <div class="tool-result-body" id="resultBody"></div>
+    </div>
+  </section>
+
+  <div class="tool-privacy">
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+    Tudo é processado localmente no seu navegador — o PDF nunca sai do seu dispositivo.
   </div>
 </main>
+
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+let selectedFile = null;
+let lastPptx = null;
+let lastFilename = '';
+
+ToolFile.setupDropZone({
+  accept: f => /pdf$/i.test(f.type) || /\.pdf$/i.test(f.name),
+  onFile: f => { selectedFile = f; ToolUI.setStatus('Pronto pra converter', ''); ToolUI.hideResult(); },
+});
+
+document.getElementById('processBtn').addEventListener('click', async () => {
+  if (!selectedFile) return;
+  const btn = document.getElementById('processBtn');
+  const btnText = document.getElementById('btnText');
+  btn.disabled = true; btnText.textContent = 'Convertendo…';
+  ToolUI.hideResult();
+  ToolUI.setProgress(5);
+  ToolUI.setStatus('Lendo PDF…');
+
+  try {
+    const arrayBuffer = await selectedFile.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    if (pdf.numPages > 50) throw new Error('Limite de 50 páginas. Use Dividir PDF antes.');
+
+    const layout = document.querySelector('input[name=layout]:checked').value;
+    const pptx = new PptxGenJS();
+
+    let slideW = 13.333, slideH = 7.5;
+    if (layout === '4x3') { slideW = 10; slideH = 7.5; }
+    if (layout === 'auto') {
+      const firstPage = await pdf.getPage(1);
+      const vp = firstPage.getViewport({ scale: 1 });
+      const ratio = vp.width / vp.height;
+      slideW = 10; slideH = 10 / ratio;
+    }
+    pptx.defineLayout({ name: 'CUSTOM', width: slideW, height: slideH });
+    pptx.layout = 'CUSTOM';
+
+    for (let i = 1; i <= pdf.numPages; i++) {
+      ToolUI.setProgress(5 + Math.floor((i / pdf.numPages) * 85));
+      ToolUI.setStatus(`Renderizando página ${i}/${pdf.numPages}…`);
+
+      const page = await pdf.getPage(i);
+      const viewport = page.getViewport({ scale: 2 });
+      const canvas = document.createElement('canvas');
+      canvas.width = viewport.width;
+      canvas.height = viewport.height;
+      const ctx = canvas.getContext('2d');
+      await page.render({ canvasContext: ctx, viewport }).promise;
+      const imgData = canvas.toDataURL('image/jpeg', 0.85);
+
+      const slide = pptx.addSlide();
+      slide.addImage({ data: imgData, x: 0, y: 0, w: slideW, h: slideH });
+      canvas.width = 0; canvas.height = 0;
+    }
+
+    ToolUI.setProgress(95);
+    ToolUI.setStatus('Empacotando .pptx…');
+    lastFilename = (selectedFile.name || 'documento.pdf').replace(/\.pdf$/i, '') + '.pptx';
+    lastPptx = pptx;
+    ToolUI.setProgress(100);
+    ToolUI.setStatus(`${pdf.numPages} slide${pdf.numPages > 1 ? 's' : ''} gerado${pdf.numPages > 1 ? 's' : ''}.`, 'success');
+
+    document.getElementById('resultBody').innerHTML = `
+      <div style="display:flex;gap:14px;align-items:center;padding:14px;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.25);border-radius:10px">
+        <div style="width:44px;height:44px;background:rgba(245,158,11,0.15);border-radius:10px;display:flex;align-items:center;justify-content:center;flex:0 0 44px">
+          <svg fill="none" stroke="#fbbf24" stroke-width="2" viewBox="0 0 24 24" style="width:22px;height:22px"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/></svg>
+        </div>
+        <div style="flex:1">
+          <div style="font-weight:600;font-size:14.5px;color:var(--text)">${escapeHtml(lastFilename)}</div>
+          <div style="font-size:12px;color:var(--text-dim)">${pdf.numPages} slide${pdf.numPages > 1 ? 's' : ''} · cada página virou um slide editável</div>
+        </div>
+      </div>
+      <div style="margin-top:12px;font-size:12.5px;color:var(--text-dim);line-height:1.6">
+        Slides contêm a imagem da página. Pra editar texto, abra no PowerPoint e use "Inserir → Texto" sobre o slide.
+      </div>`;
+    document.getElementById('result').classList.add('show');
+    if (window.trackUsage) trackUsage('pdf-para-powerpoint', { pages: pdf.numPages, layout });
+  } catch (e) {
+    ToolUI.setStatus('Erro: ' + e.message, 'error');
+    ToolUI.setProgress(0);
+  } finally {
+    btn.disabled = false;
+    btnText.textContent = 'Converter para PowerPoint';
+  }
+});
+
+document.getElementById('downloadBtn').addEventListener('click', async () => {
+  if (!lastPptx) return;
+  await lastPptx.writeFile({ fileName: lastFilename });
+});
+
+function escapeHtml(s) {
+  return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
+}
+</script>
 </body>
 </html>
