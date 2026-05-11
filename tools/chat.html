@@ -13,16 +13,18 @@
 <link rel="stylesheet" href="/assets/shared.css">
 <script src="/assets/shared.js"></script>
 <style>
-  body{overflow:hidden}
   #app-nav{flex-shrink:0}
   main.chat-page{
     display:flex;flex-direction:column;
-    height:calc(100vh - 64px);max-width:1400px;width:100%;margin:0 auto;
-    padding:14px 14px 0;gap:0;box-sizing:border-box;
+    height:calc(100dvh - 72px);min-height:600px;
+    max-width:1400px;width:100%;margin:0 auto;
+    padding:14px 14px 14px;gap:0;box-sizing:border-box;
   }
   @media (max-width:780px){
-    main.chat-page{height:calc(100vh - 56px);padding:8px 8px 0}
+    main.chat-page{height:calc(100dvh - 60px);min-height:500px;padding:8px 8px 8px}
   }
+  /* Garante que o painel float não cubra o chat full quando aberto */
+  body.chat-page-body #team-chat-float, body.chat-page-body #team-chat-drawer{display:none !important}
 
   .chat-shell{
     display:grid;grid-template-columns:300px 1fr;gap:0;
@@ -306,7 +308,7 @@
   }
 </style>
 </head>
-<body>
+<body class="chat-page-body">
 <div id="app-nav"></div>
 
 <main class="chat-page">

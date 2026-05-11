@@ -1253,6 +1253,7 @@ document.addEventListener('DOMContentLoaded', () => {
   setupCmdK();
   // Sindi flutuante (exceto sindi.html, login, index)
   setupSindiFloat();
+  // Team chat flutuante registra-se sozinho via IIFE no fim do arquivo
   // Onboarding hint (1ª visita)
   setupCmdKHint();
   // PWA install banner (Android/desktop com beforeinstallprompt)
@@ -1260,3 +1261,496 @@ document.addEventListener('DOMContentLoaded', () => {
   // Presença em tempo real (heartbeat 30s)
   setupPresence();
 });
+
+// =============================================================================
+// TEAM CHAT FLUTUANTE — widget de chat de equipe presente em todas as páginas
+// (IIFE auto-registrante no final pra evitar problemas de hoisting)
+// =============================================================================
+(function() {
+function setupTeamChatFloat() {
+  if (document.getElementById('team-chat-float')) return;
+  const path = location.pathname;
+  if (path === '/login.html' || path === '/' || path === '/index.html' || path === '/tools/chat.html') return;
+
+  const STATE_KEY = 'tc-state';
+  const SOUND_KEY = 'tc-sound';
+  const POLL_MSGS = 4000;
+  const POLL_SUMMARY = 10000;
+  const HEARTBEAT_MS = 30000;
+  const EMOJIS = ['👍','❤️','😂','🎉','🚀','👀','✅','🤔'];
+
+  const state = {
+    open: sessionStorage.getItem('tc-open') === '1',
+    view: sessionStorage.getItem('tc-view') || 'list',  // 'list' | 'conv'
+    target: sessionStorage.getItem('tc-target') || 'geral',
+    team: [],
+    teamByEmail: new Map(),
+    onlineSet: new Set(),
+    me: '',
+    messages: [],
+    lastTs: 0,
+    unread: { geral: 0, dm: {} },
+    preview: { geral: null, dm: {} },
+    knownDmPartners: new Set(),
+    soundOn: localStorage.getItem(SOUND_KEY) !== 'off',
+    typingHb: 0,
+    isAtBottom: true,
+  };
+
+  // -------- DOM --------
+  const btn = document.createElement('button');
+  btn.id = 'team-chat-float';
+  btn.className = 'team-chat-float';
+  btn.type = 'button';
+  btn.setAttribute('aria-label', 'Abrir Chat da Equipe');
+  btn.innerHTML = `
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>
+    </svg>
+    <span class="tc-label">Equipe</span>
+    <span class="tc-badge zero" id="tc-badge">0</span>`;
+  document.body.appendChild(btn);
+
+  const drawer = document.createElement('div');
+  drawer.id = 'team-chat-drawer';
+  drawer.className = 'team-chat-drawer';
+  drawer.hidden = !state.open;
+  drawer.innerHTML = `
+    <div class="tc-head">
+      <button class="tc-head-back" id="tc-back" type="button" title="Voltar">
+        <svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <div class="tc-head-av geral" id="tc-head-av">#</div>
+      <div class="tc-head-info">
+        <div class="tc-head-name" id="tc-head-name">Equipe</div>
+        <div class="tc-head-sub" id="tc-head-sub">Chat interno</div>
+      </div>
+      <a class="tc-head-expand" id="tc-expand" href="/tools/chat.html" title="Abrir tela cheia">⤢</a>
+      <button class="tc-head-close" id="tc-close" type="button" title="Fechar">×</button>
+    </div>
+    <div class="tc-body" id="tc-body">
+      <div class="tc-list-search" id="tc-list-search">
+        <input id="tc-search" placeholder="Buscar pessoa ou canal…">
+      </div>
+      <div class="tc-list" id="tc-list" hidden></div>
+      <div class="tc-msgs" id="tc-msgs" hidden></div>
+      <div class="tc-typing" id="tc-typing" hidden></div>
+      <form class="tc-compose" id="tc-compose" hidden>
+        <div class="tc-compose-row">
+          <textarea id="tc-input" placeholder="Mensagem… (Enter envia)" rows="1" autocomplete="off"></textarea>
+          <button type="submit" class="tc-compose-btn" id="tc-send" disabled title="Enviar">
+            <svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          </button>
+        </div>
+      </form>
+    </div>`;
+  document.body.appendChild(drawer);
+
+  const $ = id => document.getElementById(id);
+  const els = {
+    btn, drawer, badge: $('tc-badge'),
+    back: $('tc-back'), close: $('tc-close'), expand: $('tc-expand'),
+    headAv: $('tc-head-av'), headName: $('tc-head-name'), headSub: $('tc-head-sub'),
+    listSearch: $('tc-list-search'), search: $('tc-search'),
+    list: $('tc-list'), msgs: $('tc-msgs'),
+    typing: $('tc-typing'), compose: $('tc-compose'),
+    input: $('tc-input'), send: $('tc-send'),
+  };
+
+  // -------- HELPERS --------
+  function escH(s){return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c])}
+  function initials(name){return (name||'?').split(/\s+/).filter(Boolean).slice(0,2).map(s=>s[0]).join('').toUpperCase()}
+  function nameOf(email){return state.teamByEmail.get(email)?.name || email.split('@')[0]}
+  function roleOf(email){return state.teamByEmail.get(email)?.role || ''}
+  function avatarColor(email){
+    let h=0; for(let i=0;i<email.length;i++) h=(h*31+email.charCodeAt(i))&0xffffffff;
+    const hue=Math.abs(h)%360;
+    return `linear-gradient(135deg,hsl(${hue},65%,55%),hsl(${(hue+30)%360},65%,45%))`;
+  }
+  function relTime(ts){
+    if(!ts) return '';
+    const d=(Date.now()-ts)/1000;
+    if(d<60) return 'agora';
+    if(d<3600) return Math.floor(d/60)+'m';
+    if(d<86400) return Math.floor(d/3600)+'h';
+    if(d<7*86400) return Math.floor(d/86400)+'d';
+    return new Date(ts).toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});
+  }
+  function fmtTime(ts){return new Date(ts).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}
+  function formatTextHtml(t){
+    return escH(t)
+      .replace(/(@[\w.+-]+@[\w.-]+\.[a-z]{2,})/gi, m => {
+        const email = m.slice(1).toLowerCase();
+        const isYou = email === state.me;
+        return `<span class="mention ${isYou?'you':''}">@${escH(nameOf(email))}</span>`;
+      })
+      .replace(/\*\*([^*\n]+)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*([^*\n]+)\*/g, '<em>$1</em>')
+      .replace(/`([^`\n]+)`/g, '<code>$1</code>')
+      .replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>');
+  }
+  function persistState(){
+    sessionStorage.setItem('tc-open', state.open ? '1' : '0');
+    sessionStorage.setItem('tc-view', state.view);
+    sessionStorage.setItem('tc-target', state.target);
+  }
+  function playDing(){
+    try {
+      const a = new Audio('data:audio/wav;base64,UklGRiQFAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAFAACBgIB9fH1+gIF/fHt8foCBgH18fH6AgYB9fH1+gIB/fX1+gICAfX5+gIB/fn5/gIB/fn+AgH9+f4CAf3+AgH9/gIB/f3+AgIB/gIB/gICAf4B/gH+Af4B/gH+Af4B/gH+Af4B/gH+Af4B/gH+Af4B/gH+Af4B/gH+Af4B/gH+Af4B/gH+Af4B/gH+Af4B/gH+Af4B/gH+Af4B/gH+Af4B/gH+Af4B/gH+Af4B/gH+Af4B/gH+Af4B/gH+Af4B/gH+Af4B/gH+Af4B/gH+Af4B/gH+Af4B/gH+Af4B/gH+Af4B/gH+Af4B/gH+Af4B/gH+Af4B/gH+Af4B/gH+Af4B/gH+Af4B/gH+Af4B/gH+Af4B/gH+Af4B/gH+Af4B/gH+Af4B/gH+Af4B/gH+Af4B/gH+Af4B/gH+Af4B/gH+Af4B/gH+Af4B/gH+Af4B/gH+Af4B/gH+Af4B/gH+Af4B/gH+Af4B/gH+Af4B/gH+Af4B/gH+Af4B/gH+Af4B/gH+Af4B/gH+Af4B/gH+Af4B/gH+Af4B/gH+Af4B/gH+Af4B/gH+Af4B/gH+A');
+      a.volume = 0.3; a.play().catch(()=>{});
+    } catch {}
+  }
+
+  // -------- DATA --------
+  async function loadTeam(){
+    try {
+      const r = await fetch('/api/team', { credentials: 'include' });
+      if (!r.ok) return;
+      const j = await r.json();
+      state.team = j.team || [];
+      state.me = j.you || '';
+      state.teamByEmail = new Map(state.team.map(t => [t.email, t]));
+      state.onlineSet = new Set(state.team.filter(t => t.online).map(t => t.email));
+    } catch {}
+  }
+  async function refreshSummary(){
+    try {
+      const r = await fetch('/api/chat?summary=1', { credentials: 'include' });
+      if (!r.ok) return;
+      const j = await r.json();
+      state.me = j.you || state.me;
+      state.onlineSet = new Set(j.online || []);
+      state.unread = j.unread || { geral: 0, dm: {} };
+      state.preview = j.preview || { geral: null, dm: {} };
+      for (const p of Object.keys(state.preview.dm || {})) state.knownDmPartners.add(p);
+      for (const p of Object.keys(state.unread.dm || {})) state.knownDmPartners.add(p);
+      updateBadge();
+      if (state.view === 'list' && state.open) renderList();
+    } catch {}
+  }
+  function updateBadge(){
+    const total = (state.unread.geral || 0) + Object.values(state.unread.dm || {}).reduce((a,b) => a+b, 0);
+    els.badge.textContent = total > 99 ? '99+' : total;
+    els.badge.classList.toggle('zero', total === 0);
+  }
+
+  async function loadMessages(reset = true){
+    if (reset) { state.messages = []; state.lastTs = 0; renderMessages(); }
+    const params = state.target === 'geral'
+      ? `channel=geral&since=${state.lastTs}`
+      : `dm=${encodeURIComponent(state.target)}&since=${state.lastTs}`;
+    try {
+      const r = await fetch('/api/chat?' + params, { credentials: 'include' });
+      if (!r.ok) return;
+      const j = await r.json();
+      const fresh = j.messages || [];
+      if (fresh.length) {
+        const byId = new Map(state.messages.map(m => [m.id, m]));
+        let newCount = 0;
+        for (const m of fresh) {
+          if (!byId.has(m.id)) newCount++;
+          byId.set(m.id, m);
+        }
+        state.messages = Array.from(byId.values()).sort((a,b) => a.ts - b.ts);
+        state.lastTs = state.messages[state.messages.length - 1].ts;
+        renderMessages();
+        // Mark as read
+        fetch('/api/chat', {
+          method: 'POST', credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ read: state.target }),
+        }).catch(()=>{});
+        // Sound
+        if (newCount > 0 && state.soundOn) {
+          const newOnes = fresh.filter(m => m.from !== state.me);
+          if (newOnes.length) {
+            const isDM = state.target !== 'geral';
+            const isMention = newOnes.some(m => (m.mentions||[]).includes(state.me));
+            if (isDM || isMention) playDing();
+          }
+        }
+      }
+    } catch {}
+  }
+
+  async function refreshTyping(){
+    if (state.view !== 'conv' || !state.open) { els.typing.hidden = true; els.typing.innerHTML=''; return; }
+    try {
+      const r = await fetch(`/api/chat?typing=${encodeURIComponent(state.target)}`, { credentials: 'include' });
+      if (!r.ok) return;
+      const j = await r.json();
+      const others = (j.typing || []).filter(u => u !== state.me);
+      if (!others.length) { els.typing.hidden = true; els.typing.innerHTML=''; return; }
+      els.typing.hidden = false;
+      els.typing.innerHTML = `<span class="dots"><span></span><span></span><span></span></span> ${escH(nameOf(others[0]))}${others.length > 1 ? ` e mais ${others.length-1}` : ''} digitando…`;
+    } catch {}
+  }
+
+  // -------- VIEWS --------
+  function showList(){
+    state.view = 'list';
+    persistState();
+    els.list.hidden = false;
+    els.msgs.hidden = true;
+    els.typing.hidden = true;
+    els.compose.hidden = true;
+    els.listSearch.style.display = 'block';
+    els.back.classList.remove('show');
+    els.headAv.className = 'tc-head-av geral';
+    els.headAv.textContent = '#';
+    els.headAv.style.background = '';
+    els.headName.textContent = 'Chat da Equipe';
+    els.headSub.innerHTML = `<span class="online">${state.onlineSet.size} online</span> · canal #geral + DMs`;
+    renderList();
+  }
+  function showConversation(target){
+    state.view = 'conv';
+    state.target = target;
+    persistState();
+    els.list.hidden = true;
+    els.msgs.hidden = false;
+    els.compose.hidden = false;
+    els.listSearch.style.display = 'none';
+    els.back.classList.add('show');
+    if (target === 'geral') {
+      els.headAv.className = 'tc-head-av geral';
+      els.headAv.textContent = '#';
+      els.headAv.style.background = '';
+      els.headName.textContent = '#geral';
+      els.headSub.innerHTML = `<span class="online">${state.onlineSet.size} online</span> · canal de toda a equipe`;
+    } else {
+      els.headAv.className = 'tc-head-av';
+      els.headAv.style.background = avatarColor(target);
+      els.headAv.textContent = initials(nameOf(target));
+      els.headName.textContent = nameOf(target);
+      const online = state.onlineSet.has(target);
+      els.headSub.innerHTML = `${online ? '<span class="online">● online</span>' : '<span style="opacity:0.7">offline</span>'} · ${escH(roleOf(target) || target)}`;
+    }
+    state.isAtBottom = true;
+    loadMessages(true);
+    setTimeout(() => els.input?.focus(), 100);
+  }
+
+  function renderList(){
+    const q = (els.search.value || '').toLowerCase();
+    const dmSet = new Set([...state.knownDmPartners]);
+    dmSet.delete(state.me);
+    const dmList = Array.from(dmSet)
+      .map(email => ({ email, name: nameOf(email), role: roleOf(email), online: state.onlineSet.has(email), preview: state.preview.dm?.[email] || null, unread: state.unread.dm?.[email] || 0 }))
+      .filter(p => !q || p.name.toLowerCase().includes(q) || p.email.includes(q))
+      .sort((a,b) => {
+        if ((b.unread > 0) !== (a.unread > 0)) return b.unread - a.unread;
+        const tsA = a.preview?.ts || 0, tsB = b.preview?.ts || 0;
+        if (tsA !== tsB) return tsB - tsA;
+        return a.name.localeCompare(b.name, 'pt-BR');
+      });
+
+    const allTeam = state.team
+      .filter(t => t.email !== state.me && t.active)
+      .filter(t => !q || t.name.toLowerCase().includes(q) || t.email.includes(q) || (t.role||'').toLowerCase().includes(q))
+      .sort((a,b) => {
+        if (a.online !== b.online) return a.online ? -1 : 1;
+        return a.name.localeCompare(b.name, 'pt-BR');
+      });
+
+    let html = '';
+    html += '<div class="tc-list-sec">Canais</div>';
+    const lastG = state.preview.geral;
+    const uG = state.unread.geral || 0;
+    html += `<div class="tc-conv" data-target="geral">
+      <div class="tc-conv-av geral">#</div>
+      <div class="tc-conv-info">
+        <div class="tc-conv-name"><span class="nm">geral</span>${uG ? `<span class="badge">${uG}</span>` : ''}</div>
+        <div class="tc-conv-preview"><span>${lastG ? escH(lastG.text.slice(0,32)) : 'todo o time'}</span><span class="time">${lastG ? relTime(lastG.ts) : ''}</span></div>
+      </div>
+    </div>`;
+
+    if (dmList.length) {
+      html += `<div class="tc-list-sec">Conversas <span style="opacity:0.6;font-weight:500">${dmList.length}</span></div>`;
+      html += dmList.map(p => `
+        <div class="tc-conv" data-target="${escH(p.email)}">
+          <div class="tc-conv-av ${p.online ? 'online' : ''}" style="background:${avatarColor(p.email)}">${initials(p.name)}<span class="dot"></span></div>
+          <div class="tc-conv-info">
+            <div class="tc-conv-name"><span class="nm">${escH(p.name)}</span>${p.unread ? `<span class="badge">${p.unread}</span>` : ''}</div>
+            <div class="tc-conv-preview"><span>${p.preview ? escH((p.preview.from === state.me ? 'você: ' : '') + p.preview.text.slice(0,28)) : escH(p.role || 'sem mensagens')}</span><span class="time">${p.preview ? relTime(p.preview.ts) : ''}</span></div>
+          </div>
+        </div>`).join('');
+    }
+
+    if (allTeam.length) {
+      html += `<div class="tc-list-sec">Equipe <span style="opacity:0.6;font-weight:500">${state.team.filter(t => t.email !== state.me && t.active).length}</span></div>`;
+      html += allTeam.slice(0, 60).map(t => `
+        <div class="tc-conv" data-target="${escH(t.email)}">
+          <div class="tc-conv-av ${t.online ? 'online' : ''}" style="background:${avatarColor(t.email)}">${initials(t.name)}<span class="dot"></span></div>
+          <div class="tc-conv-info">
+            <div class="tc-conv-name"><span class="nm">${escH(t.name)}</span></div>
+            <div class="tc-conv-preview"><span>${escH(t.role || t.area || '')}</span></div>
+          </div>
+        </div>`).join('');
+    }
+
+    els.list.innerHTML = html;
+    els.list.querySelectorAll('[data-target]').forEach(el => el.addEventListener('click', () => showConversation(el.dataset.target)));
+  }
+
+  function renderMessages(){
+    const box = els.msgs;
+    if (!state.messages.length) {
+      box.innerHTML = `<div class="tc-msg-empty">
+        <strong>${state.target === 'geral' ? 'Bem-vindo ao #geral' : 'Sem mensagens com ' + escH(nameOf(state.target))}</strong>
+        Manda a primeira mensagem aí embaixo.
+      </div>`;
+      return;
+    }
+    let prevFrom = '', prevTs = 0;
+    box.innerHTML = state.messages.map(m => {
+      const sameAuthor = m.from === prevFrom && (m.ts - prevTs) < 5*60*1000 && !m.replyTo;
+      prevFrom = m.from; prevTs = m.ts;
+      const mine = m.from === state.me;
+      const name = nameOf(m.from);
+      const text = m.deleted
+        ? '<span class="tc-msg-bub deleted">— apagada —</span>'
+        : `<div class="tc-msg-bub">${formatTextHtml(m.text)}${m.editedTs && m.editedTs > m.ts ? '<span class="tc-msg-edited">(editado)</span>' : ''}</div>`;
+      const reactions = m.reactions && Object.keys(m.reactions).length ? `
+        <div class="tc-msg-react">${Object.entries(m.reactions).map(([e,u]) => `<span class="tc-react-pill ${u.includes(state.me)?'mine':''}" data-react="${e}" data-msg="${m.id}" title="${u.map(x => nameOf(x)).join(', ')}">${e} ${u.length}</span>`).join('')}</div>` : '';
+      return `
+        <div class="tc-msg-grp ${mine?'mine':''} ${sameAuthor?'cont':''}" data-msg-id="${m.id}">
+          <div class="tc-msg-av" style="background:${avatarColor(m.from)}">${initials(name)}</div>
+          <div class="tc-msg-c">
+            <div class="tc-msg-row"><span class="author">${mine?'Você':escH(name)}</span><span class="ts">${fmtTime(m.ts)}</span></div>
+            ${text}
+            ${reactions}
+          </div>
+        </div>`;
+    }).join('');
+
+    box.querySelectorAll('[data-react]').forEach(el => el.addEventListener('click', () => {
+      const payload = { react: el.dataset.msg, emoji: el.dataset.react };
+      if (state.target === 'geral') payload.channel = 'geral'; else payload.dm = state.target;
+      fetch('/api/chat', {
+        method: 'POST', credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      }).then(() => loadMessages(false));
+    }));
+
+    requestAnimationFrame(() => {
+      if (state.isAtBottom) box.scrollTop = box.scrollHeight;
+    });
+  }
+
+  // -------- COMPOSE --------
+  els.input.addEventListener('input', () => {
+    els.send.disabled = !els.input.value.trim();
+    els.input.style.height = 'auto';
+    els.input.style.height = Math.min(100, els.input.scrollHeight) + 'px';
+    const now = Date.now();
+    if (els.input.value.trim() && now - state.typingHb > 3000) {
+      state.typingHb = now;
+      fetch('/api/chat', {
+        method: 'POST', credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ typing: state.target }),
+      }).catch(()=>{});
+    }
+  });
+  els.input.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      els.compose.requestSubmit();
+    }
+  });
+
+  els.compose.addEventListener('submit', async e => {
+    e.preventDefault();
+    const text = els.input.value.trim();
+    if (!text) return;
+    els.send.disabled = true;
+    els.input.disabled = true;
+    try {
+      const mentions = [];
+      text.replace(/@([\w.+-]+@[\w.-]+\.[a-z]{2,})/gi, (_, em) => { mentions.push(em.toLowerCase()); });
+      const payload = state.target === 'geral'
+        ? { channel: 'geral', text, mentions }
+        : { dm: state.target, text, mentions };
+      const r = await fetch('/api/chat', {
+        method: 'POST', credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (!r.ok) throw new Error('Falha ' + r.status);
+      const j = await r.json();
+      if (j.message) {
+        state.messages.push(j.message);
+        state.lastTs = j.message.ts;
+        state.isAtBottom = true;
+        renderMessages();
+      }
+      els.input.value = '';
+      els.input.style.height = 'auto';
+      if (state.target !== 'geral') state.knownDmPartners.add(state.target);
+    } catch (e) {
+      console.warn('send err', e);
+    } finally {
+      els.input.disabled = false;
+      els.input.focus();
+      els.send.disabled = !els.input.value.trim();
+    }
+  });
+
+  // -------- SCROLL TRACKING --------
+  els.msgs.addEventListener('scroll', () => {
+    const el = els.msgs;
+    state.isAtBottom = (el.scrollHeight - el.scrollTop - el.clientHeight) < 60;
+  });
+
+  // -------- SEARCH --------
+  els.search.addEventListener('input', () => renderList());
+
+  // -------- CONTROLS --------
+  function openDrawer(){
+    state.open = true;
+    persistState();
+    drawer.hidden = false;
+    if (state.view === 'conv') showConversation(state.target);
+    else showList();
+  }
+  function closeDrawer(){
+    state.open = false;
+    persistState();
+    drawer.hidden = true;
+  }
+  btn.addEventListener('click', () => state.open ? closeDrawer() : openDrawer());
+  els.close.addEventListener('click', closeDrawer);
+  els.back.addEventListener('click', showList);
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && !drawer.hidden) closeDrawer(); });
+
+  // -------- INIT + POLL --------
+  (async () => {
+    await loadTeam();
+    await refreshSummary();
+    if (state.open) {
+      if (state.view === 'conv') showConversation(state.target);
+      else showList();
+    }
+  })();
+
+  setInterval(refreshSummary, POLL_SUMMARY);
+  setInterval(() => {
+    if (state.open && state.view === 'conv') loadMessages(false);
+  }, POLL_MSGS);
+  setInterval(() => {
+    if (state.open && state.view === 'conv') refreshTyping();
+  }, 4000);
+  setInterval(() => {
+    // heartbeat already runs via setupPresence(); we only refresh summary
+  }, HEARTBEAT_MS);
+}
+
+window.setupTeamChatFloat = setupTeamChatFloat;
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', setupTeamChatFloat);
+} else {
+  setupTeamChatFloat();
+}
+})();
