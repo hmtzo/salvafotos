@@ -294,6 +294,7 @@
       <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
         <button class="btn-pri" id="btnInviteAll" type="button">Enviar convite pra TODA a equipe</button>
         <button class="btn-sec" id="btnInviteDry" type="button">Preview (dry-run)</button>
+        <button class="btn-sec" id="btnMorningTest" type="button">Testar email matinal pra mim</button>
         <button class="btn-sec" id="btnDailyTest" type="button">Testar email diário pra mim</button>
       </div>
       <div id="emailLog" style="font-family:'JetBrains Mono',ui-monospace,monospace;font-size:11.5px;background:rgba(0,0,0,0.3);border:1px solid var(--border);border-radius:10px;padding:12px;min-height:60px;max-height:280px;overflow-y:auto;white-space:pre-wrap;color:var(--text-dim);display:none;margin-top:12px"></div>
@@ -1016,7 +1017,7 @@ const TEAM_NAMES_LOCAL = {
     if (isErr) logEl.style.borderColor = 'rgba(239,68,68,0.4)';
   }
   function setBusy(busy) {
-    [btnInvite, btnDry, btnDaily].forEach(b => b.disabled = busy);
+    [btnInvite, btnDry, btnDaily, document.getElementById('btnMorningTest')].filter(Boolean).forEach(b => b.disabled = busy);
   }
 
   async function callInvite(opts = {}) {
@@ -1055,18 +1056,40 @@ const TEAM_NAMES_LOCAL = {
   });
   btnDry.addEventListener('click', () => callInvite({ dryRun: true }));
 
+  // Botão: testa email matinal pra si mesmo
+  const btnMorning = document.getElementById('btnMorningTest');
+  btnMorning.addEventListener('click', async () => {
+    const me = MY_EMAIL;
+    if (!me) { log('Email do admin ainda não carregou — recarrega a página.', true); return; }
+    setBusy(true);
+    log(`Disparando email matinal de teste pra ${me}...`);
+    try {
+      const res = await fetch(`/api/email-morning?testEmail=${encodeURIComponent(me)}&force=1`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+      const data = await res.json();
+      if (!res.ok) { log('⚠ ' + (data.error || res.status), true); return; }
+      log(`✓ Email matinal enviado pra ${me}. Checa sua caixa.`);
+      if (data.log) data.log.forEach(l => {
+        const status = l.status === 'sent' ? '✓' : '✗';
+        log(`  ${status} ${l.email}${l.error ? ' — ' + l.error : ''}`);
+      });
+    } catch (e) {
+      log('✗ Falha: ' + e.message, true);
+    } finally { setBusy(false); }
+  });
+
   btnDaily.addEventListener('click', async () => {
     const me = MY_EMAIL;
     if (!me) { log('Email do admin ainda não carregou — recarrega a página.', true); return; }
     setBusy(true);
     log(`Disparando email diário de teste pra ${me}...`);
     try {
-      // /api/email-daily exige CRON_SECRET (Bearer) — admin precisa colar uma vez
-      const secret = prompt('Cola o CRON_SECRET (definido no Vercel) pra disparar:');
-      if (!secret) { setBusy(false); log('Cancelado.'); return; }
+      // Agora /api/email-daily aceita cookie de admin (sem CRON_SECRET) pra teste pessoal
       const res = await fetch(`/api/email-daily?testEmail=${encodeURIComponent(me)}&force=1`, {
         method: 'POST',
-        headers: { Authorization: 'Bearer ' + secret },
+        credentials: 'include',
       });
       const data = await res.json();
       if (!res.ok) { log('⚠ ' + (data.error || res.status), true); return; }

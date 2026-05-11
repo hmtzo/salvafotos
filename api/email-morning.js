@@ -10,8 +10,21 @@
 // =====================================================================
 
 import { sendEmail, emailLayout, emailConfigured, TEAM_EMAILS, nameFromEmail, escapeHtml } from './_email.js';
+import { ADMIN_EMAILS } from './_team.js';
 
 export const config = { runtime: 'edge' };
+
+function getUserFromCookie(req) {
+  const cookies = req.headers.get('cookie') || '';
+  const m = cookies.match(/(?:^|;\s*)sf_auth=([^;]+)/);
+  if (!m) return null;
+  try {
+    const decoded = atob(m[1]);
+    const idx = decoded.indexOf(':');
+    if (idx > 0) return decoded.slice(0, idx).toLowerCase();
+  } catch {}
+  return null;
+}
 
 const KV_URL = process.env.KV_REST_API_URL;
 const KV_TOK = process.env.KV_REST_API_TOKEN;
@@ -139,10 +152,28 @@ export default async function handler(request) {
   const url = new URL(request.url);
   const cronSecret = process.env.CRON_SECRET;
   const auth = request.headers.get('authorization') || '';
-  if (cronSecret && auth !== `Bearer ${cronSecret}`) {
+  const validCronAuth = cronSecret && auth === `Bearer ${cronSecret}`;
+
+  // Auth alternativa: admin com cookie pode disparar pra teste (só pra ele mesmo)
+  const cookieUser = getUserFromCookie(request);
+  const isAdminTest = cookieUser && ADMIN_EMAILS.includes(cookieUser);
+
+  if (!validCronAuth && !isAdminTest) {
     return new Response(JSON.stringify({ error: 'Não autorizado' }), {
       status: 401, headers: { 'Content-Type': 'application/json' },
     });
+  }
+
+  // Admin sem CRON_SECRET → força teste pra ele mesmo (impede broadcast)
+  if (isAdminTest && !validCronAuth) {
+    const requestedTest = url.searchParams.get('testEmail');
+    if (requestedTest && requestedTest.toLowerCase() !== cookieUser) {
+      return new Response(JSON.stringify({ error: 'Admin sem CRON_SECRET só pode testar pra si mesmo' }), {
+        status: 403, headers: { 'Content-Type': 'application/json' },
+      });
+    }
+    url.searchParams.set('testEmail', cookieUser);
+    url.searchParams.set('force', '1');
   }
   if (!emailConfigured()) {
     return new Response(JSON.stringify({
