@@ -1,24 +1,20 @@
 // =====================================================================
 // API DE LOGIN — HUB SINDICOMPANY
 // =====================================================================
-// Valida credenciais e seta cookie httpOnly. Edita o objeto USERS abaixo
-// para gerenciar acessos.
+// Valida credenciais e seta cookie httpOnly.
+// Fonte de usuários: /api/_team.js (única fonte de verdade da equipe).
 // =====================================================================
+
+import { TEAM } from './_team.js';
 
 export const config = { runtime: 'edge' };
 
-// Senha padrão compartilhada — colaborador troca depois (futuramente)
+// Senha padrão compartilhada por todos os usuários.
+// Cada um troca depois em /perfil.html (futuro: bcrypt + per-user).
 const DEFAULT_PASSWORD = '123Mudar@@2026';
-const USERS = new Set([
-  'luciane@sindicompany.com.br',
-  'juliana@sindicompany.com.br',
-  'raquel@sindicompany.com.br',
-  'mkt@sindicompany.com.br',
-  'junior@sindicompany.com.br',
-  'felipe.fernandes@sindicompany.com.br',
-  'comercial@sindicompany.com.br',
-  'orcamentos@sindicompany.com.br',
-]);
+
+// Todos os emails autorizados — sincronizados com middleware.js via _team.js
+const USERS = new Set(TEAM.map(t => t.email));
 
 export default async function handler(request) {
   if (request.method !== 'POST') {
