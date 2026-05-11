@@ -2,19 +2,33 @@
 // API DE LOGIN — HUB SINDICOMPANY
 // =====================================================================
 // Valida credenciais e seta cookie httpOnly.
-// Fonte de usuários: /api/_team.js (única fonte de verdade da equipe).
+// Fluxo:
+//   1) Lookup `sindi-password:<email>` em KV
+//   2) Se existe → verifica password contra hash PBKDF2
+//   3) Senão → compara com DEFAULT_PASSWORD
 // =====================================================================
 
 import { TEAM } from './_team.js';
+import { authenticatePassword } from './_password.js';
 
 export const config = { runtime: 'edge' };
 
-// Senha padrão compartilhada por todos os usuários.
-// Cada um troca depois em /perfil.html (futuro: bcrypt + per-user).
-const DEFAULT_PASSWORD = '123Mudar@@2026';
-
-// Todos os emails autorizados — sincronizados com middleware.js via _team.js
+const KV_URL = process.env.KV_REST_API_URL;
+const KV_TOK = process.env.KV_REST_API_TOKEN;
 const USERS = new Set(TEAM.map(t => t.email));
+
+async function kvGet(key) {
+  if (!KV_URL || !KV_TOK) return null;
+  try {
+    const r = await fetch(`${KV_URL}/get/${encodeURIComponent(key)}`, {
+      headers: { Authorization: `Bearer ${KV_TOK}` },
+    });
+    if (!r.ok) return null;
+    const j = await r.json();
+    if (!j.result) return null;
+    try { return JSON.parse(j.result); } catch { return j.result; }
+  } catch { return null; }
+}
 
 export default async function handler(request) {
   if (request.method !== 'POST') {
@@ -39,14 +53,24 @@ export default async function handler(request) {
   const remember = body.remember !== false;
 
   const userLower = user.toLowerCase();
-  if (!userLower || !pass || !USERS.has(userLower) || pass !== DEFAULT_PASSWORD) {
+  if (!userLower || !pass || !USERS.has(userLower)) {
     return new Response(JSON.stringify({ error: 'Usuário ou senha incorretos' }), {
       status: 401,
       headers: { 'Content-Type': 'application/json' },
     });
   }
 
-  // Token = base64(email:senha) — validado pelo middleware
+  // Lookup KV → verifica
+  const storedHash = await kvGet(`sindi-password:${userLower}`);
+  const ok = await authenticatePassword(pass, storedHash);
+  if (!ok) {
+    return new Response(JSON.stringify({ error: 'Usuário ou senha incorretos' }), {
+      status: 401,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+
+  // Token = base64(email:senha) — validado pelo middleware (que faz a mesma verificação)
   const token = btoa(`${userLower}:${pass}`);
   const maxAge = remember ? 60 * 60 * 24 * 30 : 60 * 60 * 8; // 30 dias ou 8h
 

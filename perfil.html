@@ -172,6 +172,32 @@
     </div>
   </section>
 
+  <!-- Trocar senha -->
+  <section class="panel">
+    <h2>Trocar senha</h2>
+    <p style="font-size:13px;color:var(--text-dim);margin:6px 0 14px;line-height:1.5">
+      Você está usando a senha padrão (<code style="background:rgba(255,255,255,0.06);padding:1px 6px;border-radius:4px;font-size:0.95em">123Mudar@@2026</code>). Pra sua segurança, troque pra uma só sua.
+    </p>
+    <div class="form-grid">
+      <label>
+        <span>Senha atual</span>
+        <input type="password" id="currentPassword" autocomplete="current-password" placeholder="Senha que você usa hoje">
+      </label>
+      <label>
+        <span>Nova senha (mín. 8 caracteres, com número/símbolo)</span>
+        <input type="password" id="newPassword" autocomplete="new-password" placeholder="Sua nova senha">
+      </label>
+      <label>
+        <span>Confirmar nova senha</span>
+        <input type="password" id="confirmPassword" autocomplete="new-password" placeholder="Digite de novo">
+      </label>
+    </div>
+    <div class="btn-row">
+      <button class="btn-pri" id="changePasswordBtn">Atualizar senha</button>
+    </div>
+    <div id="passwordMsg" style="display:none;margin-top:12px;padding:10px 14px;border-radius:8px;font-size:13px;line-height:1.5"></div>
+  </section>
+
   <!-- Memórias -->
   <section class="panel">
     <div class="panel-row" style="margin-bottom:14px">
@@ -334,6 +360,57 @@ $('clearProfile').addEventListener('click', async () => {
   });
   flash('Perfil limpo.');
   loadAll();
+});
+
+// ============ TROCA DE SENHA ============
+function showPasswordMsg(text, type = 'success') {
+  const el = $('passwordMsg');
+  el.style.display = 'block';
+  el.style.background = type === 'success' ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)';
+  el.style.border = '1px solid ' + (type === 'success' ? 'rgba(34,197,94,0.3)' : 'rgba(239,68,68,0.3)');
+  el.style.color = type === 'success' ? '#86efac' : '#fca5a5';
+  el.textContent = text;
+  if (type === 'success') setTimeout(() => { el.style.display = 'none'; }, 8000);
+}
+
+$('changePasswordBtn').addEventListener('click', async () => {
+  const current = $('currentPassword').value;
+  const next = $('newPassword').value;
+  const confirm = $('confirmPassword').value;
+
+  if (!current || !next) {
+    showPasswordMsg('Preencha a senha atual e a nova.', 'error');
+    return;
+  }
+  if (next !== confirm) {
+    showPasswordMsg('A confirmação não bate com a nova senha.', 'error');
+    return;
+  }
+
+  const btn = $('changePasswordBtn');
+  btn.disabled = true;
+  const orig = btn.textContent;
+  btn.textContent = 'Atualizando…';
+
+  try {
+    const r = await fetch('/api/change-password', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ currentPassword: current, newPassword: next }),
+    });
+    const j = await r.json();
+    if (!r.ok || !j.ok) throw new Error(j.error || 'Falha');
+    showPasswordMsg('✓ Senha atualizada! Use a nova senha no próximo login.', 'success');
+    $('currentPassword').value = '';
+    $('newPassword').value = '';
+    $('confirmPassword').value = '';
+  } catch (e) {
+    showPasswordMsg('Erro: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = orig;
+  }
 });
 
 $('clearMemories').addEventListener('click', async () => {

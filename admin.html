@@ -622,9 +622,41 @@ function renderOverview(d) {
           <span>${profileTag}</span>
         </div>
         <div class="u-status">${stateLabel}</div>
+        <div class="u-actions" style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">
+          <button class="reset-pw-btn" data-email="${escapeHtml(u.email)}" style="padding:5px 10px;font-size:11px;font-weight:600;background:rgba(245,158,11,0.1);color:#fbbf24;border:1px solid rgba(245,158,11,0.3);border-radius:6px;cursor:pointer;font-family:inherit">↻ Resetar senha</button>
+        </div>
       </div>
     `;
   }).join('');
+
+  // Atacha handlers de reset
+  $('usersGrid').querySelectorAll('.reset-pw-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const email = btn.dataset.email;
+      if (!confirm(`Resetar senha de ${email} pra padrão (123Mudar@@2026)?`)) return;
+      btn.disabled = true;
+      btn.textContent = 'Resetando…';
+      try {
+        const r = await fetch('/api/change-password', {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ targetEmail: email, reset: true }),
+        });
+        const j = await r.json();
+        if (!r.ok || !j.ok) throw new Error(j.error || 'falha');
+        btn.textContent = '✓ Reset OK';
+        btn.style.background = 'rgba(34,197,94,0.15)';
+        btn.style.color = '#86efac';
+        btn.style.borderColor = 'rgba(34,197,94,0.4)';
+        alert('Senha de ' + email + ' resetada pra 123Mudar@@2026. Avise ela pra trocar em /perfil.html.');
+      } catch (e) {
+        alert('Erro: ' + e.message);
+        btn.disabled = false;
+        btn.textContent = '↻ Resetar senha';
+      }
+    });
+  });
 }
 
 function renderAudit(entries) {
