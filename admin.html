@@ -405,12 +405,14 @@ function escapeHtml(s) {
   return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
 }
 
+let MY_EMAIL = '';
 async function loadAll() {
   // Verifica acesso
   const meRes = await fetch('/api/sindi-os?action=me-stats');
   if (!meRes.ok) { showForbidden(); return; }
   const me = await meRes.json();
   if (!me.isAdmin) { showForbidden(); return; }
+  MY_EMAIL = me.user || '';
 
   $('adminContent').hidden = false;
 
@@ -1048,25 +1050,18 @@ const TEAM_NAMES_LOCAL = {
   }
 
   btnInvite.addEventListener('click', () => {
-    if (!confirm('Mandar email de convite pra TODOS os 8 funcionários?')) return;
+    if (!confirm('Mandar email de convite pra TODA a equipe (todos os emails @sindicompany.com.br cadastrados)?')) return;
     callInvite();
   });
   btnDry.addEventListener('click', () => callInvite({ dryRun: true }));
 
   btnDaily.addEventListener('click', async () => {
-    const myEmail = (document.cookie.match(/sf_auth=([^;]+)/) || [])[1];
-    let me = '';
-    try { me = atob(myEmail).split(':')[0]; } catch {}
-    if (!me) { log('Não consegui detectar seu email logado.', true); return; }
+    const me = MY_EMAIL;
+    if (!me) { log('Email do admin ainda não carregou — recarrega a página.', true); return; }
     setBusy(true);
     log(`Disparando email diário de teste pra ${me}...`);
     try {
-      // Esse endpoint é protegido por CRON_SECRET, não cookie — então admin
-      // chama via /api/email-invite-style? Não — vamos chamar direto via cron secret
-      // mas isso exige bearer. Como admin não tem secret, criamos rota separada
-      // OU usamos /api/email-daily com testEmail e o user precisa ter o secret.
-      // Solução: o painel admin usa um endpoint helper que chama internamente.
-      // Por simplicidade: usuário cola o CRON_SECRET no prompt.
+      // /api/email-daily exige CRON_SECRET (Bearer) — admin precisa colar uma vez
       const secret = prompt('Cola o CRON_SECRET (definido no Vercel) pra disparar:');
       if (!secret) { setBusy(false); log('Cancelado.'); return; }
       const res = await fetch(`/api/email-daily?testEmail=${encodeURIComponent(me)}&force=1`, {
