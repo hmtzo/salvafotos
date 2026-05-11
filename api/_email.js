@@ -65,6 +65,10 @@ export async function sendEmail(opts) {
  * Wrapper de template HTML — header + footer Sindicompany comum.
  */
 export function emailLayout({ title, body, ctaText, ctaUrl, preheader = '' }) {
+  const PAINEL_URL = 'https://painel.sindicompany.com.br';
+  const LOGO_URL  = `${PAINEL_URL}/assets/brand/logo-full-white.png`;
+  const ICON_URL  = `${PAINEL_URL}/assets/brand/icon-color.png`;
+
   return `<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -77,11 +81,23 @@ export function emailLayout({ title, body, ctaText, ctaUrl, preheader = '' }) {
 <div style="display:none;font-size:1px;color:#0a0a0c;line-height:1px;max-height:0px;max-width:0px;opacity:0;overflow:hidden">${escapeHtml(preheader)}</div>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#0a0a0c">
   <tr>
-    <td align="center" style="padding:40px 16px">
-      <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;background:linear-gradient(180deg,#15151a 0%,#0a0a0c 100%);border-radius:18px;overflow:hidden;border:1px solid rgba(255,255,255,0.08)">
-        <!-- Header -->
+    <td align="center" style="padding:32px 16px 40px">
+
+      <!-- Logo topo (fora do card pra ficar mais marcante) -->
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:18px">
         <tr>
-          <td style="padding:32px 36px 0;text-align:left">
+          <td align="center">
+            <a href="${PAINEL_URL}" style="text-decoration:none;display:inline-block">
+              <img src="${LOGO_URL}" alt="Sindicompany" width="200" height="auto" style="display:block;width:200px;max-width:60%;height:auto;border:0;outline:none">
+            </a>
+          </td>
+        </tr>
+      </table>
+
+      <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;width:100%;background:linear-gradient(180deg,#15151a 0%,#0a0a0c 100%);border-radius:18px;overflow:hidden;border:1px solid rgba(255,255,255,0.08)">
+        <!-- Header (eyebrow + dot) -->
+        <tr>
+          <td style="padding:28px 36px 0;text-align:left">
             <table role="presentation" cellpadding="0" cellspacing="0" border="0">
               <tr>
                 <td style="vertical-align:middle">
@@ -94,7 +110,7 @@ export function emailLayout({ title, body, ctaText, ctaUrl, preheader = '' }) {
         </tr>
         <!-- Body -->
         <tr>
-          <td style="padding:24px 36px 32px">
+          <td style="padding:20px 36px 32px">
             ${body}
             ${ctaText && ctaUrl ? `
             <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:28px 0 8px">
@@ -109,15 +125,31 @@ export function emailLayout({ title, body, ctaText, ctaUrl, preheader = '' }) {
         </tr>
         <!-- Footer -->
         <tr>
-          <td style="padding:24px 36px 32px;border-top:1px solid rgba(255,255,255,0.08)">
-            <p style="margin:0;font-size:12px;color:#71717a;line-height:1.6">
-              <strong style="color:#a1a1aa;font-weight:700">Sindicompany</strong><br>
-              Você está recebendo este email porque tem acesso ao painel interno.<br>
-              <a href="https://painel.sindicompany.com.br" style="color:#a5b4fc;text-decoration:none">painel.sindicompany.com.br</a>
+          <td style="padding:22px 36px 28px;border-top:1px solid rgba(255,255,255,0.08)">
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+              <tr>
+                <td style="vertical-align:middle">
+                  <img src="${ICON_URL}" alt="" width="28" height="28" style="display:inline-block;vertical-align:middle;margin-right:10px;width:28px;height:28px;border:0;outline:none;border-radius:6px">
+                  <span style="vertical-align:middle;font-size:13px;font-weight:700;color:#fafafa;letter-spacing:-0.01em">Sindicompany</span>
+                </td>
+                <td align="right" style="vertical-align:middle">
+                  <a href="${PAINEL_URL}" style="color:#a5b4fc;text-decoration:none;font-size:11.5px;font-weight:600">painel.sindicompany.com.br →</a>
+                </td>
+              </tr>
+            </table>
+            <p style="margin:14px 0 0;font-size:11.5px;color:#71717a;line-height:1.55">
+              Você está recebendo este email porque tem acesso ao painel interno.
+              Dúvidas: responda este email ou fale com a equipe Sindicompany.
             </p>
           </td>
         </tr>
       </table>
+
+      <!-- Disclaimer fora do card -->
+      <p style="margin:18px auto 0;font-size:10.5px;color:#52525b;line-height:1.6;max-width:520px">
+        Sindicompany · administração condominial · uso interno
+      </p>
+
     </td>
   </tr>
 </table>
