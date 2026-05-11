@@ -22,9 +22,12 @@
 // responde JSON real → este é o domínio correto da API.
 const BASE = 'https://app.polichat.com.br/api/v1';
 
-function env(key) {
+function env(key, fallback = undefined) {
   const v = process.env[key];
-  if (!v) throw new Error(`Env var ${key} não configurada no Vercel`);
+  if (!v) {
+    if (fallback !== undefined) return fallback;
+    throw new Error(`Env var ${key} não configurada no Vercel`);
+  }
   return v;
 }
 
@@ -134,49 +137,102 @@ export async function sendTextByUid({ phone, message }) {
   return r.json().catch(() => ({}));
 }
 
-// Conveniência: envia texto pra um telefone usando a melhor estratégia.
-// Descoberta importante (OpenAPI spec oficial em cs.poli.digital/api-cliente/openapi.yaml):
-// existe endpoint UID que aceita o número de telefone direto, sem criar contato.
-// Estratégia em ordem:
-//   1) sendTextByUid — endpoint /uid/{number}/ — manda direto pro telefone
-//   2) findContactByPhone + sendText (se UID falhar, tenta o caminho clássico)
-//   3) createContact + sendText (último recurso)
-export async function sendTextByPhone({ phone, message, name = '', email = '' }) {
+// Envia template HSM (aprovado pelo Meta) — único jeito de "começar conversa"
+// fora da janela de 24h ou pra contato novo.
+// POST /customers/{c}/whatsapp/send_template/channels/{ch}/contacts/{contact}/users/{u}
+// Body: { quick_message_id: <template_id>, usermsg: <texto renderizado do template> }
+//
+// Descoberta empírica (não documentada em lugar nenhum): o campo é
+// `quick_message_id` e precisa do `usermsg` com o texto JÁ renderizado.
+// O backend valida que o template existe e está aprovado.
+export async function sendTemplate({ contactId, templateId, message }) {
+  const customer = env('POLI_CUSTOMER_ID');
+  const channel  = env('POLI_CHANNEL_ID');
+  const user     = env('POLI_USER_ID');
+  const token    = env('POLI_API_TOKEN');
+  const url = `${BASE}/customers/${customer}/whatsapp/send_template/channels/${channel}/contacts/${contactId}/users/${user}`;
+  const body = {
+    quick_message_id: Number(templateId),
+    usermsg: String(message),
+  };
+  const r = await fetch(url, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json', Accept: 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!r.ok) {
+    const t = await r.text();
+    throw new Error(`Poli sendTemplate falhou (${r.status}): ${t.slice(0, 300)}`);
+  }
+  return r.json().catch(() => ({}));
+}
+
+// Conveniência: envia mensagem pra um telefone usando a estratégia robusta.
+// Fluxo:
+//   1) findContact pelo telefone → se existir, tenta sendText com contact_id
+//   2) Se sendText falhar com "Contact Error" (janela 24h fechada / novo) →
+//      cai pra sendTemplate com template padrão (id em POLI_DEFAULT_TEMPLATE_ID)
+//   3) Se contato não existe → createContact + sendTemplate
+//
+// Pra mensagem motivacional matinal, o template_id pode ter texto fixo
+// genérico (ex: "Bom dia! Tudo bem?") — quando funcionário responder,
+// abre janela 24h e dia seguinte pode mandar texto livre.
+export async function sendTextByPhone({ phone, message, name = '', email = '', templateId = null }) {
   const norm = normalizePhone(phone);
   const tries = [];
+  const tpl = templateId || env('POLI_DEFAULT_TEMPLATE_ID', null);
 
-  // (1) Endpoint UID — mais limpo, não precisa cadastrar contato antes
-  try {
-    return await sendTextByUid({ phone: norm, message });
-  } catch (e) {
-    tries.push({ step: 'sendTextByUid', ok: false, err: e.message });
-  }
-
-  // (2) findContact existente + send
+  // (1) Tenta achar contato + texto
+  let contactId = null;
   try {
     const found = await findContactByPhone(phone);
     if (found) {
-      const id = found.id || found.contact_id || found.uuid;
-      if (id) {
-        tries.push({ step: 'findContact', ok: true, id });
-        return await sendText({ contactId: id, message });
-      }
+      contactId = found.id || found.contact_id || found.uuid;
+      tries.push({ step: 'findContact', ok: !!contactId, id: contactId });
+    } else {
+      tries.push({ step: 'findContact', ok: false, reason: 'not found' });
     }
-    tries.push({ step: 'findContact', ok: false, reason: 'not found' });
   } catch (e) {
     tries.push({ step: 'findContact', ok: false, err: e.message });
   }
 
-  // (3) Último recurso — tenta criar contato e mandar
-  try {
-    const created = await createContact({ name: name || norm, phone: norm, email });
-    const id = created.id || created.contact_id || created.uuid;
-    if (id) {
-      tries.push({ step: 'createContact', ok: true, id });
-      return await sendText({ contactId: id, message });
+  // (2) Se tem contato, tenta sendText
+  if (contactId) {
+    try {
+      return await sendText({ contactId, message });
+    } catch (e) {
+      tries.push({ step: 'sendText', ok: false, err: e.message });
+      // Se erro foi "Contact Error" (janela 24h fechada), cai pra template
+      if (tpl && /Contact Error|submit a template/i.test(e.message)) {
+        try {
+          tries.push({ step: 'sendTemplate', attempting: true });
+          return await sendTemplate({ contactId, templateId: tpl, message });
+        } catch (e2) {
+          tries.push({ step: 'sendTemplate', ok: false, err: e2.message });
+        }
+      }
     }
+  }
+
+  // (3) Se não tem contato, cria e tenta template
+  if (!contactId) {
+    try {
+      const created = await createContact({ name: name || norm, phone: norm, email });
+      contactId = created.id || created.contact_id || created.uuid;
+      tries.push({ step: 'createContact', ok: !!contactId, id: contactId });
+      if (contactId && tpl) {
+        return await sendTemplate({ contactId, templateId: tpl, message });
+      }
+    } catch (e) {
+      tries.push({ step: 'createContact', ok: false, err: e.message });
+    }
+  }
+
+  // (4) Última tentativa — endpoint UID texto livre (raro funcionar mas é o legado)
+  try {
+    return await sendTextByUid({ phone: norm, message });
   } catch (e) {
-    tries.push({ step: 'createContact', ok: false, err: e.message });
+    tries.push({ step: 'sendTextByUid', ok: false, err: e.message });
   }
 
   const summary = tries.map(t => `${t.step}=${t.ok ? 'ok' : 'fail'}${t.err ? ' (' + t.err.slice(0, 80) + ')' : ''}${t.reason ? ' (' + t.reason + ')' : ''}`).join(' | ');
