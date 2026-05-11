@@ -17,7 +17,9 @@ const USERS = new Set([
   'eduardo@sindicompany.com.br',
   'felipe.fernandes@sindicompany.com.br',
   'isabella@sindicompany.com.br',
+  'juliana@sindicompany.com.br',
   'junior@sindicompany.com.br',
+  'luciane@sindicompany.com.br',
   'luciane.barco@sindicompany.com.br',
   'marcia@sindicompany.com.br',
   'marcio@sindicompany.com.br',
@@ -38,13 +40,14 @@ const USERS = new Set([
   'operacional2@sindicompany.com.br',
   'operacional3@sindicompany.com.br',
   'orcamento@sindicompany.com.br',
+  'orcamentos@sindicompany.com.br',
   // Administrativo do painel
   'mkt@sindicompany.com.br',
 ]);
 
 export const config = {
   // Protege APENAS rotas autenticadas. Resto (/, /login.html, /assets/*, /api/login etc) público.
-  matcher: ['/hub.html', '/tools/:path*', '/dashboard.html', '/perfil.html', '/admin.html', '/api/sindi', '/api/sindi-chats', '/api/sindi-os', '/api/corretor', '/api/transcribe', '/api/gemini-doc', '/api/track-usage', '/api/email-invite', '/api/email-broadcast', '/api/presence', '/api/quick-capture', '/api/chat'],
+  matcher: ['/hub.html', '/tools/:path*', '/dashboard.html', '/perfil.html', '/admin.html', '/api/sindi', '/api/sindi-chats', '/api/sindi-os', '/api/corretor', '/api/transcribe', '/api/gemini-doc', '/api/track-usage', '/api/email-invite', '/api/email-broadcast', '/api/presence', '/api/quick-capture', '/api/chat', '/api/team'],
 };
 
 export default function middleware(request) {

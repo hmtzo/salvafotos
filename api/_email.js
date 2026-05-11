@@ -133,37 +133,13 @@ export function escapeHtml(s) {
 
 /**
  * Lista oficial de funcionários (mesma do middleware).
- * Mantém em sincronia se mudar.
- * Fonte: /Users/.../sindicompany.xlsx (cadastro oficial da equipe).
+ * Fonte de verdade: /api/_team.js. Re-exporta aqui pra retrocompatibilidade
+ * com chamadas existentes (email-invite, broadcast, cron, etc).
  */
-export const TEAM_EMAILS = [
-  'amanda@sindicompany.com.br',
-  'arquitetura@sindicompany.com.br',
-  'atendimento@sindicompany.com.br',
-  'atendimento2@sindicompany.com.br',
-  'comercial@sindicompany.com.br',
-  'contasapagar@sindicompany.com.br',
-  'corina@sindicompany.com.br',
-  'diego@sindicompany.com.br',
-  'eduardo@sindicompany.com.br',
-  'engenharia@sindicompany.com.br',
-  'engenharia1@sindicompany.com.br',
-  'engenharia2@sindicompany.com.br',
-  'felipe.fernandes@sindicompany.com.br',
-  'isabella@sindicompany.com.br',
-  'jornal@sindicompany.com.br',
-  'junior@sindicompany.com.br',
-  'luciane.barco@sindicompany.com.br',
-  'marcia@sindicompany.com.br',
-  'marcio@sindicompany.com.br',
-  'miriam@sindicompany.com.br',
-  'operacional@sindicompany.com.br',
-  'operacional2@sindicompany.com.br',
-  'operacional3@sindicompany.com.br',
-  'orcamento@sindicompany.com.br',
-  'raquel@sindicompany.com.br',
-  'rose@sindicompany.com.br',
-];
+import { TEAM as _TEAM } from './_team.js';
+export const TEAM_EMAILS = _TEAM
+  .filter(t => t.active && t.email.endsWith('@sindicompany.com.br'))
+  .map(t => t.email);
 
 /**
  * Mapa email → nome real do cadastro oficial. Tem preferência sobre o

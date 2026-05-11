@@ -9,45 +9,20 @@
 // GET    /api/sindi-os?action=quota         → quota usada hoje
 // =====================================================================
 
+import { TEAM, ALL_USERS, ADMIN_EMAILS } from './_team.js';
+
 export const config = { runtime: 'edge' };
 
 const KV_URL = () => process.env.KV_REST_API_URL;
 const KV_TOKEN = () => process.env.KV_REST_API_TOKEN;
 // Admins: veem painel /admin.html, trilha de auditoria global e gerenciam KB
-const ADMIN_USERS = [
-  'hmtzo@icloud.com',
-  'juliana@sindicompany.com.br',   // CEO
-  'raquel@sindicompany.com.br',    // Head de Cultura e Pessoas
-  'luciane@sindicompany.com.br',   // Agilista
-  'mkt@sindicompany.com.br',
-];
-const ALL_USERS = [
-  'luciane@sindicompany.com.br',
-  'juliana@sindicompany.com.br',
-  'raquel@sindicompany.com.br',
-  'mkt@sindicompany.com.br',
-  'junior@sindicompany.com.br',
-  'felipe.fernandes@sindicompany.com.br',
-  'comercial@sindicompany.com.br',
-  'orcamentos@sindicompany.com.br',
-  'engenharia@sindicompany.com.br',
-  'hmtzo@icloud.com',
-];
+const ADMIN_USERS = ADMIN_EMAILS;
 
-// Perfis padrão — aplicados automaticamente se o usuário não preencheu o próprio perfil.
-// O usuário pode sobrescrever em /perfil.html.
-const DEFAULT_PROFILES = {
-  'juliana@sindicompany.com.br':           { name: 'Juliana',  role: 'CEO' },
-  'raquel@sindicompany.com.br':            { name: 'Raquel',   role: 'Head de Pessoas e Cultura' },
-  'luciane@sindicompany.com.br':           { name: 'Luciane',  role: 'Agilista' },
-  'junior@sindicompany.com.br':            { name: 'Junior',   role: 'Coordenador de Atendimento' },
-  'felipe.fernandes@sindicompany.com.br':  { name: 'Felipe',   role: 'Analista Financeiro' },
-  'orcamentos@sindicompany.com.br':        { name: 'Eduardo',  role: 'Orçamentos' },
-  'comercial@sindicompany.com.br':         { name: 'Hellen',   role: 'Comercial' },
-  'engenharia@sindicompany.com.br':        { name: 'Vitor',    role: 'Engenharia' },
-  'mkt@sindicompany.com.br':               { name: 'Marketing', role: 'Marketing' },
-  'hmtzo@icloud.com':                      { name: 'Heitor',   role: 'Admin' },
-};
+// Perfis padrão — aplicados automaticamente se o usuário não preencheu o próprio.
+// Fonte: /api/_team.js (única fonte de verdade da equipe).
+const DEFAULT_PROFILES = Object.fromEntries(
+  TEAM.map(t => [t.email, { name: t.name, role: t.role }])
+);
 
 async function kv(method, path, body) {
   if (!KV_URL() || !KV_TOKEN()) return null;

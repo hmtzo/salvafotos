@@ -114,7 +114,7 @@
     <aside class="eb-side">
       <div class="eb-section">Destinatários</div>
       <div class="eb-target-radio">
-        <label class="active"><input type="radio" name="target" value="all" checked> <div><div>Todos do time (26)</div><div class="desc">manda pra todos cadastrados</div></div></label>
+        <label class="active"><input type="radio" name="target" value="all" checked> <div><div>Todos do time <span id="allCount" style="opacity:0.7;font-weight:500">(–)</span></div><div class="desc">manda pra todos cadastrados</div></div></label>
         <label><input type="radio" name="target" value="custom"> <div><div>Selecionar pessoas</div><div class="desc">escolhe destinatários abaixo</div></div></label>
         <label><input type="radio" name="target" value="me"> <div><div>Só pra mim (teste)</div><div class="desc">útil pra validar o template</div></div></label>
       </div>
@@ -197,36 +197,24 @@ Equipe Sindicompany"></textarea>
 </main>
 
 <script>
-const TEAM = [
-  ['amanda@sindicompany.com.br', 'Amanda Queiroz'],
-  ['corina@sindicompany.com.br', 'Corina Abreu'],
-  ['diego@sindicompany.com.br', 'Diego Leite'],
-  ['eduardo@sindicompany.com.br', 'Eduardo Ribeiro'],
-  ['felipe.fernandes@sindicompany.com.br', 'Felipe Fernandes'],
-  ['isabella@sindicompany.com.br', 'Isabella Nascimento'],
-  ['junior@sindicompany.com.br', 'Rommel Júnior'],
-  ['luciane.barco@sindicompany.com.br', 'Luciane Barco'],
-  ['marcia@sindicompany.com.br', 'Márcia'],
-  ['marcio@sindicompany.com.br', 'Marcio Reis'],
-  ['miriam@sindicompany.com.br', 'Miriam Diamantino'],
-  ['raquel@sindicompany.com.br', 'Raquel Moura'],
-  ['rose@sindicompany.com.br', 'Rose Brandão'],
-  ['arquitetura@sindicompany.com.br', 'equipe Arquitetura'],
-  ['atendimento@sindicompany.com.br', 'equipe SAC'],
-  ['atendimento2@sindicompany.com.br', 'Henrique Nogueira'],
-  ['comercial@sindicompany.com.br', 'By Sindicompany'],
-  ['contasapagar@sindicompany.com.br', 'equipe Contas a Pagar'],
-  ['engenharia@sindicompany.com.br', 'equipe Engenharia'],
-  ['engenharia1@sindicompany.com.br', 'Vitor Porto'],
-  ['engenharia2@sindicompany.com.br', 'Vitor Porto'],
-  ['jornal@sindicompany.com.br', 'equipe Mídias'],
-  ['operacional@sindicompany.com.br', 'equipe Operacional'],
-  ['operacional2@sindicompany.com.br', 'Bruno (Operacional)'],
-  ['operacional3@sindicompany.com.br', 'Silvanio (Operacional)'],
-  ['orcamento@sindicompany.com.br', 'equipe Orçamentos'],
-];
+let TEAM = []; // [{ email, name, role }] — vem de /api/team
+const customSelection = new Set();
 
-const customSelection = new Set(TEAM.map(([e]) => e));
+async function loadTeam(){
+  try {
+    const r = await fetch('/api/team?active=1', { credentials: 'include' });
+    if (!r.ok) throw new Error(r.status);
+    const j = await r.json();
+    TEAM = (j.team || [])
+      .filter(t => t.active && t.email.endsWith('@sindicompany.com.br'))
+      .map(t => [t.email, t.name, t.role]);
+    TEAM.forEach(([email]) => customSelection.add(email));
+    renderRecipients();
+    updateCount();
+  } catch (e) {
+    console.warn('team load err', e);
+  }
+}
 
 function escapeHtml(s) {
   return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
@@ -234,10 +222,10 @@ function escapeHtml(s) {
 
 function renderRecipients() {
   const box = document.getElementById('recipients');
-  box.innerHTML = TEAM.map(([email, name]) => `
+  box.innerHTML = TEAM.map(([email, name, role]) => `
     <label>
       <input type="checkbox" data-email="${email}" ${customSelection.has(email) ? 'checked' : ''}>
-      <span class="name">${escapeHtml(name)}</span>
+      <span class="name">${escapeHtml(name)}${role ? ' <span style="opacity:0.6">· ' + escapeHtml(role) + '</span>' : ''}</span>
       <span class="email">${escapeHtml(email.split('@')[0])}</span>
     </label>
   `).join('');
@@ -265,6 +253,8 @@ function updateCount() {
   else { n = customSelection.size; label = `${n} destinatário(s) vão receber`; }
   document.getElementById('recipientCount').textContent = label;
   document.getElementById('sendBtnText').textContent = mode === 'me' ? 'Enviar teste pra mim' : `Enviar pra ${n} ${n === 1 ? 'pessoa' : 'pessoas'}`;
+  const allCountEl = document.getElementById('allCount');
+  if (allCountEl) allCountEl.textContent = `(${TEAM.length})`;
 }
 
 document.querySelectorAll('input[name=target]').forEach(r => {
@@ -420,8 +410,7 @@ async function loadLog() {
   }
 }
 
-renderRecipients();
-updateCount();
+loadTeam();
 loadLog();
 </script>
 </body>
