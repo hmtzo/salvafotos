@@ -8,10 +8,29 @@
 
 export const config = { runtime: 'edge' };
 
+// Importa lista de admins
+import { ADMIN_EMAILS } from './_team.js';
+
+function getUserFromCookie(req) {
+  const cookies = req.headers.get('cookie') || '';
+  const m = cookies.match(/(?:^|;\s*)sf_auth=([^;]+)/);
+  if (!m) return null;
+  try {
+    const decoded = atob(m[1]);
+    const idx = decoded.indexOf(':');
+    if (idx > 0) return decoded.slice(0, idx).toLowerCase();
+  } catch {}
+  return null;
+}
+
 export default async function handler(request) {
   const url = new URL(request.url);
   const secret = url.searchParams.get('secret');
-  if (secret !== process.env.CRON_SECRET) {
+  const cookieUser = getUserFromCookie(request);
+  const isAdmin = cookieUser && ADMIN_EMAILS.includes(cookieUser);
+
+  // Aceita CRON_SECRET ou admin com cookie
+  if (secret !== process.env.CRON_SECRET && !isAdmin) {
     return new Response('forbidden', { status: 403 });
   }
 

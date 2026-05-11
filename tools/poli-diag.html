@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0a0a0c">
+<title>Diagnóstico Poli API — Sindicompany</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="icon" type="image/png" href="/assets/brand/icon-color.png">
+<link rel="stylesheet" href="/assets/shared.css">
+<script src="/assets/shared.js"></script>
+<style>
+  .diag-card{
+    background:#0e0e13;border:1px solid var(--border);border-radius:14px;padding:24px;margin-bottom:14px;
+  }
+  .diag-card h3{
+    font-size:13px;font-weight:800;letter-spacing:0.07em;text-transform:uppercase;color:#a5b4fc;margin:0 0 14px;
+    display:flex;align-items:center;gap:8px;
+  }
+  .diag-row{
+    display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;
+    padding:10px 12px;margin-bottom:4px;border-radius:8px;background:rgba(255,255,255,0.02);
+    border-left:3px solid var(--border);
+  }
+  .diag-row.ok{border-left-color:#10b981;background:rgba(34,197,94,0.04)}
+  .diag-row.err{border-left-color:#ef4444;background:rgba(239,68,68,0.04)}
+  .diag-row.warn{border-left-color:#fbbf24;background:rgba(245,158,11,0.04)}
+  .diag-name{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;color:var(--text);overflow:hidden;word-break:break-all}
+  .diag-name .url{display:block;font-weight:400;color:var(--text-dim);font-size:10.5px;margin-top:2px}
+  .diag-status{
+    display:inline-flex;align-items:center;gap:5px;font-family:'JetBrains Mono',monospace;font-size:11.5px;font-weight:700;
+    padding:3px 10px;border-radius:100px;white-space:nowrap;
+  }
+  .diag-status.s2xx{background:rgba(34,197,94,0.15);color:#86efac}
+  .diag-status.s4xx{background:rgba(239,68,68,0.15);color:#fca5a5}
+  .diag-status.s5xx{background:rgba(168,85,247,0.15);color:#d8b4fe}
+  .diag-status.s0,.diag-status.sNET{background:rgba(245,158,11,0.15);color:#fbbf24}
+  .diag-body{
+    font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-dim);
+    margin-top:6px;padding:6px 10px;background:rgba(0,0,0,0.25);border-radius:6px;
+    white-space:pre-wrap;word-break:break-all;max-height:90px;overflow:auto;
+  }
+  .diag-row-full{display:block}
+  .meta-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .meta-item{padding:8px 12px;background:rgba(255,255,255,0.03);border-radius:6px;font-size:12px}
+  .meta-item .label{font-size:10px;color:var(--text-dim);font-weight:700;letter-spacing:0.06em;text-transform:uppercase;margin-bottom:3px}
+  .meta-item .value{font-family:'JetBrains Mono',monospace;font-size:12.5px;color:var(--text);word-break:break-all}
+  .meta-item .value.warn{color:#fbbf24}
+  .meta-item .value.ok{color:#86efac}
+  .diag-summary{
+    display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:14px;
+  }
+  .diag-stat{padding:10px 12px;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:8px;text-align:center}
+  .diag-stat .v{font-size:22px;font-weight:800;line-height:1.1;font-variant-numeric:tabular-nums}
+  .diag-stat .l{font-size:10px;color:var(--text-dim);font-weight:700;letter-spacing:0.06em;text-transform:uppercase;margin-top:3px}
+  .diag-stat.bad .v{color:#fca5a5}
+  .diag-stat.ok .v{color:#86efac}
+
+  .print-banner{
+    background:linear-gradient(135deg,rgba(99,102,241,0.12),rgba(139,92,246,0.08));
+    border:1px solid rgba(99,102,241,0.25);border-radius:14px;padding:18px 20px;margin-bottom:18px;
+    display:flex;gap:14px;align-items:center;
+  }
+  .print-banner-ico{
+    width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,#6366f1,#8b5cf6);
+    flex:0 0 48px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:22px;
+  }
+  .print-banner h2{font-size:15px;font-weight:700;margin:0 0 4px;color:var(--text)}
+  .print-banner p{font-size:12.5px;color:var(--text-dim);margin:0;line-height:1.5}
+  .print-banner button{
+    padding:8px 14px;background:#fff;color:#0a0a0c;border:none;border-radius:8px;
+    font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer;margin-left:auto;flex-shrink:0;
+  }
+
+  @media print {
+    #app-nav, .print-banner, #team-chat-float, #sindi-float { display: none !important; }
+    body { background: #fff !important; color: #000 !important; }
+    .diag-card { background: #fff !important; border-color: #ccc !important; }
+    .diag-row { background: #f7f7f7 !important; }
+    .diag-name, .diag-name .url, .meta-item .value { color: #000 !important; }
+    .meta-item { background: #f0f0f0 !important; }
+  }
+</style>
+</head>
+<body>
+<div id="app-nav"></div>
+
+<main class="tool-container">
+  <header class="tool-hero">
+    <span class="tool-eyebrow"><span class="dot"></span> Suporte · Diagnóstico Poli</span>
+    <h1>Diagnóstico Poli API</h1>
+    <p>Testa todos os endpoints da Poli e mostra status + auth + URL. Imprime e manda pro suporte deles — eles vão ver exatamente o que tá retornando 401.</p>
+  </header>
+
+  <div class="print-banner">
+    <div class="print-banner-ico">📸</div>
+    <div>
+      <h2>Pra mandar pro suporte Poli</h2>
+      <p>Espera o relatório carregar abaixo, depois tire um print da tela inteira (Cmd+Shift+4 no Mac, Win+Shift+S no Windows) ou clica "Imprimir como PDF".</p>
+    </div>
+    <button id="printBtn" type="button">🖨 Imprimir / PDF</button>
+  </div>
+
+  <div id="loading" style="text-align:center;padding:60px 20px;color:var(--text-dim);font-size:14px">
+    <div style="font-size:32px;margin-bottom:10px">⏳</div>
+    Rodando ~15 chamadas pro endpoint da Poli...
+  </div>
+
+  <div id="result" hidden>
+
+    <div class="diag-card">
+      <h3>📋 Informações da conta</h3>
+      <div class="meta-grid" id="metaGrid"></div>
+    </div>
+
+    <div class="diag-card">
+      <h3>📊 Resumo</h3>
+      <div class="diag-summary" id="summaryGrid"></div>
+      <p id="summaryText" style="font-size:13px;line-height:1.55;color:var(--text-dim);margin:8px 0 0"></p>
+    </div>
+
+    <div class="diag-card">
+      <h3>🔍 Endpoints GET testados — <code style="font-size:11px;background:rgba(255,255,255,0.06);padding:1px 6px;border-radius:4px">Authorization: Bearer &lt;TOKEN&gt;</code></h3>
+      <div id="getResults"></div>
+    </div>
+
+    <div class="diag-card">
+      <h3>🔐 Variantes de autenticação — em <code style="font-size:11px;background:rgba(255,255,255,0.06);padding:1px 6px;border-radius:4px">/customers/{id}/channels</code></h3>
+      <div id="authResults"></div>
+    </div>
+
+    <div class="diag-card">
+      <h3>🌐 Base URLs alternativas testadas</h3>
+      <div id="altResults"></div>
+    </div>
+
+    <div class="diag-card">
+      <h3>💬 Pra resolver com o suporte Poli</h3>
+      <ol style="font-size:13px;line-height:1.7;color:var(--text-dim);padding-left:18px;margin:0">
+        <li>Token está armazenado, sem espaços/aspas. Conferido em "Informações da conta".</li>
+        <li><strong>100% das chamadas autenticadas retornam 401</strong> — em todos os 4 hosts da Poli (app.polichat.com.br, app.poli.digital, api.poli.digital, cs.poli.digital).</li>
+        <li>Já tentamos 6+ variantes de header de auth (Bearer, raw, X-API-Key, X-Auth-Token, Token, Cookie) — todas falham igual.</li>
+        <li><strong>Conclusão:</strong> o módulo "API REST" da minha conta ainda não foi liberado no backend da Poli, apesar do suporte ter dito que sim.</li>
+        <li><strong>Preciso que vocês:</strong> (a) habilitem REST API outbound no plano; (b) confirmem qual o host correto; (c) confirmem o formato do header de auth; (d) validem com o mesmo curl que tá nessa tela ANTES de fechar o chamado.</li>
+      </ol>
+    </div>
+
+  </div>
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+
+function statusClass(status) {
+  if (status === 0) return 's0';
+  if (status >= 200 && status < 300) return 's2xx';
+  if (status >= 400 && status < 500) return 's4xx';
+  if (status >= 500) return 's5xx';
+  return 'sNET';
+}
+function rowClass(status) {
+  if (status >= 200 && status < 300) return 'ok';
+  if (status === 401 || status === 403) return 'err';
+  return 'warn';
+}
+function trunc(s, n) { return s.length > n ? s.slice(0, n) + '…' : s; }
+
+async function loadDiag() {
+  try {
+    const r = await fetch('/api/poli-diag', { credentials: 'include' });
+    if (!r.ok) {
+      $('loading').innerHTML = `<div style="color:#fca5a5;font-size:14px">Erro ${r.status}: ${r.statusText}<br><br>Acesso restrito a admins. Faça login como admin pra rodar.</div>`;
+      return;
+    }
+    const data = await r.json();
+    render(data);
+  } catch (e) {
+    $('loading').innerHTML = `<div style="color:#fca5a5;font-size:14px">Erro de rede: ${e.message}</div>`;
+  }
+}
+
+function render(data) {
+  $('loading').hidden = true;
+  $('result').hidden = false;
+
+  // Meta
+  const t = data.tokenInfo || {};
+  const tokenPreview = t.length ? `${t.firstChars}••••${t.lastChars}` : '— vazio —';
+  const tokenStatus = !t.length ? 'value warn' : (t.hasSpaces || t.hasQuotes ? 'value warn' : 'value ok');
+  $('metaGrid').innerHTML = `
+    <div class="meta-item">
+      <div class="label">Token (parcial)</div>
+      <div class="${tokenStatus}">${escH(tokenPreview)}</div>
+    </div>
+    <div class="meta-item">
+      <div class="label">Comprimento do token</div>
+      <div class="value">${t.length || 0} chars${t.hasSpaces ? ' · ⚠ espaços' : ''}${t.hasQuotes ? ' · ⚠ aspas' : ''}</div>
+    </div>
+    <div class="meta-item">
+      <div class="label">Customer ID</div>
+      <div class="value">${escH(t.customerId || '— não configurado —')}</div>
+    </div>
+    <div class="meta-item">
+      <div class="label">Channel ID</div>
+      <div class="value">${escH(t.channelId || '— não configurado —')}</div>
+    </div>
+    <div class="meta-item">
+      <div class="label">User ID</div>
+      <div class="value">${escH(t.userId || '— não configurado —')}</div>
+    </div>
+    <div class="meta-item">
+      <div class="label">Hora do teste</div>
+      <div class="value">${new Date().toLocaleString('pt-BR')}</div>
+    </div>
+  `;
+
+  // Summary
+  const all = [...(data.bearerResults||[]), ...(data.authVariants||[]), ...(data.altBases||[])];
+  const total = all.length;
+  const ok = all.filter(r => r.status >= 200 && r.status < 300).length;
+  const e401 = all.filter(r => r.status === 401).length;
+  const e403 = all.filter(r => r.status === 403).length;
+  const e404 = all.filter(r => r.status === 404).length;
+  const e5xx = all.filter(r => r.status >= 500).length;
+
+  $('summaryGrid').innerHTML = `
+    <div class="diag-stat"><div class="v">${total}</div><div class="l">Total testes</div></div>
+    <div class="diag-stat ${ok > 0 ? 'ok' : 'bad'}"><div class="v">${ok}</div><div class="l">200 OK</div></div>
+    <div class="diag-stat bad"><div class="v">${e401}</div><div class="l">401</div></div>
+    <div class="diag-stat bad"><div class="v">${e403}</div><div class="l">403</div></div>
+    <div class="diag-stat"><div class="v">${e404}</div><div class="l">404</div></div>
+    <div class="diag-stat"><div class="v">${e5xx}</div><div class="l">5xx</div></div>
+  `;
+
+  const verdict = ok > 0
+    ? `<strong style="color:#86efac">✓ ${ok} endpoint(s) funcionando.</strong> A integração tá viva.`
+    : e401 > 0
+      ? `<strong style="color:#fca5a5">✗ Todos os ${e401} endpoints autenticados retornam 401 Unauthorized.</strong> Token rejeitado em todas as variantes de auth e em todos os hosts da Poli — o módulo API REST da conta provavelmente não foi habilitado.`
+      : `<strong style="color:#fbbf24">⚠ Nenhum sucesso, mas também nenhum 401 puro.</strong> Possível problema de DNS, CORS ou rota.`;
+  $('summaryText').innerHTML = verdict;
+
+  // GET endpoints (bearerResults)
+  $('getResults').innerHTML = (data.bearerResults||[]).map(r => `
+    <div class="diag-row diag-row-full ${rowClass(r.status)}">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
+        <div class="diag-name">${escH(r.name)}<span class="url">GET ${escH(r.url||'')}</span></div>
+        <span class="diag-status ${statusClass(r.status)}">${r.error ? 'NET' : (r.status || '—')}</span>
+      </div>
+      ${r.body ? `<div class="diag-body">${escH(trunc(typeof r.body === 'string' ? r.body : JSON.stringify(r.body), 200))}</div>` : ''}
+      ${r.error ? `<div class="diag-body">erro: ${escH(r.error)}</div>` : ''}
+    </div>
+  `).join('');
+
+  // Auth variants
+  $('authResults').innerHTML = (data.authVariants||[]).map(r => `
+    <div class="diag-row diag-row-full ${rowClass(r.status)}">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
+        <div class="diag-name">${escH(r.name)}${r.looksHtml ? ' <span style="color:#fbbf24">⚠ resposta HTML</span>' : ''}</div>
+        <span class="diag-status ${statusClass(r.status)}">${r.error ? 'NET' : (r.status || '—')}</span>
+      </div>
+      ${r.bodySnippet ? `<div class="diag-body">${escH(trunc(r.bodySnippet, 180))}</div>` : ''}
+      ${r.error ? `<div class="diag-body">erro: ${escH(r.error)}</div>` : ''}
+    </div>
+  `).join('');
+
+  // Alt bases
+  $('altResults').innerHTML = (data.altBases||[]).map(r => `
+    <div class="diag-row diag-row-full ${rowClass(r.status)}">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
+        <div class="diag-name">${escH(r.base)}</div>
+        <span class="diag-status ${statusClass(r.status)}">${r.error ? 'NET' : (r.status || '—')}</span>
+      </div>
+      ${r.bodySnippet ? `<div class="diag-body">${escH(trunc(r.bodySnippet, 180))}</div>` : ''}
+      ${r.error ? `<div class="diag-body">erro: ${escH(r.error)}</div>` : ''}
+    </div>
+  `).join('');
+}
+
+function escH(s) {
+  return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
+}
+
+$('printBtn').addEventListener('click', () => window.print());
+
+loadDiag();
+</script>
+</body>
+</html>
