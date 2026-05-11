@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0a0a0c">
+<title>Chat Interno — Sindicompany</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="icon" type="image/png" href="/assets/brand/icon-color.png">
+<link rel="stylesheet" href="/assets/shared.css">
+<script src="/assets/shared.js"></script>
+<style>
+  .chat-layout{
+    display:grid;grid-template-columns:280px 1fr;gap:0;
+    height:calc(100vh - 200px);min-height:560px;max-height:780px;
+    background:rgba(255,255,255,0.02);border:1px solid var(--border);border-radius:14px;overflow:hidden;
+  }
+  @media (max-width:780px){
+    .chat-layout{grid-template-columns:1fr;height:auto;min-height:auto;max-height:none}
+    .chat-sidebar{border-right:none;border-bottom:1px solid var(--border);max-height:280px}
+    .chat-main{min-height:520px}
+  }
+
+  .chat-sidebar{
+    border-right:1px solid var(--border);display:flex;flex-direction:column;
+    background:rgba(0,0,0,0.15);overflow-y:auto;
+  }
+  .chat-section{padding:14px 14px 8px;font-size:10.5px;font-weight:700;color:var(--text-dim);letter-spacing:0.08em;text-transform:uppercase}
+  .chat-item{
+    display:flex;align-items:center;gap:10px;padding:10px 14px;cursor:pointer;
+    border-left:2px solid transparent;font-size:13.5px;color:var(--text);
+  }
+  .chat-item:hover{background:rgba(255,255,255,0.04)}
+  .chat-item.active{background:rgba(99,102,241,0.1);border-left-color:#6366f1;color:#a5b4fc}
+  .chat-item .badge{
+    margin-left:auto;background:#ef4444;color:#fff;font-size:10px;font-weight:700;
+    padding:2px 7px;border-radius:100px;min-width:18px;text-align:center;
+  }
+  .chat-item .badge.zero{display:none}
+  .chat-item .av{
+    width:28px;height:28px;border-radius:50%;flex:0 0 28px;
+    display:flex;align-items:center;justify-content:center;
+    background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;font-weight:700;font-size:11px;
+    position:relative;
+  }
+  .chat-item .av.geral{background:linear-gradient(135deg,#10b981,#14b8a6);font-size:14px}
+  .chat-item .av .online-dot{
+    position:absolute;bottom:-1px;right:-1px;width:10px;height:10px;border-radius:50%;
+    background:#10b981;border:2px solid #0a0a0c;
+  }
+  .chat-item .av .online-dot.off{background:#71717a}
+
+  .chat-new-dm-btn{
+    margin:8px 14px 14px;padding:8px;background:rgba(99,102,241,0.08);
+    border:1px dashed rgba(99,102,241,0.4);border-radius:8px;
+    color:#a5b4fc;font-family:inherit;font-size:12.5px;font-weight:500;cursor:pointer;
+  }
+  .chat-new-dm-btn:hover{background:rgba(99,102,241,0.15)}
+
+  .chat-main{
+    display:flex;flex-direction:column;min-width:0;
+  }
+  .chat-header{
+    padding:14px 18px;border-bottom:1px solid var(--border);
+    display:flex;align-items:center;gap:10px;background:rgba(0,0,0,0.1);
+  }
+  .chat-header .av{
+    width:34px;height:34px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;font-weight:700;font-size:13px;
+  }
+  .chat-header .av.geral{background:linear-gradient(135deg,#10b981,#14b8a6);font-size:16px}
+  .chat-header .name{font-size:15px;font-weight:700;color:var(--text)}
+  .chat-header .sub{font-size:11.5px;color:var(--text-dim);margin-top:1px}
+
+  .chat-messages{
+    flex:1;overflow-y:auto;padding:18px;display:flex;flex-direction:column;gap:8px;
+  }
+  .chat-msg{display:flex;gap:10px;max-width:80%}
+  .chat-msg.mine{align-self:flex-end;flex-direction:row-reverse}
+  .chat-msg-av{
+    width:30px;height:30px;border-radius:50%;flex:0 0 30px;
+    display:flex;align-items:center;justify-content:center;
+    background:rgba(255,255,255,0.08);color:var(--text);font-weight:700;font-size:11px;margin-top:4px;
+  }
+  .chat-msg.mine .chat-msg-av{background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff}
+  .chat-msg-bubble{
+    padding:9px 13px;background:rgba(255,255,255,0.06);border-radius:14px;
+    font-size:13.5px;line-height:1.5;color:var(--text);word-wrap:break-word;
+  }
+  .chat-msg.mine .chat-msg-bubble{background:linear-gradient(135deg,#4f46e5,#6366f1);color:#fff}
+  .chat-msg-meta{font-size:10.5px;color:var(--text-dim);margin-top:3px;font-weight:500}
+  .chat-msg.mine .chat-msg-meta{text-align:right}
+
+  .chat-day-divider{
+    text-align:center;font-size:10.5px;color:var(--text-dim);font-weight:700;letter-spacing:0.06em;
+    text-transform:uppercase;margin:14px 0 6px;
+  }
+
+  .chat-empty{margin:auto;text-align:center;color:var(--text-dim);font-size:13.5px;line-height:1.6;max-width:300px;padding:20px}
+
+  .chat-compose{
+    padding:12px;border-top:1px solid var(--border);background:rgba(0,0,0,0.1);
+    display:flex;gap:8px;align-items:flex-end;
+  }
+  .chat-compose textarea{
+    flex:1;padding:10px 14px;background:rgba(255,255,255,0.04);border:1px solid var(--border);
+    border-radius:18px;color:var(--text);font-family:inherit;font-size:13.5px;
+    resize:none;min-height:38px;max-height:120px;line-height:1.4;
+  }
+  .chat-compose textarea:focus{outline:none;border-color:#6366f1}
+  .chat-compose button{
+    width:44px;height:44px;border-radius:50%;border:none;cursor:pointer;
+    background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;
+    display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  }
+  .chat-compose button:disabled{opacity:0.4;cursor:not-allowed}
+  .chat-compose button svg{width:18px;height:18px}
+
+  .chat-typing{font-size:11px;color:var(--text-dim);padding:4px 18px;font-style:italic;min-height:18px}
+</style>
+</head>
+<body>
+<div id="app-nav"></div>
+
+<main class="tool-container">
+  <header class="tool-hero">
+    <span class="tool-eyebrow"><span class="dot"></span> Comunicação · Time</span>
+    <h1>Chat Interno</h1>
+    <p>Canal <strong>#geral</strong> pra todo time + mensagens diretas (DM) com cada pessoa. Histórico fica salvo, presença atualiza a cada poucos segundos.</p>
+  </header>
+
+  <div class="chat-layout">
+    <aside class="chat-sidebar">
+      <div class="chat-section">Canal</div>
+      <div class="chat-item active" data-target="geral">
+        <div class="av geral">#</div>
+        <div>
+          <div style="font-weight:600">geral</div>
+          <div style="font-size:11px;color:var(--text-dim);margin-top:1px">todo o time</div>
+        </div>
+        <span class="badge zero" id="badge-geral">0</span>
+      </div>
+      <div class="chat-section">Mensagens diretas</div>
+      <div id="dmList"></div>
+      <button class="chat-new-dm-btn" id="newDmBtn">+ Nova DM</button>
+    </aside>
+
+    <section class="chat-main">
+      <div class="chat-header" id="chatHeader">
+        <div class="av geral">#</div>
+        <div>
+          <div class="name" id="headerName">#geral</div>
+          <div class="sub" id="headerSub">canal de toda a equipe</div>
+        </div>
+      </div>
+      <div class="chat-messages" id="messages"></div>
+      <div class="chat-typing" id="typing"></div>
+      <form class="chat-compose" id="composeForm">
+        <textarea id="composeInput" placeholder="Mande uma mensagem… (Enter envia, Shift+Enter quebra linha)" autocomplete="off"></textarea>
+        <button type="submit" id="sendBtn" disabled>
+          <svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        </button>
+      </form>
+    </section>
+  </div>
+</main>
+
+<script>
+const TEAM = [
+  ['amanda@sindicompany.com.br', 'Amanda Queiroz'],
+  ['corina@sindicompany.com.br', 'Corina Abreu'],
+  ['diego@sindicompany.com.br', 'Diego Leite'],
+  ['eduardo@sindicompany.com.br', 'Eduardo Ribeiro'],
+  ['felipe.fernandes@sindicompany.com.br', 'Felipe Fernandes'],
+  ['isabella@sindicompany.com.br', 'Isabella Nascimento'],
+  ['junior@sindicompany.com.br', 'Rommel Júnior'],
+  ['luciane.barco@sindicompany.com.br', 'Luciane Barco'],
+  ['marcia@sindicompany.com.br', 'Márcia'],
+  ['marcio@sindicompany.com.br', 'Marcio Reis'],
+  ['miriam@sindicompany.com.br', 'Miriam Diamantino'],
+  ['raquel@sindicompany.com.br', 'Raquel Moura'],
+  ['rose@sindicompany.com.br', 'Rose Brandão'],
+  ['arquitetura@sindicompany.com.br', 'equipe Arquitetura'],
+  ['atendimento@sindicompany.com.br', 'equipe SAC'],
+  ['atendimento2@sindicompany.com.br', 'Henrique Nogueira'],
+  ['comercial@sindicompany.com.br', 'By Sindicompany'],
+  ['contasapagar@sindicompany.com.br', 'equipe Contas a Pagar'],
+  ['engenharia@sindicompany.com.br', 'equipe Engenharia'],
+  ['engenharia1@sindicompany.com.br', 'Vitor Porto'],
+  ['engenharia2@sindicompany.com.br', 'Vitor Porto'],
+  ['jornal@sindicompany.com.br', 'equipe Mídias'],
+  ['junior@sindicompany.com.br', 'Rommel Júnior'],
+  ['operacional@sindicompany.com.br', 'equipe Operacional'],
+  ['operacional2@sindicompany.com.br', 'Bruno (Operacional)'],
+  ['operacional3@sindicompany.com.br', 'Silvanio (Operacional)'],
+  ['orcamento@sindicompany.com.br', 'equipe Orçamentos'],
+  ['mkt@sindicompany.com.br', 'equipe Marketing'],
+];
+const NAMES = Object.fromEntries(TEAM);
+
+let me = '';
+let onlineSet = new Set();
+let currentTarget = 'geral'; // 'geral' | email
+let dmPartners = []; // ['user@', ...]
+let messages = []; // current conversation
+let lastTs = 0;
+let unread = { geral: 0, dm: {} };
+let pollHandle = null;
+
+function escapeHtml(s) {
+  return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
+}
+function initials(name) {
+  return (name || '?').split(/\s+/).filter(Boolean).slice(0, 2).map(s => s[0]).join('').toUpperCase();
+}
+function nameOf(email) {
+  return NAMES[email] || email.split('@')[0];
+}
+
+// Detect own user from /api/sindi-chats or another existing source isn't trivial;
+// easier: hit /api/presence and look for our heartbeat — we send one on load below.
+async function detectMe() {
+  // Send a heartbeat ourselves so we know we're "online"
+  try {
+    await fetch('/api/presence', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ tool: 'chat', toolName: 'Chat Interno' }),
+    });
+  } catch {}
+  // Ask summary to know our email + unread + online
+  const r = await fetch('/api/chat?summary=1', { credentials: 'include' });
+  if (!r.ok) return;
+  const j = await r.json();
+  me = j.you || '';
+  onlineSet = new Set(j.online || []);
+  unread = j.unread || { geral: 0, dm: {} };
+  dmPartners = Object.keys(unread.dm || {});
+  renderSidebar();
+}
+
+async function loadMessages(reset = true) {
+  if (reset) { messages = []; lastTs = 0; renderMessages(); }
+  const params = currentTarget === 'geral'
+    ? `channel=geral&since=${lastTs}`
+    : `dm=${encodeURIComponent(currentTarget)}&since=${lastTs}`;
+  const r = await fetch('/api/chat?' + params, { credentials: 'include' });
+  if (!r.ok) return;
+  const j = await r.json();
+  const fresh = j.messages || [];
+  if (fresh.length) {
+    messages = messages.concat(fresh);
+    lastTs = fresh[fresh.length - 1].ts;
+    renderMessages();
+    // Mark as read
+    fetch('/api/chat', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ read: currentTarget }),
+    }).catch(() => {});
+  }
+}
+
+async function refreshSummary() {
+  const r = await fetch('/api/chat?summary=1', { credentials: 'include' });
+  if (!r.ok) return;
+  const j = await r.json();
+  me = j.you || me;
+  onlineSet = new Set(j.online || []);
+  unread = j.unread || { geral: 0, dm: {} };
+  const newPartners = Object.keys(unread.dm || {}).filter(p => !dmPartners.includes(p));
+  if (newPartners.length) dmPartners = dmPartners.concat(newPartners);
+  renderSidebar();
+}
+
+function renderSidebar() {
+  // Geral badge
+  const badge = document.getElementById('badge-geral');
+  const n = currentTarget === 'geral' ? 0 : (unread.geral || 0);
+  badge.textContent = n;
+  badge.classList.toggle('zero', n === 0);
+
+  // DMs
+  const list = document.getElementById('dmList');
+  if (!dmPartners.length) {
+    list.innerHTML = `<div style="padding:6px 14px 12px;font-size:11.5px;color:var(--text-dim);line-height:1.5">Nenhuma DM ainda. Toque em <strong>+ Nova DM</strong> ou abra <a href="/tools/equipe.html" style="color:#a5b4fc">Equipe</a>.</div>`;
+    return;
+  }
+  list.innerHTML = dmPartners.sort((a, b) => nameOf(a).localeCompare(nameOf(b), 'pt-BR')).map(email => {
+    const u = unread.dm[email] || 0;
+    const active = currentTarget === email ? 'active' : '';
+    const online = onlineSet.has(email);
+    return `
+      <div class="chat-item ${active}" data-target="${email}">
+        <div class="av">${initials(nameOf(email))}<span class="online-dot ${online ? '' : 'off'}"></span></div>
+        <div style="overflow:hidden;flex:1">
+          <div style="font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(nameOf(email))}</div>
+          <div style="font-size:11px;color:var(--text-dim);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${online ? 'online' : 'offline'}</div>
+        </div>
+        <span class="badge ${currentTarget === email || !u ? 'zero' : ''}">${u}</span>
+      </div>`;
+  }).join('');
+  list.querySelectorAll('[data-target]').forEach(el => {
+    el.addEventListener('click', () => switchTarget(el.dataset.target));
+  });
+}
+
+function switchTarget(target) {
+  currentTarget = target;
+  // Reset badges visually
+  if (target === 'geral') unread.geral = 0;
+  else if (unread.dm) unread.dm[target] = 0;
+
+  // Header
+  if (target === 'geral') {
+    document.getElementById('chatHeader').innerHTML = `
+      <div class="av geral">#</div>
+      <div>
+        <div class="name">#geral</div>
+        <div class="sub">canal de toda a equipe</div>
+      </div>`;
+  } else {
+    const online = onlineSet.has(target);
+    document.getElementById('chatHeader').innerHTML = `
+      <div class="av">${initials(nameOf(target))}</div>
+      <div>
+        <div class="name">${escapeHtml(nameOf(target))}</div>
+        <div class="sub">${online ? '<span style="color:#86efac">● online</span>' : 'offline'} · ${escapeHtml(target)}</div>
+      </div>`;
+  }
+
+  // Update active state on sidebar
+  document.querySelectorAll('.chat-sidebar [data-target]').forEach(el => {
+    el.classList.toggle('active', el.dataset.target === target);
+  });
+  renderSidebar();
+  loadMessages(true);
+  document.getElementById('composeInput').focus();
+}
+
+function renderMessages() {
+  const box = document.getElementById('messages');
+  if (!messages.length) {
+    box.innerHTML = `<div class="chat-empty">
+      Sem mensagens ainda. Mande a primeira aí embaixo —
+      <strong>${currentTarget === 'geral' ? 'todo time vai ver' : escapeHtml(nameOf(currentTarget)) + ' vai receber'}</strong>.
+    </div>`;
+    return;
+  }
+  let lastDay = '';
+  box.innerHTML = messages.map(m => {
+    const day = new Date(m.ts).toLocaleDateString('pt-BR');
+    const mine = m.from === me;
+    let divider = '';
+    if (day !== lastDay) {
+      divider = `<div class="chat-day-divider">${day === new Date().toLocaleDateString('pt-BR') ? 'hoje' : day}</div>`;
+      lastDay = day;
+    }
+    return divider + `
+      <div class="chat-msg ${mine ? 'mine' : ''}">
+        <div class="chat-msg-av">${initials(nameOf(m.from))}</div>
+        <div>
+          <div class="chat-msg-bubble">${linkify(escapeHtml(m.text))}</div>
+          <div class="chat-msg-meta">${mine ? 'você' : escapeHtml(nameOf(m.from))} · ${new Date(m.ts).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</div>
+        </div>
+      </div>`;
+  }).join('');
+  box.scrollTop = box.scrollHeight;
+}
+
+function linkify(s) {
+  return s.replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener" style="color:inherit;text-decoration:underline">$1</a>');
+}
+
+// Compose
+const composeForm = document.getElementById('composeForm');
+const composeInput = document.getElementById('composeInput');
+const sendBtn = document.getElementById('sendBtn');
+composeInput.addEventListener('input', () => {
+  sendBtn.disabled = !composeInput.value.trim();
+  composeInput.style.height = 'auto';
+  composeInput.style.height = Math.min(120, composeInput.scrollHeight) + 'px';
+});
+composeInput.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    composeForm.requestSubmit();
+  }
+});
+composeForm.addEventListener('submit', async e => {
+  e.preventDefault();
+  const text = composeInput.value.trim();
+  if (!text) return;
+  sendBtn.disabled = true;
+  composeInput.disabled = true;
+  try {
+    const payload = currentTarget === 'geral' ? { channel: 'geral', text } : { dm: currentTarget, text };
+    const r = await fetch('/api/chat', {
+      method: 'POST', credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!r.ok) throw new Error('Falha ' + r.status);
+    const j = await r.json();
+    if (j.message) {
+      messages.push(j.message);
+      lastTs = j.message.ts;
+      renderMessages();
+    }
+    composeInput.value = '';
+    composeInput.style.height = 'auto';
+    if (currentTarget !== 'geral' && !dmPartners.includes(currentTarget)) {
+      dmPartners.push(currentTarget);
+      renderSidebar();
+    }
+    if (window.trackUsage) trackUsage('chat', { target: currentTarget === 'geral' ? 'geral' : 'dm' });
+  } catch (e) {
+    alert('Erro: ' + e.message);
+  } finally {
+    composeInput.disabled = false;
+    composeInput.focus();
+  }
+});
+
+// New DM
+document.getElementById('newDmBtn').addEventListener('click', () => {
+  const options = TEAM.filter(([email]) => email !== me).map(([email, name]) => `${name} <${email}>`).join('\n');
+  const pick = prompt(`Pra quem? Cole o email exato:\n\n${options}`);
+  if (!pick) return;
+  const m = pick.match(/[\w.+-]+@[\w.-]+\.[a-z]{2,}/i);
+  if (!m) return alert('Email inválido');
+  const target = m[0].toLowerCase();
+  if (target === me) return alert('Não dá pra mandar pra você mesmo');
+  if (!dmPartners.includes(target)) dmPartners.push(target);
+  switchTarget(target);
+});
+
+// Sidebar geral click
+document.querySelector('[data-target="geral"]').addEventListener('click', () => switchTarget('geral'));
+
+// Init
+(async () => {
+  await detectMe();
+  // Open DM from URL ?dm=email if present
+  const params = new URLSearchParams(location.search);
+  const dmParam = params.get('dm');
+  if (dmParam && /@/.test(dmParam)) {
+    if (!dmPartners.includes(dmParam.toLowerCase())) dmPartners.push(dmParam.toLowerCase());
+    switchTarget(dmParam.toLowerCase());
+  } else {
+    switchTarget('geral');
+  }
+})();
+
+// Polling: 5s for current chat, 12s for summary
+async function pollLoop() {
+  await loadMessages(false);
+  await refreshSummary();
+}
+setInterval(pollLoop, 5000);
+
+// Heartbeat de presença
+setInterval(() => {
+  fetch('/api/presence', {
+    method: 'POST', credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ tool: 'chat', toolName: 'Chat Interno' }),
+  }).catch(() => {});
+}, 30000);
+
+// Notification permission opt-in
+if ('Notification' in window && Notification.permission === 'default') {
+  setTimeout(() => Notification.requestPermission().catch(() => {}), 2000);
+}
+</script>
+</body>
+</html>

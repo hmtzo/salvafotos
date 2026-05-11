@@ -89,11 +89,10 @@ export default async function handler(request) {
 
   // ---------- GET: lista online ----------
   if (request.method === 'GET') {
-    if (!ADMIN_USERS.includes(user)) {
-      return new Response(JSON.stringify({ error: 'Apenas admin' }), {
-        status: 403, headers: { 'Content-Type': 'application/json' },
-      });
-    }
+    const url = new URL(request.url);
+    const isAdmin = ADMIN_USERS.includes(user);
+    // Admin enxerga tudo (com ferramenta atual). Usuário comum só vê email + idleSeconds.
+    const verbose = isAdmin || url.searchParams.get('verbose') === '0';
 
     const state = (await kvGet('sindi-presence-state')) || [];
     const cutoff = Date.now() - ONLINE_WINDOW_MS;
@@ -101,15 +100,20 @@ export default async function handler(request) {
       .filter(p => p.ts > cutoff)
       .sort((a, b) => b.ts - a.ts);
 
-    // Enriquece com perfis
+    // Enriquece com perfis (nome sempre, ferramenta só pra admin)
     const enriched = await Promise.all(online.map(async p => {
       const profile = await kvGet(`sindi-profile:${p.email.toLowerCase()}`).catch(() => null);
-      return {
-        ...p,
+      const base = {
+        email: p.email,
         name: profile?.name || p.email.split('@')[0],
         role: profile?.role || null,
         idleSeconds: Math.floor((Date.now() - p.ts) / 1000),
+        ts: p.ts,
       };
+      if (isAdmin) {
+        return { ...base, tool: p.tool, toolName: p.toolName, label: p.label };
+      }
+      return base;
     }));
 
     return new Response(JSON.stringify({
@@ -117,6 +121,7 @@ export default async function handler(request) {
       now: Date.now(),
       online: enriched,
       count: enriched.length,
+      isAdmin,
     }), { status: 200, headers: { 'Content-Type': 'application/json' } });
   }
 

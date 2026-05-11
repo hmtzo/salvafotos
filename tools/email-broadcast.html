@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0a0a0c">
+<title>Disparador de Email — Sindicompany</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="icon" type="image/png" href="/assets/brand/icon-color.png">
+<link rel="stylesheet" href="/assets/shared.css">
+<script src="/assets/shared.js"></script>
+<style>
+  .eb-grid{display:grid;grid-template-columns:340px 1fr;gap:14px}
+  @media (max-width:880px){.eb-grid{grid-template-columns:1fr}}
+
+  .eb-side{
+    background:rgba(255,255,255,0.02);border:1px solid var(--border);border-radius:12px;padding:14px;
+  }
+  .eb-section{font-size:10.5px;font-weight:700;color:var(--text-dim);letter-spacing:0.06em;text-transform:uppercase;margin:6px 0 8px}
+
+  .eb-target-radio{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+  .eb-target-radio label{
+    padding:10px 12px;background:rgba(255,255,255,0.03);border:1px solid var(--border);
+    border-radius:8px;cursor:pointer;display:flex;align-items:center;gap:10px;font-size:13px;
+  }
+  .eb-target-radio label.active{background:rgba(99,102,241,0.12);border-color:rgba(99,102,241,0.4)}
+  .eb-target-radio label .desc{font-size:11px;color:var(--text-dim);margin-top:2px}
+  .eb-target-radio input[type=radio]{margin:0;cursor:pointer}
+
+  .eb-recipients{
+    display:grid;gap:5px;max-height:280px;overflow-y:auto;padding-right:4px;
+    background:rgba(0,0,0,0.2);border-radius:8px;padding:8px;
+  }
+  .eb-recipients label{
+    padding:6px 8px;display:flex;align-items:center;gap:8px;cursor:pointer;border-radius:6px;
+    font-size:12px;color:var(--text);
+  }
+  .eb-recipients label:hover{background:rgba(255,255,255,0.04)}
+  .eb-recipients input{margin:0;cursor:pointer}
+  .eb-recipients .name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .eb-recipients .email{font-size:10.5px;color:var(--text-dim);font-family:'JetBrains Mono',monospace}
+
+  .eb-count{
+    padding:8px 10px;background:rgba(99,102,241,0.08);border:1px solid rgba(99,102,241,0.25);
+    border-radius:8px;font-size:12px;font-weight:600;color:#a5b4fc;text-align:center;margin-top:10px;
+  }
+
+  .eb-editor{display:flex;flex-direction:column;gap:10px}
+  .eb-input{
+    padding:11px 14px;background:rgba(255,255,255,0.03);border:1px solid var(--border);
+    border-radius:8px;color:var(--text);font-family:inherit;font-size:13.5px;width:100%;
+  }
+  .eb-input:focus{outline:none;border-color:#6366f1}
+  textarea.eb-input{font-family:'JetBrains Mono',monospace;font-size:13px;line-height:1.55;min-height:280px;resize:vertical}
+
+  .eb-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  @media (max-width:600px){.eb-row{grid-template-columns:1fr}}
+
+  .eb-help{font-size:11px;color:var(--text-dim);line-height:1.5}
+  .eb-help code{background:rgba(255,255,255,0.06);padding:1px 5px;border-radius:3px;font-size:0.92em;color:#fbbf24;font-family:'JetBrains Mono',monospace}
+
+  .eb-preview{
+    background:#fff;color:#000;border-radius:10px;overflow:auto;max-height:60vh;
+    border:1px solid var(--border);
+  }
+  .eb-preview iframe{width:100%;height:60vh;border:none}
+
+  .eb-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+  .eb-btn{
+    padding:11px 18px;border-radius:10px;border:1px solid var(--border);background:rgba(255,255,255,0.04);
+    color:var(--text);font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;
+    display:inline-flex;align-items:center;gap:8px;
+  }
+  .eb-btn:hover{background:rgba(255,255,255,0.08)}
+  .eb-btn.primary{background:linear-gradient(135deg,#6366f1,#8b5cf6);border-color:transparent;color:#fff}
+  .eb-btn.danger{background:linear-gradient(135deg,#ef4444,#dc2626);border-color:transparent;color:#fff}
+  .eb-btn:disabled{opacity:0.5;cursor:not-allowed}
+
+  .eb-log{
+    margin-top:16px;display:grid;gap:6px;
+  }
+  .eb-log-item{
+    padding:10px 12px;background:rgba(255,255,255,0.02);border:1px solid var(--border);border-radius:8px;
+    font-size:12px;
+  }
+  .eb-log-item .head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:4px}
+  .eb-log-item .subj{font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .eb-log-item .meta{font-size:11px;color:var(--text-dim)}
+  .eb-log-item .stats{display:flex;gap:10px;font-size:11px}
+  .eb-log-item .stats .ok{color:#86efac}
+  .eb-log-item .stats .fail{color:#fca5a5}
+
+  .eb-toast{
+    margin-top:12px;padding:11px 14px;border-radius:8px;font-size:13px;line-height:1.5;
+  }
+  .eb-toast.success{background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.3);color:#86efac}
+  .eb-toast.error{background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);color:#fca5a5}
+</style>
+</head>
+<body>
+<div id="app-nav"></div>
+
+<main class="tool-container">
+  <header class="tool-hero">
+    <span class="tool-eyebrow"><span class="dot"></span> Comunicação · Admin</span>
+    <h1>Disparador de Email</h1>
+    <p>Manda comunicado interno pra toda a equipe (ou subset). Suporta Markdown, prévia antes do envio, histórico salvo. Usa o domínio sindicompany.com.br pelo Resend.</p>
+  </header>
+
+  <div class="eb-grid">
+    <aside class="eb-side">
+      <div class="eb-section">Destinatários</div>
+      <div class="eb-target-radio">
+        <label class="active"><input type="radio" name="target" value="all" checked> <div><div>Todos do time (26)</div><div class="desc">manda pra todos cadastrados</div></div></label>
+        <label><input type="radio" name="target" value="custom"> <div><div>Selecionar pessoas</div><div class="desc">escolhe destinatários abaixo</div></div></label>
+        <label><input type="radio" name="target" value="me"> <div><div>Só pra mim (teste)</div><div class="desc">útil pra validar o template</div></div></label>
+      </div>
+
+      <div id="recipientsBox" style="display:none">
+        <div class="eb-section">Quem recebe</div>
+        <div style="display:flex;gap:6px;margin-bottom:6px">
+          <button class="eb-btn" type="button" id="selectAllBtn" style="flex:1;padding:5px 8px;font-size:11px;font-weight:500">Marcar todos</button>
+          <button class="eb-btn" type="button" id="selectNoneBtn" style="flex:1;padding:5px 8px;font-size:11px;font-weight:500">Desmarcar</button>
+        </div>
+        <div class="eb-recipients" id="recipients"></div>
+      </div>
+
+      <div class="eb-count" id="recipientCount">26 destinatário(s) vão receber</div>
+    </aside>
+
+    <section>
+      <div class="eb-editor">
+        <input class="eb-input" id="subject" placeholder="Assunto · ex: Comunicado de horário de funcionamento" maxlength="200">
+        <input class="eb-input" id="preheader" placeholder="Preheader (preview no inbox) — opcional" maxlength="150">
+        <textarea class="eb-input" id="bodyMd" placeholder="# Use Markdown aqui
+
+Olá time,
+
+Comunicado importante:
+
+- **Item 1** em negrito
+- *Item 2* em itálico
+- Item 3 com [link](https://painel.sindicompany.com.br)
+
+## Próximos passos
+Conta com vocês.
+
+Abraços,
+Equipe Sindicompany"></textarea>
+
+        <div class="eb-row">
+          <input class="eb-input" id="ctaText" placeholder="Texto do botão (opcional) · ex: Abrir painel" maxlength="60">
+          <input class="eb-input" id="ctaUrl" placeholder="URL do botão · https://…" maxlength="500">
+        </div>
+
+        <div class="eb-help">
+          Markdown suportado: <code>**negrito**</code> · <code>*itálico*</code> · <code># H1</code> <code>## H2</code> · <code>- item</code> · <code>[texto](url)</code> · <code>\`código\`</code>
+        </div>
+      </div>
+
+      <div class="eb-actions">
+        <button class="eb-btn" id="previewBtn" type="button">
+          <svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" style="width:16px;height:16px"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          Ver prévia
+        </button>
+        <button class="eb-btn" id="testBtn" type="button">
+          <svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" style="width:16px;height:16px"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          Mandar pra mim (teste)
+        </button>
+        <button class="eb-btn primary" id="sendBtn" type="button">
+          <svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" style="width:16px;height:16px"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          <span id="sendBtnText">Enviar pra 26 pessoas</span>
+        </button>
+      </div>
+
+      <div class="eb-toast" id="toast" style="display:none"></div>
+
+      <div id="previewBox" style="display:none;margin-top:14px">
+        <div style="font-size:11px;color:var(--text-dim);font-weight:700;letter-spacing:0.06em;text-transform:uppercase;margin-bottom:8px">Prévia do email</div>
+        <div class="eb-preview"><iframe id="previewFrame" sandbox=""></iframe></div>
+      </div>
+    </section>
+  </div>
+
+  <section style="margin-top:24px">
+    <div class="tool-config-head"><h2>Histórico de envios</h2></div>
+    <div class="eb-log" id="logBox"></div>
+  </section>
+
+  <div class="tool-privacy" style="margin-top:18px">
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+    Acesso restrito a admins (luciane.barco e mkt). Cada envio fica registrado no log com remetente, assunto, hora e taxa de entrega.
+  </div>
+</main>
+
+<script>
+const TEAM = [
+  ['amanda@sindicompany.com.br', 'Amanda Queiroz'],
+  ['corina@sindicompany.com.br', 'Corina Abreu'],
+  ['diego@sindicompany.com.br', 'Diego Leite'],
+  ['eduardo@sindicompany.com.br', 'Eduardo Ribeiro'],
+  ['felipe.fernandes@sindicompany.com.br', 'Felipe Fernandes'],
+  ['isabella@sindicompany.com.br', 'Isabella Nascimento'],
+  ['junior@sindicompany.com.br', 'Rommel Júnior'],
+  ['luciane.barco@sindicompany.com.br', 'Luciane Barco'],
+  ['marcia@sindicompany.com.br', 'Márcia'],
+  ['marcio@sindicompany.com.br', 'Marcio Reis'],
+  ['miriam@sindicompany.com.br', 'Miriam Diamantino'],
+  ['raquel@sindicompany.com.br', 'Raquel Moura'],
+  ['rose@sindicompany.com.br', 'Rose Brandão'],
+  ['arquitetura@sindicompany.com.br', 'equipe Arquitetura'],
+  ['atendimento@sindicompany.com.br', 'equipe SAC'],
+  ['atendimento2@sindicompany.com.br', 'Henrique Nogueira'],
+  ['comercial@sindicompany.com.br', 'By Sindicompany'],
+  ['contasapagar@sindicompany.com.br', 'equipe Contas a Pagar'],
+  ['engenharia@sindicompany.com.br', 'equipe Engenharia'],
+  ['engenharia1@sindicompany.com.br', 'Vitor Porto'],
+  ['engenharia2@sindicompany.com.br', 'Vitor Porto'],
+  ['jornal@sindicompany.com.br', 'equipe Mídias'],
+  ['operacional@sindicompany.com.br', 'equipe Operacional'],
+  ['operacional2@sindicompany.com.br', 'Bruno (Operacional)'],
+  ['operacional3@sindicompany.com.br', 'Silvanio (Operacional)'],
+  ['orcamento@sindicompany.com.br', 'equipe Orçamentos'],
+];
+
+const customSelection = new Set(TEAM.map(([e]) => e));
+
+function escapeHtml(s) {
+  return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
+}
+
+function renderRecipients() {
+  const box = document.getElementById('recipients');
+  box.innerHTML = TEAM.map(([email, name]) => `
+    <label>
+      <input type="checkbox" data-email="${email}" ${customSelection.has(email) ? 'checked' : ''}>
+      <span class="name">${escapeHtml(name)}</span>
+      <span class="email">${escapeHtml(email.split('@')[0])}</span>
+    </label>
+  `).join('');
+  box.querySelectorAll('input[data-email]').forEach(c => {
+    c.addEventListener('change', () => {
+      if (c.checked) customSelection.add(c.dataset.email);
+      else customSelection.delete(c.dataset.email);
+      updateCount();
+    });
+  });
+}
+
+function getRecipientList() {
+  const mode = document.querySelector('input[name=target]:checked').value;
+  if (mode === 'all') return TEAM.map(([e]) => e);
+  if (mode === 'me') return ['_me_'];
+  return Array.from(customSelection);
+}
+
+function updateCount() {
+  const mode = document.querySelector('input[name=target]:checked').value;
+  let n, label;
+  if (mode === 'all') { n = TEAM.length; label = `${n} destinatário(s) vão receber`; }
+  else if (mode === 'me') { n = 1; label = 'só você vai receber (teste)'; }
+  else { n = customSelection.size; label = `${n} destinatário(s) vão receber`; }
+  document.getElementById('recipientCount').textContent = label;
+  document.getElementById('sendBtnText').textContent = mode === 'me' ? 'Enviar teste pra mim' : `Enviar pra ${n} ${n === 1 ? 'pessoa' : 'pessoas'}`;
+}
+
+document.querySelectorAll('input[name=target]').forEach(r => {
+  r.addEventListener('change', () => {
+    document.querySelectorAll('.eb-target-radio label').forEach(l => l.classList.toggle('active', l.querySelector('input').checked));
+    document.getElementById('recipientsBox').style.display = r.value === 'custom' ? 'block' : 'none';
+    updateCount();
+  });
+});
+
+document.getElementById('selectAllBtn').addEventListener('click', () => {
+  TEAM.forEach(([e]) => customSelection.add(e));
+  renderRecipients();
+  updateCount();
+});
+document.getElementById('selectNoneBtn').addEventListener('click', () => {
+  customSelection.clear();
+  renderRecipients();
+  updateCount();
+});
+
+function gatherBody() {
+  const subject = document.getElementById('subject').value.trim();
+  const preheader = document.getElementById('preheader').value.trim();
+  const bodyMd = document.getElementById('bodyMd').value.trim();
+  const ctaText = document.getElementById('ctaText').value.trim();
+  const ctaUrl = document.getElementById('ctaUrl').value.trim();
+  return { subject, preheader, bodyMd, ctaText, ctaUrl };
+}
+
+function toast(msg, type = 'success') {
+  const t = document.getElementById('toast');
+  t.className = 'eb-toast ' + type;
+  t.style.display = 'block';
+  t.innerHTML = msg;
+  if (type === 'success') setTimeout(() => t.style.display = 'none', 6000);
+}
+
+async function postBroadcast(payload, btn, label) {
+  if (btn) { btn.disabled = true; btn.dataset.orig = btn.textContent; btn.textContent = label; }
+  try {
+    const r = await fetch('/api/email-broadcast', {
+      method: 'POST', credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const j = await r.json();
+    if (!r.ok || !j.ok) throw new Error(j.error || 'Falha ' + r.status);
+    return j;
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = btn.dataset.orig; }
+  }
+}
+
+document.getElementById('previewBtn').addEventListener('click', async () => {
+  const b = gatherBody();
+  if (!b.subject || !b.bodyMd) return toast('Preencha assunto e corpo antes de visualizar', 'error');
+  try {
+    const j = await postBroadcast({
+      ...b, recipients: [/* irrelevant in dryRun */],
+      dryRun: true,
+    });
+    document.getElementById('previewBox').style.display = 'block';
+    const frame = document.getElementById('previewFrame');
+    frame.srcdoc = j.html;
+    document.getElementById('previewBox').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  } catch (e) {
+    toast('Erro: ' + e.message, 'error');
+  }
+});
+
+document.getElementById('testBtn').addEventListener('click', async () => {
+  const b = gatherBody();
+  if (!b.subject || !b.bodyMd) return toast('Preencha assunto e corpo', 'error');
+  if (!confirm('Mandar email teste só pra você?')) return;
+  try {
+    const j = await postBroadcast({ ...b, recipients: 'sample' }, document.getElementById('testBtn'), 'Enviando…');
+    toast(`✓ Email teste enviado. Recebidos: ${j.sent} · falhas: ${j.failed}`, 'success');
+    loadLog();
+    if (window.trackUsage) trackUsage('email-broadcast', { mode: 'test' });
+  } catch (e) {
+    toast('Erro: ' + e.message, 'error');
+  }
+});
+
+document.getElementById('sendBtn').addEventListener('click', async () => {
+  const b = gatherBody();
+  const mode = document.querySelector('input[name=target]:checked').value;
+  if (!b.subject || !b.bodyMd) return toast('Preencha assunto e corpo', 'error');
+
+  let recipients;
+  if (mode === 'all') recipients = 'all';
+  else if (mode === 'me') recipients = 'sample';
+  else recipients = Array.from(customSelection);
+
+  const n = mode === 'all' ? TEAM.length : (mode === 'me' ? 1 : customSelection.size);
+  if (!n) return toast('Selecione pelo menos um destinatário', 'error');
+
+  const confirmMsg = mode === 'me'
+    ? 'Mandar email teste só pra você?'
+    : `Enviar este comunicado pra ${n} ${n === 1 ? 'pessoa' : 'pessoas'}? Não dá pra cancelar depois.`;
+  if (!confirm(confirmMsg)) return;
+
+  try {
+    const j = await postBroadcast({ ...b, recipients }, document.getElementById('sendBtn'), 'Enviando…');
+    toast(`✓ Enviado. Sucesso: ${j.sent} · falhas: ${j.failed} · total: ${j.total}`, 'success');
+    if (j.failed > 0) {
+      const errors = (j.results || []).filter(r => !r.ok).map(r => `${r.to}: ${r.error}`).slice(0, 5);
+      if (errors.length) toast(`✓ Enviado, mas ${j.failed} falharam:<br><small>${errors.join('<br>')}</small>`, 'error');
+    }
+    loadLog();
+    if (window.trackUsage) trackUsage('email-broadcast', { mode, sent: j.sent });
+  } catch (e) {
+    toast('Erro: ' + e.message, 'error');
+  }
+});
+
+async function loadLog() {
+  try {
+    const r = await fetch('/api/email-broadcast', { credentials: 'include' });
+    if (!r.ok) {
+      if (r.status === 403) {
+        document.getElementById('logBox').innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-dim);font-size:13px">Acesso restrito. Só admins (luciane.barco@ e mkt@) usam essa ferramenta.</div>';
+      }
+      return;
+    }
+    const j = await r.json();
+    const box = document.getElementById('logBox');
+    if (!j.log || !j.log.length) {
+      box.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text-dim);font-size:13px">Nenhum envio ainda.</div>';
+      return;
+    }
+    if (!j.emailConfigured) {
+      toast('⚠ RESEND_API_KEY ou EMAIL_FROM não configurado no Vercel — envios vão falhar', 'error');
+    }
+    box.innerHTML = j.log.map(item => `
+      <div class="eb-log-item">
+        <div class="head">
+          <div class="subj">${escapeHtml(item.subject)}</div>
+          <div class="meta">${new Date(item.ts).toLocaleString('pt-BR')}</div>
+        </div>
+        <div style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap">
+          <div class="meta">por ${escapeHtml(item.by)} · ${item.recipientCount} destinatário(s)</div>
+          <div class="stats">
+            <span class="ok">✓ ${item.sent}</span>
+            ${item.failed ? `<span class="fail">✗ ${item.failed}</span>` : ''}
+          </div>
+        </div>
+      </div>
+    `).join('');
+  } catch (e) {
+    console.warn(e);
+  }
+}
+
+renderRecipients();
+updateCount();
+loadLog();
+</script>
+</body>
+</html>

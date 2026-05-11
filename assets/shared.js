@@ -710,6 +710,11 @@ const CMDK_INDEX = [
   { kind: 'tool', id: 'numerar-paginas', name: 'Numerar Páginas',    desc: 'Adiciona número em cada página',       url: '/tools/numerar-paginas.html',kw: 'numerar numero pagina pdf' },
   { kind: 'tool', id: 'marca-dagua',     name: 'Marca d\'água',      desc: 'Texto como marca d\'água',             url: '/tools/marca-dagua.html',    kw: 'marca dagua watermark pdf texto' },
 
+  // --- Equipe / comunicação interna ---
+  { kind: 'tool', id: 'equipe',          name: 'Equipe Online',     desc: 'Veja quem do time tá ativo agora',       url: '/tools/equipe.html',          kw: 'equipe presenca online time ativo pessoas usuarios status' },
+  { kind: 'tool', id: 'chat',            name: 'Chat Interno',      desc: '#geral + DMs com a equipe',              url: '/tools/chat.html',            kw: 'chat mensagem dm direto interno conversa time geral' },
+  { kind: 'tool', id: 'email-broadcast', name: 'Disparador de Email', desc: 'Comunicado interno pra equipe (admin)', url: '/tools/email-broadcast.html', kw: 'email disparador broadcast comunicado interno admin resend mensagem' },
+
   // --- Documentos ---
   { kind: 'tool', id: 'whatsapp-fotos',  name: 'Fotos do WhatsApp', desc: 'Extrai fotos com legenda/data/remetente', url: '/tools/whatsapp-fotos.html', kw: 'whatsapp fotos midia legenda export zip' },
   { kind: 'tool', id: 'ocr',             name: 'OCR',               desc: 'Extrai texto de fotos e PDFs escaneados', url: '/tools/ocr.html',            kw: 'ocr texto imagem foto reconhecimento scan' },
