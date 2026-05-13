@@ -95,86 +95,98 @@
     margin:18px auto 32px;position:relative;z-index:3;
   }
 
-  /* ===== Sindi Hero Card — destaque principal ===== */
-  .sindi-hero{
-    position:relative;z-index:2;margin:8px auto 28px;max-width:760px;
+  /* ===== Mapa Hero Card — destaque principal ===== */
+  .mapa-hero{
+    position:relative;z-index:2;margin:8px auto 28px;max-width:880px;
     background:
-      radial-gradient(120% 120% at 0% 0%, rgba(236,72,153,0.18) 0%, transparent 50%),
-      radial-gradient(120% 120% at 100% 100%, rgba(99,102,241,0.18) 0%, transparent 50%),
-      rgba(31,32,35,0.7);
-    border:1px solid rgba(255,255,255,0.1);border-radius:24px;
-    padding:32px 36px;backdrop-filter:blur(20px);
-    box-shadow:0 24px 60px -12px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.08);
+      radial-gradient(140% 140% at 0% 0%, rgba(20,184,166,0.20) 0%, transparent 50%),
+      radial-gradient(140% 140% at 100% 100%, rgba(99,102,241,0.20) 0%, transparent 50%),
+      rgba(20,22,28,0.78);
+    border:1px solid rgba(132,199,211,0.18);border-radius:24px;
+    padding:30px 34px;backdrop-filter:blur(24px);
+    box-shadow:0 24px 60px -12px rgba(0,0,0,0.7), inset 0 1px 0 rgba(255,255,255,0.08);
     overflow:hidden;
   }
-  .sindi-hero::before{
-    content:'';position:absolute;top:-40%;right:-20%;width:60%;height:160%;
-    background:radial-gradient(closest-side, rgba(236,72,153,0.25), transparent);
+  .mapa-hero::before{
+    content:'';position:absolute;top:-40%;right:-10%;width:60%;height:160%;
+    background:radial-gradient(closest-side, rgba(132,199,211,0.28), transparent);
     filter:blur(40px);pointer-events:none;
   }
-  .sindi-hero-row{display:flex;align-items:center;gap:24px;position:relative;z-index:1}
-  .sindi-avatar{
+  .mapa-hero::after{
+    content:'';position:absolute;bottom:-30%;left:-10%;width:50%;height:120%;
+    background:radial-gradient(closest-side, rgba(99,102,241,0.22), transparent);
+    filter:blur(40px);pointer-events:none;
+  }
+  .mapa-hero-row{display:flex;align-items:center;gap:24px;position:relative;z-index:1}
+  .mapa-avatar{
     width:84px;height:84px;border-radius:22px;flex-shrink:0;
-    background:linear-gradient(135deg, #ec4899 0%, #6366f1 100%);
+    background:linear-gradient(135deg, #14b8a6 0%, #6366f1 100%);
     display:flex;align-items:center;justify-content:center;color:white;
-    box-shadow:0 12px 32px -8px rgba(236,72,153,0.5), inset 0 1px 0 rgba(255,255,255,0.3);
+    box-shadow:0 12px 32px -8px rgba(20,184,166,0.5), inset 0 1px 0 rgba(255,255,255,0.3);
     position:relative;
   }
-  .sindi-avatar::after{
+  .mapa-avatar::after{
     content:'';position:absolute;inset:-4px;border-radius:26px;
-    background:linear-gradient(135deg, #ec4899, #6366f1);
+    background:linear-gradient(135deg, #14b8a6, #6366f1);
     opacity:0.3;filter:blur(10px);z-index:-1;
-    animation:sindi-pulse 3s ease-in-out infinite;
+    animation:mapa-pulse 3s ease-in-out infinite;
   }
-  @keyframes sindi-pulse{0%,100%{opacity:0.3;transform:scale(1)}50%{opacity:0.5;transform:scale(1.05)}}
-  .sindi-info{flex:1;min-width:0}
-  .sindi-tag{
+  @keyframes mapa-pulse{0%,100%{opacity:0.3;transform:scale(1)}50%{opacity:0.55;transform:scale(1.06)}}
+  .mapa-info{flex:1;min-width:0}
+  .mapa-tag{
     display:inline-flex;align-items:center;gap:6px;
     padding:4px 10px;border-radius:100px;
-    background:rgba(236,72,153,0.15);border:1px solid rgba(236,72,153,0.3);
-    font-size:11px;font-weight:600;color:#f9a8d4;text-transform:uppercase;
+    background:rgba(20,184,166,0.15);border:1px solid rgba(20,184,166,0.35);
+    font-size:11px;font-weight:700;color:#5eead4;text-transform:uppercase;
     letter-spacing:0.08em;margin-bottom:8px;
   }
-  .sindi-tag .dot{width:6px;height:6px;border-radius:50%;background:#10b981;box-shadow:0 0 8px #10b981}
-  .sindi-info h2{font-size:28px;font-weight:800;letter-spacing:-0.02em;margin:0 0 6px;line-height:1.1}
-  .sindi-info p{font-size:14px;color:var(--text-dim);margin:0;line-height:1.5}
-  .sindi-cta{
+  .mapa-tag .dot{width:6px;height:6px;border-radius:50%;background:#5eead4;box-shadow:0 0 8px #5eead4;animation:mapa-dot-pulse 2s ease-in-out infinite}
+  @keyframes mapa-dot-pulse{0%,100%{opacity:1}50%{opacity:0.5}}
+  .mapa-info h2{font-size:28px;font-weight:800;letter-spacing:-0.02em;margin:0 0 6px;line-height:1.1}
+  .mapa-info p{font-size:14px;color:var(--text-dim);margin:0;line-height:1.5}
+  .mapa-stats{
+    display:flex;gap:18px;margin:18px 0 0;flex-wrap:wrap;position:relative;z-index:1;
+  }
+  .mapa-stat{display:flex;align-items:baseline;gap:6px;padding:8px 14px;background:rgba(255,255,255,0.04);border-radius:10px;border:1px solid rgba(255,255,255,0.06)}
+  .mapa-stat .v{font-size:22px;font-weight:800;color:#fff;font-variant-numeric:tabular-nums;line-height:1;
+    background:linear-gradient(180deg,#5eead4,#a5b4fc);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+  }
+  .mapa-stat .l{font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--text-dim)}
+  .mapa-cta{
     margin-top:18px;display:flex;gap:10px;flex-wrap:wrap;position:relative;z-index:1;
   }
-  .sindi-btn{
-    flex:1;min-width:220px;display:inline-flex;align-items:center;justify-content:center;gap:10px;
-    padding:14px 22px;border-radius:14px;font-size:15px;font-weight:600;
+  .mapa-btn{
+    flex:1;min-width:200px;display:inline-flex;align-items:center;justify-content:center;gap:10px;
+    padding:13px 22px;border-radius:13px;font-size:14.5px;font-weight:700;letter-spacing:-0.01em;
     text-decoration:none;transition:all 0.2s;font-family:inherit;cursor:pointer;border:none;
   }
-  .sindi-btn.primary{
-    background:linear-gradient(135deg, #ec4899 0%, #db2777 100%);
-    color:white;box-shadow:0 8px 24px -6px rgba(236,72,153,0.5);
+  .mapa-btn.primary{
+    background:linear-gradient(135deg, #14b8a6 0%, #6366f1 100%);
+    color:white;box-shadow:0 8px 24px -6px rgba(20,184,166,0.5);
   }
-  .sindi-btn.primary:hover{transform:translateY(-2px);box-shadow:0 12px 32px -6px rgba(236,72,153,0.6)}
-  .sindi-btn.ghost{
-    background:rgba(255,255,255,0.06);color:var(--text);
-    border:1px solid rgba(255,255,255,0.12);
-  }
-  .sindi-btn.ghost:hover{background:rgba(255,255,255,0.1)}
-  .sindi-quick{
-    margin-top:16px;display:flex;flex-wrap:wrap;gap:8px;position:relative;z-index:1;
-  }
-  .sindi-quick-chip{
-    padding:7px 12px;border-radius:100px;
+  .mapa-btn.primary:hover{transform:translateY(-2px);box-shadow:0 12px 32px -6px rgba(20,184,166,0.6)}
+  .mapa-btn.ghost{background:rgba(255,255,255,0.06);color:var(--text);border:1px solid rgba(255,255,255,0.12)}
+  .mapa-btn.ghost:hover{background:rgba(255,255,255,0.1)}
+  .mapa-btn svg{width:16px;height:16px;flex-shrink:0}
+  .mapa-quick{margin-top:16px;display:flex;flex-wrap:wrap;gap:8px;position:relative;z-index:1}
+  .mapa-quick-label{font-size:11px;color:var(--text-dim);align-self:center;margin-right:4px;font-weight:600}
+  .mapa-quick-chip{
+    padding:7px 13px;border-radius:100px;
     background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);
     font-size:12px;color:var(--text-dim);cursor:pointer;transition:all 0.15s;
-    font-family:inherit;
+    font-family:inherit;text-decoration:none;display:inline-flex;align-items:center;gap:5px;
   }
-  .sindi-quick-chip:hover{background:rgba(255,255,255,0.08);color:var(--text);border-color:rgba(255,255,255,0.15)}
+  .mapa-quick-chip:hover{background:rgba(20,184,166,0.12);color:#5eead4;border-color:rgba(20,184,166,0.3)}
   @media (max-width:640px){
-    .sindi-hero{padding:22px 20px;margin:0 auto 20px}
-    .sindi-hero-row{gap:14px}
-    .sindi-avatar{width:60px;height:60px;border-radius:16px}
-    .sindi-avatar svg{width:32px;height:32px}
-    .sindi-info h2{font-size:20px}
-    .sindi-info p{font-size:13px}
-    .sindi-btn{min-width:0;width:100%;padding:12px 18px;font-size:14px}
-    .sindi-cta{flex-direction:column}
+    .mapa-hero{padding:22px 20px;margin:0 auto 20px}
+    .mapa-hero-row{gap:14px}
+    .mapa-avatar{width:60px;height:60px;border-radius:16px}
+    .mapa-avatar svg{width:32px;height:32px}
+    .mapa-info h2{font-size:20px}
+    .mapa-info p{font-size:13px}
+    .mapa-btn{min-width:0;width:100%;padding:12px 18px;font-size:14px}
+    .mapa-cta{flex-direction:column}
+    .mapa-stat .v{font-size:18px}
   }
 
   /* ===== Ferramentas dropdown trigger + panel ===== */
@@ -616,6 +628,49 @@
       <a href="/perfil.html" class="hub-mini-link">Meu perfil</a>
     </div>
 
+    <!-- Mapa dos Síndicos — destaque principal -->
+    <section class="mapa-hero" aria-label="Mapa dos Síndicos">
+      <div class="mapa-hero-row">
+        <div class="mapa-avatar">
+          <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+            <circle cx="12" cy="10" r="3"/>
+          </svg>
+        </div>
+        <div class="mapa-info">
+          <span class="mapa-tag"><span class="dot"></span> Novo · destaque</span>
+          <h2>Mapa dos Síndicos</h2>
+          <p>Veja onde cada síndico atua, descubra concorrência por bairro e calcule distâncias. Dados oficiais dos 96 distritos de São Paulo.</p>
+        </div>
+      </div>
+
+      <div class="mapa-stats">
+        <div class="mapa-stat"><span class="v">32</span><span class="l">Síndicos</span></div>
+        <div class="mapa-stat"><span class="v">203</span><span class="l">Locais</span></div>
+        <div class="mapa-stat"><span class="v">96</span><span class="l">Distritos</span></div>
+      </div>
+
+      <div class="mapa-cta">
+        <a href="/tools/mapa-sindicos.html" class="mapa-btn primary">
+          <svg fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          Abrir mapa
+        </a>
+        <a href="/tools/mapa-sindicos.html?tab=regiao" class="mapa-btn ghost">
+          <svg fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+          Buscar por região
+        </a>
+      </div>
+
+      <div class="mapa-quick">
+        <span class="mapa-quick-label">Atalhos:</span>
+        <a href="/tools/mapa-sindicos.html?q=Vila%20Mariana" class="mapa-quick-chip">📍 Vila Mariana</a>
+        <a href="/tools/mapa-sindicos.html?q=Ipiranga" class="mapa-quick-chip">📍 Ipiranga</a>
+        <a href="/tools/mapa-sindicos.html?q=Moema" class="mapa-quick-chip">📍 Moema</a>
+        <a href="/tools/mapa-sindicos.html?q=Santo%20Amaro" class="mapa-quick-chip">📍 Santo Amaro</a>
+        <a href="/tools/mapa-sindicos.html?q=Mooca" class="mapa-quick-chip">📍 Mooca</a>
+      </div>
+    </section>
+
     <div class="search-wrap">
       <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
       <input type="text" id="search" placeholder="Buscar ferramenta…" autocomplete="off">
@@ -687,13 +742,13 @@ function svg(name, size = 22) {
 }
 
 const TOOLS = [
-  // === IA (destaque) ===
-  { slug: 'sindi', cat: 'ai', name: 'Sindi (IA)', desc: 'Copiloto IA que lê documentos e responde dúvidas sobre direito condominial.', icon: 'bot', iconClass: 'icon-ai' },
-  { slug: 'corretor-texto', cat: 'ai', name: 'Corretor de Texto PT-BR', desc: 'Corrige ortografia, gramática e pontuação. Mantém o tom do texto.', icon: 'pencil', iconClass: 'icon-ai', badge: 'new' },
-  { slug: 'resumir-pdf', cat: 'ai', name: 'Resumir PDF com IA', desc: 'Resumos executivo, detalhado, ação ou risco em segundos.', icon: 'sparkles', iconClass: 'icon-ai', badge: 'new' },
-  { slug: 'traduzir-pdf', cat: 'ai', name: 'Traduzir PDF com IA', desc: 'Tradução natural multi-idiomas preservando layout.', icon: 'sparkles', iconClass: 'icon-ai', badge: 'new' },
-  { slug: 'auditor-contratos', cat: 'ai', name: 'Auditor de Contratos', desc: 'Sindi analisa contratos e marca cláusulas problemáticas, multas e riscos.', icon: 'shield', iconClass: 'icon-ai', badge: 'new' },
-  { slug: 'sindi-reunioes', cat: 'ai', name: 'Sindi Reuniões', desc: 'Áudio → ata + resumo + action items + transcrição. Tudo em segundos.', icon: 'sparkles', iconClass: 'icon-ai', badge: 'new' },
+  // === IA (em breve — Gemini API em manutenção) ===
+  { slug: 'sindi', cat: 'ai', name: 'Sindi (IA)', desc: 'Copiloto IA que lê documentos e responde dúvidas sobre direito condominial.', icon: 'bot', iconClass: 'icon-ai', badge: 'soon' },
+  { slug: 'corretor-texto', cat: 'ai', name: 'Corretor de Texto PT-BR', desc: 'Corrige ortografia, gramática e pontuação. Mantém o tom do texto.', icon: 'pencil', iconClass: 'icon-ai', badge: 'soon' },
+  { slug: 'resumir-pdf', cat: 'ai', name: 'Resumir PDF com IA', desc: 'Resumos executivo, detalhado, ação ou risco em segundos.', icon: 'sparkles', iconClass: 'icon-ai', badge: 'soon' },
+  { slug: 'traduzir-pdf', cat: 'ai', name: 'Traduzir PDF com IA', desc: 'Tradução natural multi-idiomas preservando layout.', icon: 'sparkles', iconClass: 'icon-ai', badge: 'soon' },
+  { slug: 'auditor-contratos', cat: 'ai', name: 'Auditor de Contratos', desc: 'Sindi analisa contratos e marca cláusulas problemáticas, multas e riscos.', icon: 'shield', iconClass: 'icon-ai', badge: 'soon' },
+  { slug: 'sindi-reunioes', cat: 'ai', name: 'Sindi Reuniões', desc: 'Áudio → ata + resumo + action items + transcrição. Tudo em segundos.', icon: 'sparkles', iconClass: 'icon-ai', badge: 'soon' },
 
   // === GERADORES ===
   { slug: 'wizard-inadimplencia', cat: 'doc', name: 'Wizard Inadimplência', desc: 'Fluxo guiado de cobrança em 5 passos: dados → cálculo → notificação → cronograma.', icon: 'fileSign', iconClass: 'icon-doc', badge: 'new' },
@@ -712,7 +767,7 @@ const TOOLS = [
   { slug: 'jpg-para-pdf', cat: 'convert', name: 'Imagens → PDF', desc: 'Junte várias imagens em um PDF.', icon: 'images', iconClass: 'icon-convert' },
   { slug: 'conversor-imagens', cat: 'convert', name: 'Conversor de Imagens', desc: 'PNG ↔ JPG ↔ WEBP. Redimensiona, comprime, em lote.', icon: 'palette', iconClass: 'icon-image', badge: 'new' },
   { slug: 'html-para-pdf', cat: 'convert', name: 'HTML → PDF', desc: 'Converte página web ou HTML em PDF com layout preservado.', icon: 'fileText', iconClass: 'icon-convert', badge: 'new' },
-  { slug: 'pdf-para-word', cat: 'convert', name: 'PDF → Word', desc: 'Sindi extrai e gera .docx editável preservando títulos, listas e tabelas.', icon: 'fileText', iconClass: 'icon-convert', badge: 'new' },
+  { slug: 'pdf-para-word', cat: 'convert', name: 'PDF → Word', desc: 'Sindi extrai e gera .docx editável preservando títulos, listas e tabelas.', icon: 'fileText', iconClass: 'icon-convert', badge: 'soon' },
   { slug: 'pdf-para-powerpoint', cat: 'convert', name: 'PDF → PowerPoint', desc: 'Cada página vira slide .pptx editável (16:9, 4:3 ou auto).', icon: 'fileText', iconClass: 'icon-convert', badge: 'new' },
   { slug: 'powerpoint-para-pdf', cat: 'convert', name: 'PowerPoint → PDF', desc: 'Converte .pptx em PDF extraindo texto e imagens de cada slide.', icon: 'fileText', iconClass: 'icon-convert', badge: 'new' },
   { slug: 'pdf-para-pdfa', cat: 'convert', name: 'PDF → PDF/A', desc: 'Marca metadados XMP PDF/A-2b/3b pra arquivamento legal e contábil.', icon: 'shield', iconClass: 'icon-convert', badge: 'new' },
@@ -757,7 +812,7 @@ const TOOLS = [
   { slug: 'lembretes-inteligentes', cat: 'automation', name: 'Lembretes Inteligentes', desc: 'Vencimentos críticos com contagem regressiva, alerta no navegador e export .ics.', icon: 'sparkles', iconClass: 'icon-ai', badge: 'new' },
   { slug: 'saude-condominio', cat: 'automation', name: 'Saúde do Condomínio', desc: 'Dashboard por condomínio: inadimplência, chamados, SLA, NPS, vencimentos.', icon: 'chart', iconClass: 'icon-ai', badge: 'new' },
   { slug: 'workflow-builder', cat: 'automation', name: 'Workflow Builder', desc: 'Encadeie ferramentas em sequências reutilizáveis e execute passo a passo.', icon: 'sparkles', iconClass: 'icon-ai', badge: 'new' },
-  { slug: 'inbox-unificada', cat: 'automation', name: 'Inbox Unificada', desc: 'Capturas do time + WhatsApp + Email num só lugar (admin). Sindi sugere resposta.', icon: 'message', iconClass: 'icon-ai', badge: 'new' },
+  { slug: 'inbox-unificada', cat: 'automation', name: 'Inbox Unificada', desc: 'Capturas do time + WhatsApp + Email num só lugar (admin). Sindi sugere resposta.', icon: 'message', iconClass: 'icon-ai', badge: 'soon' },
 ];
 
 const grid = document.getElementById('toolsGrid');

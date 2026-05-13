@@ -542,6 +542,7 @@ $('gateForm').addEventListener('submit', async e => {
   $('mapMain').hidden = false;
   await loadData();
   initMap();
+  applyURLParams();
 });
 
 (async () => {
@@ -552,12 +553,28 @@ $('gateForm').addEventListener('submit', async e => {
       $('mapMain').hidden = false;
       await loadData();
       initMap();
+      applyURLParams();
     } else {
       sessionStorage.removeItem(SESSION_KEY);
       STATE.password = '';
     }
   }
 })();
+
+// Quando passa do gate, aplica params (depois do auth)
+function applyURLParams() {
+  const params = new URLSearchParams(location.search);
+  const q = params.get('q');
+  const tab = params.get('tab');
+  if (q) {
+    // Switch pra tab região e busca
+    switchTab('regiao');
+    $('regionInput').value = q;
+    searchRegion(q);
+  } else if (tab === 'regiao') {
+    switchTab('regiao');
+  }
+}
 
 // ============ DATA ============
 async function loadData() {
