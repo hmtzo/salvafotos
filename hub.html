@@ -728,13 +728,13 @@ function svg(name, size = 22) {
 }
 
 const TOOLS = [
-  // === IA (em breve — Gemini API em manutenção) ===
-  { slug: 'sindi', cat: 'ai', name: 'Sindi (IA)', desc: 'Copiloto IA que lê documentos e responde dúvidas sobre direito condominial.', icon: 'bot', iconClass: 'icon-ai', badge: 'soon' },
-  { slug: 'corretor-texto', cat: 'ai', name: 'Corretor de Texto PT-BR', desc: 'Corrige ortografia, gramática e pontuação. Mantém o tom do texto.', icon: 'pencil', iconClass: 'icon-ai', badge: 'soon' },
-  { slug: 'resumir-pdf', cat: 'ai', name: 'Resumir PDF com IA', desc: 'Resumos executivo, detalhado, ação ou risco em segundos.', icon: 'sparkles', iconClass: 'icon-ai', badge: 'soon' },
-  { slug: 'traduzir-pdf', cat: 'ai', name: 'Traduzir PDF com IA', desc: 'Tradução natural multi-idiomas preservando layout.', icon: 'sparkles', iconClass: 'icon-ai', badge: 'soon' },
-  { slug: 'auditor-contratos', cat: 'ai', name: 'Auditor de Contratos', desc: 'Sindi analisa contratos e marca cláusulas problemáticas, multas e riscos.', icon: 'shield', iconClass: 'icon-ai', badge: 'soon' },
-  { slug: 'sindi-reunioes', cat: 'ai', name: 'Sindi Reuniões', desc: 'Áudio → ata + resumo + action items + transcrição. Tudo em segundos.', icon: 'sparkles', iconClass: 'icon-ai', badge: 'soon' },
+  // === IA (destaque) ===
+  { slug: 'sindi', cat: 'ai', name: 'Sindi (IA)', desc: 'Copiloto IA que lê documentos e responde dúvidas sobre direito condominial.', icon: 'bot', iconClass: 'icon-ai' },
+  { slug: 'corretor-texto', cat: 'ai', name: 'Corretor de Texto PT-BR', desc: 'Corrige ortografia, gramática e pontuação. Mantém o tom do texto.', icon: 'pencil', iconClass: 'icon-ai', badge: 'new' },
+  { slug: 'resumir-pdf', cat: 'ai', name: 'Resumir PDF com IA', desc: 'Resumos executivo, detalhado, ação ou risco em segundos.', icon: 'sparkles', iconClass: 'icon-ai', badge: 'new' },
+  { slug: 'traduzir-pdf', cat: 'ai', name: 'Traduzir PDF com IA', desc: 'Tradução natural multi-idiomas preservando layout.', icon: 'sparkles', iconClass: 'icon-ai', badge: 'new' },
+  { slug: 'auditor-contratos', cat: 'ai', name: 'Auditor de Contratos', desc: 'Sindi analisa contratos e marca cláusulas problemáticas, multas e riscos.', icon: 'shield', iconClass: 'icon-ai', badge: 'new' },
+  { slug: 'sindi-reunioes', cat: 'ai', name: 'Sindi Reuniões', desc: 'Áudio → ata + resumo + action items + transcrição. Tudo em segundos.', icon: 'sparkles', iconClass: 'icon-ai', badge: 'new' },
 
   // === GERADORES ===
   { slug: 'wizard-inadimplencia', cat: 'doc', name: 'Wizard Inadimplência', desc: 'Fluxo guiado de cobrança em 5 passos: dados → cálculo → notificação → cronograma.', icon: 'fileSign', iconClass: 'icon-doc', badge: 'new' },
@@ -753,7 +753,7 @@ const TOOLS = [
   { slug: 'jpg-para-pdf', cat: 'convert', name: 'Imagens → PDF', desc: 'Junte várias imagens em um PDF.', icon: 'images', iconClass: 'icon-convert' },
   { slug: 'conversor-imagens', cat: 'convert', name: 'Conversor de Imagens', desc: 'PNG ↔ JPG ↔ WEBP. Redimensiona, comprime, em lote.', icon: 'palette', iconClass: 'icon-image', badge: 'new' },
   { slug: 'html-para-pdf', cat: 'convert', name: 'HTML → PDF', desc: 'Converte página web ou HTML em PDF com layout preservado.', icon: 'fileText', iconClass: 'icon-convert', badge: 'new' },
-  { slug: 'pdf-para-word', cat: 'convert', name: 'PDF → Word', desc: 'Sindi extrai e gera .docx editável preservando títulos, listas e tabelas.', icon: 'fileText', iconClass: 'icon-convert', badge: 'soon' },
+  { slug: 'pdf-para-word', cat: 'convert', name: 'PDF → Word', desc: 'Sindi extrai e gera .docx editável preservando títulos, listas e tabelas.', icon: 'fileText', iconClass: 'icon-convert', badge: 'new' },
   { slug: 'pdf-para-powerpoint', cat: 'convert', name: 'PDF → PowerPoint', desc: 'Cada página vira slide .pptx editável (16:9, 4:3 ou auto).', icon: 'fileText', iconClass: 'icon-convert', badge: 'new' },
   { slug: 'powerpoint-para-pdf', cat: 'convert', name: 'PowerPoint → PDF', desc: 'Converte .pptx em PDF extraindo texto e imagens de cada slide.', icon: 'fileText', iconClass: 'icon-convert', badge: 'new' },
   { slug: 'pdf-para-pdfa', cat: 'convert', name: 'PDF → PDF/A', desc: 'Marca metadados XMP PDF/A-2b/3b pra arquivamento legal e contábil.', icon: 'shield', iconClass: 'icon-convert', badge: 'new' },
@@ -798,7 +798,7 @@ const TOOLS = [
   { slug: 'lembretes-inteligentes', cat: 'automation', name: 'Lembretes Inteligentes', desc: 'Vencimentos críticos com contagem regressiva, alerta no navegador e export .ics.', icon: 'sparkles', iconClass: 'icon-ai', badge: 'new' },
   { slug: 'saude-condominio', cat: 'automation', name: 'Saúde do Condomínio', desc: 'Dashboard por condomínio: inadimplência, chamados, SLA, NPS, vencimentos.', icon: 'chart', iconClass: 'icon-ai', badge: 'new' },
   { slug: 'workflow-builder', cat: 'automation', name: 'Workflow Builder', desc: 'Encadeie ferramentas em sequências reutilizáveis e execute passo a passo.', icon: 'sparkles', iconClass: 'icon-ai', badge: 'new' },
-  { slug: 'inbox-unificada', cat: 'automation', name: 'Inbox Unificada', desc: 'Capturas do time + WhatsApp + Email num só lugar (admin). Sindi sugere resposta.', icon: 'message', iconClass: 'icon-ai', badge: 'soon' },
+  { slug: 'inbox-unificada', cat: 'automation', name: 'Inbox Unificada', desc: 'Capturas do time + WhatsApp + Email num só lugar (admin). Sindi sugere resposta.', icon: 'message', iconClass: 'icon-ai', badge: 'new' },
 ];
 
 const grid = document.getElementById('toolsGrid');
