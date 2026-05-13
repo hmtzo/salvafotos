@@ -19,6 +19,11 @@
 <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 <style>
   body{margin:0;overflow:hidden}
+  /* Esconde widgets flutuantes (Equipe + Sindi) — mapa tem UI própria */
+  body.map-page-body #team-chat-float,
+  body.map-page-body #team-chat-drawer,
+  body.map-page-body #sindi-float,
+  body.map-page-body #sindi-drawer{display:none !important}
   main.map-page{
     display:grid;grid-template-columns:340px 1fr 380px;
     height:calc(100dvh - 60px);min-height:560px;
