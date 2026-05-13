@@ -20,14 +20,23 @@
 <style>
   body{margin:0;overflow:hidden}
   main.map-page{
-    display:grid;grid-template-columns:340px 1fr;
+    display:grid;grid-template-columns:340px 1fr 380px;
     height:calc(100dvh - 60px);min-height:560px;
+  }
+  @media (max-width:1200px){
+    main.map-page{grid-template-columns:300px 1fr}
+    .detail-pane{display:none}
+    .detail-pane.show{
+      display:flex;position:absolute;right:0;top:0;height:100%;width:min(380px, 100vw);z-index:500;
+      box-shadow:-12px 0 32px rgba(0,0,0,0.5);
+    }
   }
   @media (max-width:780px){
     main.map-page{grid-template-columns:1fr;height:calc(100dvh - 56px)}
     .map-aside.hidden-mobile{display:none}
   }
 
+  /* ==== ASIDE LEFT ==== */
   .map-aside{
     background:#0e0e13;border-right:1px solid var(--border);
     display:flex;flex-direction:column;overflow:hidden;
@@ -36,11 +45,20 @@
   .map-aside-head h2{font-size:16px;margin:0 0 4px;font-weight:700}
   .map-aside-head .sub{font-size:11.5px;color:var(--text-dim)}
   .map-stats{display:flex;gap:8px;margin-top:10px}
-  .map-stat{
-    flex:1;padding:8px 10px;background:rgba(255,255,255,0.03);border-radius:8px;text-align:center;
-  }
+  .map-stat{flex:1;padding:8px 10px;background:rgba(255,255,255,0.03);border-radius:8px;text-align:center}
   .map-stat .v{font-size:20px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums}
   .map-stat .l{font-size:9.5px;color:var(--text-dim);font-weight:700;letter-spacing:0.05em;text-transform:uppercase;margin-top:3px}
+
+  .tabs{display:flex;border-bottom:1px solid var(--border);background:rgba(0,0,0,0.18)}
+  .tab{
+    flex:1;padding:10px;font-size:12px;font-weight:600;color:var(--text-dim);
+    cursor:pointer;background:none;border:none;font-family:inherit;
+    border-bottom:2px solid transparent;
+  }
+  .tab.active{color:#a5b4fc;border-bottom-color:#6366f1}
+
+  .tab-pane{flex:1;overflow-y:auto;display:flex;flex-direction:column}
+  .tab-pane[hidden]{display:none}
 
   .map-search{padding:10px 16px;border-bottom:1px solid var(--border)}
   .map-search input{
@@ -53,55 +71,165 @@
 
   .map-actions{display:flex;gap:6px;padding:10px 16px;border-bottom:1px solid var(--border)}
   .map-actions button{
-    flex:1;padding:8px 10px;background:rgba(99,102,241,0.1);border:1px solid rgba(99,102,241,0.3);
-    border-radius:8px;color:#a5b4fc;font-family:inherit;font-size:11.5px;font-weight:600;cursor:pointer;
-    display:flex;align-items:center;justify-content:center;gap:6px;
+    flex:1;padding:8px 8px;background:rgba(99,102,241,0.1);border:1px solid rgba(99,102,241,0.3);
+    border-radius:8px;color:#a5b4fc;font-family:inherit;font-size:11px;font-weight:600;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;gap:5px;
   }
   .map-actions button:hover{background:rgba(99,102,241,0.18)}
   .map-actions button svg{width:13px;height:13px}
 
-  .map-sindicos-list{flex:1;overflow-y:auto;padding:4px 0}
+  .sindicos-list{flex:1;overflow-y:auto;padding:4px 0}
   .sindico-row{
-    display:flex;align-items:center;gap:10px;padding:8px 16px;cursor:pointer;
+    display:flex;align-items:center;gap:10px;padding:9px 16px;cursor:pointer;
     border-left:3px solid transparent;
   }
   .sindico-row:hover{background:rgba(255,255,255,0.04)}
   .sindico-row.active{background:rgba(99,102,241,0.08);border-left-color:#6366f1}
-  .sindico-row .dot{
-    width:14px;height:14px;border-radius:50%;flex:0 0 14px;
-    box-shadow:0 0 0 2px rgba(255,255,255,0.1);
-  }
+  .sindico-row .dot{width:14px;height:14px;border-radius:50%;flex:0 0 14px;box-shadow:0 0 0 2px rgba(255,255,255,0.1)}
   .sindico-row .info{flex:1;min-width:0}
   .sindico-row .name{font-size:13px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .sindico-row .meta{font-size:11px;color:var(--text-dim);margin-top:1px}
+  .sindico-row .meta{font-size:10.5px;color:var(--text-dim);margin-top:1px}
 
+  /* ==== REGION SEARCH TAB ==== */
+  .region-search-box{padding:14px 16px;border-bottom:1px solid var(--border)}
+  .region-search-box label{display:block;font-size:10.5px;font-weight:700;color:var(--text-dim);letter-spacing:0.05em;text-transform:uppercase;margin-bottom:6px}
+  .region-search-box input{
+    width:100%;padding:10px 12px;background:rgba(255,255,255,0.04);border:1px solid var(--border);
+    border-radius:8px;color:var(--text);font-family:inherit;font-size:13.5px;
+  }
+  .region-search-box input:focus{outline:none;border-color:#6366f1}
+  .region-hint{font-size:11px;color:var(--text-dim);margin-top:6px;line-height:1.4}
+
+  .region-results{flex:1;overflow-y:auto}
+  .region-summary{
+    padding:14px 16px;background:rgba(99,102,241,0.06);border-bottom:1px solid var(--border);
+    font-size:12px;color:var(--text-dim);line-height:1.5;
+  }
+  .region-summary strong{color:#a5b4fc;font-size:20px;font-weight:800;display:inline-block;margin-right:4px}
+
+  .region-sindico-card{
+    padding:12px 16px;border-bottom:1px solid rgba(255,255,255,0.04);
+  }
+  .region-sindico-card .head{display:flex;align-items:center;gap:10px;margin-bottom:6px}
+  .region-sindico-card .dot{width:14px;height:14px;border-radius:50%;box-shadow:0 0 0 2px rgba(255,255,255,0.1)}
+  .region-sindico-card .name{font-size:13.5px;font-weight:700;color:var(--text);flex:1}
+  .region-sindico-card .count{
+    font-size:10.5px;font-weight:700;background:rgba(99,102,241,0.18);color:#a5b4fc;
+    padding:2px 8px;border-radius:100px;letter-spacing:0.04em;
+  }
+  .region-sindico-card .locs{font-size:11.5px;color:var(--text-dim);line-height:1.5;margin-top:4px}
+  .region-sindico-card .actions{display:flex;gap:6px;margin-top:8px}
+  .region-sindico-card .actions button{
+    padding:5px 10px;font-size:11px;font-weight:600;background:rgba(255,255,255,0.04);
+    border:1px solid var(--border);border-radius:6px;color:var(--text-dim);cursor:pointer;font-family:inherit;
+  }
+  .region-sindico-card .actions button:hover{background:rgba(255,255,255,0.08);color:var(--text)}
+
+  /* ==== MAP STAGE ==== */
   .map-stage{position:relative}
   #map{height:100%;width:100%;background:#1a1a1f}
-  .leaflet-popup-content-wrapper{background:#1c1c22;color:#fff;border-radius:12px;box-shadow:0 12px 32px rgba(0,0,0,0.6)}
-  .leaflet-popup-tip{background:#1c1c22}
-  .leaflet-popup-content{font-family:'Inter',sans-serif;margin:14px 16px;font-size:13px;line-height:1.55}
-  .leaflet-popup-content h3{margin:0 0 6px;font-size:14.5px;font-weight:700;color:#fff}
-  .leaflet-popup-content .badge{display:inline-block;padding:2px 8px;border-radius:100px;font-size:10.5px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;margin-bottom:6px}
-  .leaflet-popup-content .meta{font-size:11.5px;color:#a1a1aa;margin-top:6px}
-  .leaflet-popup-close-button{color:#a1a1aa !important;font-size:18px !important;margin-top:4px !important;margin-right:4px !important}
   .leaflet-control-zoom a{background:#1c1c22 !important;color:#fff !important;border:1px solid #2a2a32 !important}
   .leaflet-control-zoom a:hover{background:#2a2a32 !important}
   .leaflet-control-attribution{background:rgba(0,0,0,0.6) !important;color:#a1a1aa !important;font-size:9.5px !important}
   .leaflet-control-attribution a{color:#a5b4fc !important}
+  .leaflet-popup-content-wrapper{background:#1c1c22;color:#fff;border-radius:10px}
+  .leaflet-popup-tip{background:#1c1c22}
+  .leaflet-popup-content{font-family:'Inter',sans-serif;margin:10px 12px;font-size:12.5px}
 
-  /* Mobile toggle */
+  .map-overlay-controls{
+    position:absolute;top:14px;right:14px;z-index:500;
+    display:flex;gap:6px;
+  }
+  .map-overlay-controls button{
+    padding:8px 12px;background:rgba(28,28,34,0.92);border:1px solid var(--border);border-radius:8px;
+    color:var(--text);font-family:inherit;font-size:11.5px;font-weight:600;cursor:pointer;
+    backdrop-filter:blur(8px);
+    display:flex;align-items:center;gap:6px;
+  }
+  .map-overlay-controls button:hover{background:rgba(35,35,42,0.95)}
+  .map-overlay-controls button.active{background:rgba(99,102,241,0.18);color:#a5b4fc;border-color:rgba(99,102,241,0.4)}
+  .map-overlay-controls button svg{width:13px;height:13px}
+
   .map-toggle-aside{
     display:none;position:absolute;top:14px;left:14px;z-index:500;
     padding:8px 14px;background:#1c1c22;border:1px solid var(--border);border-radius:8px;
     color:var(--text);font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;
-    box-shadow:0 4px 12px rgba(0,0,0,0.4);
   }
   @media (max-width:780px){.map-toggle-aside{display:block}}
 
-  /* === MODAL/GATE === */
+  /* ==== DETAIL PANE RIGHT ==== */
+  .detail-pane{
+    background:#0e0e13;border-left:1px solid var(--border);
+    display:flex;flex-direction:column;overflow:hidden;
+  }
+  .detail-empty{
+    margin:auto;text-align:center;color:var(--text-dim);font-size:13px;line-height:1.6;padding:40px 24px;
+  }
+  .detail-empty .ico{
+    width:48px;height:48px;border-radius:14px;background:linear-gradient(135deg,#6366f1,#8b5cf6);
+    margin:0 auto 14px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:22px;
+  }
+  .detail-head{
+    padding:18px 18px 14px;border-bottom:1px solid var(--border);
+  }
+  .detail-head .top{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+  .detail-head .avatar{
+    width:48px;height:48px;border-radius:14px;color:#fff;font-weight:800;font-size:18px;
+    display:flex;align-items:center;justify-content:center;flex-shrink:0;
+    box-shadow:0 4px 12px rgba(0,0,0,0.4);
+  }
+  .detail-head .name{flex:1;min-width:0}
+  .detail-head .name h2{font-size:17px;font-weight:800;letter-spacing:-0.01em;margin:0 0 2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .detail-head .name .region{font-size:11.5px;color:var(--text-dim);font-weight:500}
+  .detail-head-close{
+    width:30px;height:30px;border-radius:8px;border:1px solid var(--border);background:transparent;
+    color:var(--text-dim);cursor:pointer;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .detail-head-close:hover{background:rgba(255,255,255,0.06);color:var(--text)}
+
+  .detail-contact{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+  .detail-contact a, .detail-contact span{
+    display:inline-flex;align-items:center;gap:5px;padding:5px 9px;border-radius:8px;
+    background:rgba(255,255,255,0.04);border:1px solid var(--border);
+    font-size:11.5px;font-weight:500;color:var(--text);text-decoration:none;
+  }
+  .detail-contact a:hover{background:rgba(99,102,241,0.12);color:#a5b4fc}
+  .detail-contact svg{width:12px;height:12px}
+
+  .detail-body{flex:1;overflow-y:auto;padding:14px 18px}
+  .detail-section{margin-bottom:16px}
+  .detail-section h3{font-size:10.5px;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;color:var(--text-dim);margin:0 0 8px}
+  .detail-section .home-row{
+    padding:10px 12px;background:rgba(245,158,11,0.06);border-left:3px solid #fbbf24;
+    border-radius:0 8px 8px 0;font-size:12px;line-height:1.5;
+  }
+  .detail-section .home-row .label{font-size:10px;color:#fbbf24;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;margin-bottom:3px}
+  .detail-section .notes{font-size:12.5px;color:var(--text);line-height:1.55;padding:10px 12px;background:rgba(255,255,255,0.03);border-radius:8px}
+
+  .loc-list{display:grid;gap:6px}
+  .loc-item{
+    padding:10px 12px;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:8px;
+    cursor:pointer;transition:background .15s;
+  }
+  .loc-item:hover{background:rgba(99,102,241,0.08)}
+  .loc-item .top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:3px}
+  .loc-item .bairro{font-size:12.5px;font-weight:600;color:var(--text);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .loc-item .dist{font-size:10.5px;font-weight:700;color:#5eead4;background:rgba(20,184,166,0.12);padding:2px 7px;border-radius:100px;white-space:nowrap}
+  .loc-item .addr{font-size:11px;color:var(--text-dim);line-height:1.4;margin-top:2px}
+
+  .detail-foot{padding:14px 18px;border-top:1px solid var(--border);display:flex;gap:6px;flex-wrap:wrap}
+  .detail-foot button{
+    padding:8px 12px;font-size:11.5px;font-weight:600;border-radius:8px;cursor:pointer;font-family:inherit;
+    border:1px solid var(--border);background:rgba(255,255,255,0.04);color:var(--text-dim);
+  }
+  .detail-foot button:hover{background:rgba(255,255,255,0.08);color:var(--text)}
+  .detail-foot button.add-loc{background:rgba(99,102,241,0.12);color:#a5b4fc;border-color:rgba(99,102,241,0.3)}
+  .detail-foot button.delete{background:rgba(239,68,68,0.1);color:#fca5a5;border-color:rgba(239,68,68,0.3)}
+
+  /* ==== GATE ==== */
   .gate-overlay{
-    position:fixed;inset:0;z-index:9999;
-    background:rgba(0,0,0,0.85);backdrop-filter:blur(8px);
+    position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.85);backdrop-filter:blur(8px);
     display:flex;align-items:center;justify-content:center;padding:20px;
   }
   .gate-overlay[hidden]{display:none}
@@ -111,7 +239,7 @@
     border:1px solid var(--border-bright);border-radius:18px;
     box-shadow:0 24px 60px rgba(0,0,0,0.6);
   }
-  .gate-card h1{font-size:22px;font-weight:800;margin:0 0 6px;letter-spacing:-0.02em}
+  .gate-card h1{font-size:22px;font-weight:800;margin:0 0 6px}
   .gate-card p{font-size:13px;color:var(--text-dim);margin:0 0 18px;line-height:1.5}
   .gate-card .ico{width:50px;height:50px;border-radius:14px;background:linear-gradient(135deg,#6366f1,#8b5cf6);display:flex;align-items:center;justify-content:center;margin-bottom:14px;font-size:24px}
   .gate-card input{
@@ -126,48 +254,45 @@
     border:none;border-radius:10px;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;
   }
 
-  /* === ADD MODAL === */
-  .add-overlay{
-    position:fixed;inset:0;z-index:9998;
-    background:rgba(0,0,0,0.7);backdrop-filter:blur(6px);
+  /* ==== MODAL ==== */
+  .modal-overlay{
+    position:fixed;inset:0;z-index:9998;background:rgba(0,0,0,0.7);backdrop-filter:blur(6px);
     display:flex;align-items:center;justify-content:center;padding:20px;
   }
-  .add-overlay[hidden]{display:none}
-  .add-card{
-    width:100%;max-width:460px;max-height:90vh;overflow-y:auto;
-    background:#0e0e13;border:1px solid var(--border-bright);border-radius:16px;
-    padding:24px;
+  .modal-overlay[hidden]{display:none}
+  .modal{
+    width:100%;max-width:520px;max-height:90vh;overflow-y:auto;
+    background:#0e0e13;border:1px solid var(--border-bright);border-radius:16px;padding:24px;
   }
-  .add-card h2{margin:0 0 4px;font-size:18px;font-weight:700}
-  .add-card .sub{font-size:12.5px;color:var(--text-dim);margin-bottom:16px}
-  .add-card label{display:block;margin-bottom:12px}
-  .add-card label > span{display:block;font-size:11px;font-weight:700;color:var(--text-dim);letter-spacing:0.05em;text-transform:uppercase;margin-bottom:5px}
-  .add-card input, .add-card select, .add-card textarea{
+  .modal h2{margin:0 0 4px;font-size:18px;font-weight:700}
+  .modal .sub{font-size:12.5px;color:var(--text-dim);margin-bottom:16px}
+  .modal label{display:block;margin-bottom:12px}
+  .modal label > span{display:block;font-size:11px;font-weight:700;color:var(--text-dim);letter-spacing:0.05em;text-transform:uppercase;margin-bottom:5px}
+  .modal input, .modal select, .modal textarea{
     width:100%;padding:9px 12px;background:rgba(255,255,255,0.04);border:1px solid var(--border);
     border-radius:8px;color:var(--text);font-family:inherit;font-size:13.5px;
   }
-  .add-card textarea{resize:vertical;min-height:60px}
-  .add-card .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-  .add-card .actions{display:flex;gap:8px;margin-top:14px}
-  .add-card .actions button{
+  .modal textarea{resize:vertical;min-height:60px}
+  .modal .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .modal .row.three{grid-template-columns:2fr 1fr 1fr}
+  .modal .actions{display:flex;gap:8px;margin-top:14px}
+  .modal .actions button{
     flex:1;padding:11px;border-radius:10px;border:none;cursor:pointer;
     font-family:inherit;font-size:13px;font-weight:700;
   }
-  .add-card .btn-primary{background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff}
-  .add-card .btn-secondary{background:rgba(255,255,255,0.06);color:var(--text);border:1px solid var(--border)}
-  .add-card .msg{font-size:12px;margin-top:8px;padding:8px 12px;border-radius:8px}
-  .add-card .msg.err{background:rgba(239,68,68,0.1);color:#fca5a5;border:1px solid rgba(239,68,68,0.3)}
-  .add-card .msg.ok{background:rgba(34,197,94,0.1);color:#86efac;border:1px solid rgba(34,197,94,0.3)}
-  .geocode-suggestion{
-    padding:8px 12px;background:rgba(99,102,241,0.06);border:1px solid rgba(99,102,241,0.3);
-    border-radius:8px;font-size:12px;color:#a5b4fc;cursor:pointer;margin-top:6px;
-  }
+  .modal .btn-primary{background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff}
+  .modal .btn-secondary{background:rgba(255,255,255,0.06);color:var(--text);border:1px solid var(--border)}
+  .modal .msg{font-size:12px;margin-top:8px;padding:8px 12px;border-radius:8px}
+  .modal .msg.err{background:rgba(239,68,68,0.1);color:#fca5a5;border:1px solid rgba(239,68,68,0.3)}
+  .modal .msg.ok{background:rgba(34,197,94,0.1);color:#86efac;border:1px solid rgba(34,197,94,0.3)}
+  .geo-help{padding:8px 12px;background:rgba(99,102,241,0.06);border:1px solid rgba(99,102,241,0.3);border-radius:8px;font-size:11.5px;color:#a5b4fc;margin-bottom:10px;line-height:1.5}
+  .geo-btn{padding:8px 12px;background:rgba(99,102,241,0.12);color:#a5b4fc;border:1px solid rgba(99,102,241,0.3);border-radius:8px;cursor:pointer;font-family:inherit;font-size:12px;font-weight:600;width:auto !important;display:inline-flex;align-items:center;gap:6px;margin-bottom:6px}
 </style>
 </head>
 <body class="map-page-body">
 <div id="app-nav"></div>
 
-<!-- GATE: senha obrigatória -->
+<!-- GATE -->
 <div class="gate-overlay" id="gateOverlay">
   <div class="gate-card">
     <div class="ico">🔒</div>
@@ -182,18 +307,15 @@
 </div>
 
 <main class="map-page" id="mapMain" hidden>
+  <!-- LEFT: lista síndicos + busca regional -->
   <aside class="map-aside" id="aside">
     <div class="map-aside-head">
       <h2>Mapa dos Síndicos</h2>
-      <div class="sub">Localizações de atendimento da equipe</div>
+      <div class="sub">Atuação e concorrência por região</div>
       <div class="map-stats">
         <div class="map-stat"><div class="v" id="statSindicos">–</div><div class="l">Síndicos</div></div>
         <div class="map-stat"><div class="v" id="statLocations">–</div><div class="l">Locais</div></div>
       </div>
-    </div>
-
-    <div class="map-search">
-      <input id="searchInput" placeholder="Buscar síndico ou bairro…" autocomplete="off">
     </div>
 
     <div class="map-actions">
@@ -211,40 +333,88 @@
       </button>
     </div>
 
-    <div class="map-sindicos-list" id="sindicosList"></div>
+    <div class="tabs">
+      <button class="tab active" data-tab="sindicos">Síndicos</button>
+      <button class="tab" data-tab="regiao">Por região</button>
+    </div>
+
+    <!-- Tab: Síndicos -->
+    <div class="tab-pane" id="tabSindicos">
+      <div class="map-search"><input id="searchInput" placeholder="Buscar síndico, bairro, telefone…"></div>
+      <div class="sindicos-list" id="sindicosList"></div>
+    </div>
+
+    <!-- Tab: Por região -->
+    <div class="tab-pane" id="tabRegiao" hidden>
+      <div class="region-search-box">
+        <label>Bairro ou região</label>
+        <input type="text" id="regionInput" placeholder="Ex: Vila Mariana, Pinheiros, Zona Oeste…">
+        <div class="region-hint">Digite o bairro pra ver quantos e quais síndicos atendem ali.</div>
+      </div>
+      <div class="region-results" id="regionResults">
+        <div style="padding:30px 20px;text-align:center;color:var(--text-dim);font-size:12.5px">
+          Comece digitando uma região acima 👆
+        </div>
+      </div>
+    </div>
   </aside>
 
+  <!-- CENTER: map -->
   <div class="map-stage">
     <button class="map-toggle-aside" id="toggleAside">📋 Lista</button>
+
+    <div class="map-overlay-controls">
+      <button id="toggleLines" title="Linhas conectando residência → locais">
+        <svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M9 17 5 12l4-5M15 7l4 5-4 5"/></svg>
+        <span>Linhas</span>
+      </button>
+    </div>
+
     <div id="map"></div>
   </div>
+
+  <!-- RIGHT: detalhe síndico -->
+  <aside class="detail-pane" id="detailPane">
+    <div class="detail-empty">
+      <div class="ico">👤</div>
+      <strong style="color:var(--text);display:block;margin-bottom:4px">Selecione um síndico</strong>
+      Clica numa bolinha no mapa ou num nome na lista pra ver detalhes, contato e os locais que ele atende.
+    </div>
+  </aside>
 </main>
 
 <!-- MODAL: adicionar síndico -->
-<div class="add-overlay" id="addSindicoOverlay" hidden>
-  <div class="add-card">
-    <h2>+ Novo Síndico</h2>
-    <p class="sub">Adicione um síndico ao mapa. Depois pode adicionar os bairros que ele atende.</p>
+<div class="modal-overlay" id="addSindicoOverlay" hidden>
+  <div class="modal">
+    <h2 id="addSindicoTitle">+ Novo Síndico</h2>
+    <p class="sub">Cadastra o síndico com dados de contato e endereço residencial (pra calcular distâncias).</p>
     <form id="addSindicoForm">
+      <input type="hidden" id="editSindicoId" value="">
       <label><span>Nome*</span><input type="text" id="newSindicoName" required maxlength="80"></label>
       <div class="row">
-        <label><span>Região</span>
+        <label><span>Região principal</span>
           <select id="newSindicoRegion">
-            <option>São Paulo</option>
-            <option>Barueri e Região</option>
-            <option>Rio de Janeiro</option>
-            <option>ABC Paulista</option>
-            <option>Interior SP</option>
-            <option>Outras</option>
+            <option>São Paulo</option><option>Barueri e Região</option>
+            <option>Rio de Janeiro</option><option>ABC Paulista</option>
+            <option>Interior SP</option><option>Outras</option>
           </select>
         </label>
         <label><span>Telefone</span><input type="tel" id="newSindicoPhone" maxlength="30" placeholder="(11) 9..."></label>
       </div>
       <label><span>E-mail</span><input type="email" id="newSindicoEmail" maxlength="80"></label>
-      <label><span>Observações</span><textarea id="newSindicoNotes" maxlength="500" placeholder="Especialidades, restrições, contato preferido..."></textarea></label>
+
+      <label><span>Endereço residencial (opcional, pra calcular distâncias)</span><input type="text" id="newSindicoHomeAddr" placeholder="Ex: Rua Augusta, 1000, Consolação, SP"></label>
+      <button type="button" class="geo-btn" id="geocodeHomeBtn">📍 Buscar coordenadas</button>
+      <div id="homeGeoResult"></div>
+      <div class="row">
+        <label><span>Lat residência</span><input type="number" id="newSindicoHomeLat" step="any"></label>
+        <label><span>Lng residência</span><input type="number" id="newSindicoHomeLng" step="any"></label>
+      </div>
+
+      <label><span>Observações</span><textarea id="newSindicoNotes" maxlength="500"></textarea></label>
       <div class="actions">
         <button type="button" class="btn-secondary" onclick="closeModal('addSindicoOverlay')">Cancelar</button>
-        <button type="submit" class="btn-primary">Adicionar</button>
+        <button type="submit" class="btn-primary" id="saveSindicoBtn">Adicionar</button>
       </div>
       <div id="addSindicoMsg"></div>
     </form>
@@ -252,23 +422,43 @@
 </div>
 
 <!-- MODAL: adicionar local -->
-<div class="add-overlay" id="addLocationOverlay" hidden>
-  <div class="add-card">
-    <h2>+ Novo Local</h2>
-    <p class="sub">Adicione um bairro/local de atendimento pra um síndico existente.</p>
+<div class="modal-overlay" id="addLocationOverlay" hidden>
+  <div class="modal">
+    <h2>+ Novo Local de Atuação</h2>
+    <p class="sub">Bairro inteiro, condomínio específico ou endereço pontual.</p>
     <form id="addLocationForm">
       <label><span>Síndico*</span><select id="newLocSindico" required></select></label>
-      <label><span>Bairro / Local*</span><input type="text" id="newLocBairro" required maxlength="80" placeholder="Ex: Vila Mariana"></label>
-      <label><span>Endereço aproximado (pra geocoding)</span>
-        <input type="text" id="newLocAddress" placeholder="Ex: Vila Mariana, São Paulo, SP" autocomplete="off">
-      </label>
-      <button type="button" id="geocodeBtn" class="btn-secondary" style="padding:8px 12px;width:auto;font-size:12px;font-weight:600;background:rgba(99,102,241,0.1);color:#a5b4fc;border:1px solid rgba(99,102,241,0.3);border-radius:8px;cursor:pointer;margin-bottom:8px">📍 Buscar coordenadas</button>
-      <div id="geocodeResult"></div>
+
+      <div class="row three">
+        <label><span>Bairro / Local*</span><input type="text" id="newLocBairro" required maxlength="80" placeholder="Ex: Vila Mariana"></label>
+        <label><span>Tipo</span>
+          <select id="newLocType">
+            <option value="bairro">Bairro</option>
+            <option value="condo">Condomínio</option>
+            <option value="endereco">Endereço</option>
+          </select>
+        </label>
+        <label><span>Região</span>
+          <select id="newLocRegion">
+            <option>São Paulo</option><option>Barueri e Região</option>
+            <option>Rio de Janeiro</option><option>ABC Paulista</option>
+            <option>Interior SP</option><option>Outras</option>
+          </select>
+        </label>
+      </div>
+
+      <label id="condoNameField"><span>Nome do condomínio (opcional)</span><input type="text" id="newLocCondoName" maxlength="120" placeholder="Ex: Ed. Aurora"></label>
+
+      <label><span>Endereço completo (rua, número, complemento — opcional)</span><input type="text" id="newLocAddress" placeholder="Ex: Av. Paulista, 1500, conj. 22, São Paulo"></label>
+      <button type="button" class="geo-btn" id="geocodeLocBtn">📍 Buscar coordenadas</button>
+      <div id="locGeoResult"></div>
+
       <div class="row">
         <label><span>Latitude*</span><input type="number" id="newLocLat" step="any" required></label>
         <label><span>Longitude*</span><input type="number" id="newLocLng" step="any" required></label>
       </div>
-      <p style="font-size:11.5px;color:var(--text-dim);margin:0 0 6px">Dica: clica diretamente no mapa pra pegar lat/lng exato</p>
+      <div class="geo-help">💡 Dica: clica direto no mapa pra capturar lat/lng exato sem digitar.</div>
+
       <div class="actions">
         <button type="button" class="btn-secondary" onclick="closeModal('addLocationOverlay')">Cancelar</button>
         <button type="submit" class="btn-primary">Adicionar</button>
@@ -285,11 +475,17 @@ const STATE = {
   sindicos: [],
   locations: [],
   sindicosMap: new Map(),
-  filterSindico: null,  // id ou null pra todos
+  filterSindico: null,
   searchQuery: '',
+  currentTab: 'sindicos',
+  selectedSindico: null,  // pra mostrar no detail pane
   map: null,
   cluster: null,
+  homeMarkersGroup: null,
+  linesGroup: null,
+  showLines: false,
   pickingCoord: false,
+  pickingTarget: null,  // 'home' | 'loc'
 };
 const $ = id => document.getElementById(id);
 
@@ -312,9 +508,8 @@ $('gateForm').addEventListener('submit', async e => {
   $('gateErr').textContent = '';
   const ok = await tryAuth(pwd);
   if (!ok) {
-    $('gateErr').textContent = 'Senha incorreta. Tenta de novo.';
-    $('gatePassword').value = '';
-    $('gatePassword').focus();
+    $('gateErr').textContent = 'Senha incorreta.';
+    $('gatePassword').value = ''; $('gatePassword').focus();
     return;
   }
   STATE.password = pwd;
@@ -325,7 +520,6 @@ $('gateForm').addEventListener('submit', async e => {
   initMap();
 });
 
-// Tenta auto-login se já tem senha em sessionStorage
 (async () => {
   if (STATE.password) {
     const ok = await tryAuth(STATE.password);
@@ -354,75 +548,196 @@ async function loadData() {
   renderSindicosList();
   populateSindicoSelect();
   if (STATE.map) renderMarkers();
+  if (STATE.selectedSindico) {
+    const s = STATE.sindicosMap.get(STATE.selectedSindico);
+    if (s) showSindicoDetail(s); else closeDetail();
+  }
 }
 
 function renderSindicosList() {
   const q = STATE.searchQuery.toLowerCase();
   const filtered = STATE.sindicos
-    .filter(s => !q || s.name.toLowerCase().includes(q) || (s.region||'').toLowerCase().includes(q))
+    .filter(s => {
+      if (!q) return true;
+      const hits = [s.name, s.region, s.phone, s.email, s.notes].join(' ').toLowerCase();
+      // Também busca por bairros que ele atende
+      const bairros = STATE.locations.filter(l => l.sindicoId === s.id).map(l => l.bairro).join(' ').toLowerCase();
+      return hits.includes(q) || bairros.includes(q);
+    })
     .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
   $('sindicosList').innerHTML = filtered.map(s => {
     const count = STATE.locations.filter(l => l.sindicoId === s.id).length;
-    const active = STATE.filterSindico === s.id ? 'active' : '';
-    return `<div class="sindico-row ${active}" data-id="${s.id}">
+    const active = STATE.selectedSindico === s.id ? 'active' : '';
+    return `<div class="sindico-row ${active}" data-id="${escH(s.id)}">
       <div class="dot" style="background:${s.color}"></div>
       <div class="info">
         <div class="name">${escH(s.name)}</div>
         <div class="meta">${count} ${count === 1 ? 'local' : 'locais'} · ${escH(s.region || '')}</div>
       </div>
     </div>`;
-  }).join('');
+  }).join('') || '<div style="padding:30px 20px;text-align:center;color:var(--text-dim);font-size:12.5px">Nenhum resultado.</div>';
   $('sindicosList').querySelectorAll('[data-id]').forEach(el => {
-    el.addEventListener('click', () => {
-      const id = el.dataset.id;
-      STATE.filterSindico = STATE.filterSindico === id ? null : id;
-      renderSindicosList();
-      renderMarkers();
-      fitMapToFilter();
-    });
+    el.addEventListener('click', () => selectSindico(el.dataset.id));
   });
 }
 
 function populateSindicoSelect() {
   const sel = $('newLocSindico');
   sel.innerHTML = '<option value="">— escolher síndico —</option>' +
-    STATE.sindicos.map(s => `<option value="${s.id}">${escH(s.name)}</option>`).join('');
+    STATE.sindicos.sort((a,b) => a.name.localeCompare(b.name,'pt-BR')).map(s => `<option value="${escH(s.id)}">${escH(s.name)}</option>`).join('');
+}
+
+// ============ SELECT SINDICO ============
+function selectSindico(id) {
+  const s = STATE.sindicosMap.get(id);
+  if (!s) return;
+  STATE.selectedSindico = id;
+  showSindicoDetail(s);
+  renderSindicosList();
+  // Zoom pros locais dele
+  const locs = STATE.locations.filter(l => l.sindicoId === id);
+  if (locs.length) {
+    const pts = locs.map(l => [l.lat, l.lng]);
+    if (s.home?.lat) pts.push([s.home.lat, s.home.lng]);
+    STATE.map.fitBounds(L.latLngBounds(pts), { padding: [60, 60], maxZoom: 13 });
+  }
+  // Mobile: abre painel detail
+  if (window.innerWidth < 1200) $('detailPane').classList.add('show');
+}
+
+function closeDetail() {
+  STATE.selectedSindico = null;
+  $('detailPane').innerHTML = `<div class="detail-empty">
+    <div class="ico">👤</div>
+    <strong style="color:var(--text);display:block;margin-bottom:4px">Selecione um síndico</strong>
+    Clica numa bolinha no mapa ou num nome na lista pra ver detalhes, contato e os locais que ele atende.
+  </div>`;
+  $('detailPane').classList.remove('show');
+  renderSindicosList();
+}
+
+function showSindicoDetail(s) {
+  const locs = STATE.locations.filter(l => l.sindicoId === s.id)
+    .sort((a, b) => (a.distanceKm ?? Infinity) - (b.distanceKm ?? Infinity));
+  const initials = (s.name || '?').split(/\s+/).slice(0,2).map(w => w[0]).join('').toUpperCase();
+
+  $('detailPane').innerHTML = `
+    <div class="detail-head">
+      <div class="top">
+        <div class="avatar" style="background:${s.color}">${initials}</div>
+        <div class="name">
+          <h2>${escH(s.name)}</h2>
+          <div class="region">${escH(s.region || '—')} · ${locs.length} ${locs.length === 1 ? 'local' : 'locais'}</div>
+        </div>
+        <button class="detail-head-close" id="detailCloseBtn" title="Fechar">
+          <svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24" style="width:14px;height:14px"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
+      </div>
+      <div class="detail-contact">
+        ${s.phone ? `<a href="https://wa.me/${onlyDigits(s.phone)}" target="_blank" title="WhatsApp">
+          <svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+          ${escH(s.phone)}
+        </a>` : ''}
+        ${s.email ? `<a href="mailto:${escH(s.email)}" title="Email">
+          <svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          ${escH(s.email)}
+        </a>` : ''}
+        ${!s.phone && !s.email ? '<span style="color:var(--text-dim)">Sem contato cadastrado</span>' : ''}
+      </div>
+    </div>
+
+    <div class="detail-body">
+      ${s.home ? `<div class="detail-section">
+        <h3>🏠 Residência (base de cálculo)</h3>
+        <div class="home-row">
+          <div class="label">Endereço</div>
+          <div>${escH(s.home.raw || '(sem endereço textual)')}</div>
+          <div style="font-size:10.5px;color:var(--text-dim);margin-top:4px">${s.home.lat.toFixed(5)}, ${s.home.lng.toFixed(5)}</div>
+        </div>
+      </div>` : `<div class="detail-section">
+        <h3>🏠 Residência</h3>
+        <div style="font-size:12px;color:var(--text-dim);padding:8px 10px;background:rgba(255,255,255,0.02);border-radius:8px">Sem endereço residencial. Edita o síndico pra adicionar e calcular distâncias.</div>
+      </div>`}
+
+      <div class="detail-section">
+        <h3>📍 Locais atendidos · ${locs.length}</h3>
+        <div class="loc-list">
+          ${locs.length ? locs.map(l => `
+            <div class="loc-item" data-loc-id="${escH(l.id)}">
+              <div class="top">
+                <div class="bairro">${escH(l.bairro)}${l.condoName ? ' · ' + escH(l.condoName) : ''}</div>
+                ${l.distanceKm != null ? `<div class="dist">${l.distanceKm.toFixed(1)} km</div>` : ''}
+              </div>
+              <div class="addr">${[l.street, l.number, l.complement, l.region].filter(Boolean).map(escH).join(', ') || `${l.lat.toFixed(4)}, ${l.lng.toFixed(4)}`}</div>
+            </div>
+          `).join('') : '<div style="font-size:12px;color:var(--text-dim);padding:8px 10px">Nenhum local cadastrado ainda.</div>'}
+        </div>
+      </div>
+
+      ${s.notes ? `<div class="detail-section">
+        <h3>📝 Observações</h3>
+        <div class="notes">${escH(s.notes)}</div>
+      </div>` : ''}
+    </div>
+
+    <div class="detail-foot">
+      <button id="editSindicoBtn">✎ Editar</button>
+      <button id="addLocForSindicoBtn" class="add-loc">+ Local</button>
+      <button id="deleteSindicoBtn" class="delete">🗑 Apagar</button>
+    </div>
+  `;
+
+  $('detailCloseBtn').addEventListener('click', closeDetail);
+  $('editSindicoBtn').addEventListener('click', () => openEditSindico(s));
+  $('addLocForSindicoBtn').addEventListener('click', () => {
+    $('newLocSindico').value = s.id;
+    openAddLocation();
+  });
+  $('deleteSindicoBtn').addEventListener('click', () => deleteSindico(s));
+  document.querySelectorAll('[data-loc-id]').forEach(el => {
+    el.addEventListener('click', () => {
+      const loc = locs.find(l => l.id === el.dataset.locId);
+      if (loc) STATE.map.setView([loc.lat, loc.lng], 16);
+    });
+  });
+
+  if (STATE.showLines) renderLines();
 }
 
 // ============ MAP ============
 function initMap() {
-  STATE.map = L.map('map', { zoomControl: true, attributionControl: true }).setView([-23.5505, -46.6333], 11);
-
-  // OSM dark theme via CartoDB
+  STATE.map = L.map('map', { zoomControl: true }).setView([-23.5505, -46.6333], 11);
   L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-    attribution: '© OpenStreetMap, © CARTO',
-    subdomains: 'abcd',
-    maxZoom: 19,
+    attribution: '© OpenStreetMap, © CARTO', subdomains: 'abcd', maxZoom: 19,
   }).addTo(STATE.map);
 
   STATE.cluster = L.markerClusterGroup({
-    showCoverageOnHover: false,
-    spiderfyOnMaxZoom: true,
-    maxClusterRadius: 40,
+    showCoverageOnHover: false, spiderfyOnMaxZoom: true, maxClusterRadius: 40,
     iconCreateFunction: cluster => {
       const n = cluster.getChildCount();
       return L.divIcon({
         html: `<div style="background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;border-radius:50%;width:36px;height:36px;line-height:36px;text-align:center;font-weight:700;font-size:13px;border:2px solid rgba(255,255,255,0.2);box-shadow:0 4px 10px rgba(0,0,0,0.3)">${n}</div>`,
-        className: '',
-        iconSize: [36, 36],
+        className: '', iconSize: [36, 36],
       });
     },
   });
   STATE.map.addLayer(STATE.cluster);
+  STATE.homeMarkersGroup = L.layerGroup().addTo(STATE.map);
+  STATE.linesGroup = L.layerGroup().addTo(STATE.map);
 
-  // Click no mapa = preencher lat/lng se modal aberto
   STATE.map.on('click', e => {
-    if (!$('addLocationOverlay').hidden && STATE.pickingCoord) {
+    if (!STATE.pickingCoord) return;
+    if (STATE.pickingTarget === 'home') {
+      $('newSindicoHomeLat').value = e.latlng.lat.toFixed(6);
+      $('newSindicoHomeLng').value = e.latlng.lng.toFixed(6);
+      $('homeGeoResult').innerHTML = `<div style="font-size:11px;color:#86efac;margin-top:6px">✓ ${e.latlng.lat.toFixed(5)}, ${e.latlng.lng.toFixed(5)}</div>`;
+    } else if (STATE.pickingTarget === 'loc') {
       $('newLocLat').value = e.latlng.lat.toFixed(6);
       $('newLocLng').value = e.latlng.lng.toFixed(6);
-      STATE.pickingCoord = false;
-      $('geocodeResult').innerHTML = `<div style="font-size:11.5px;color:#86efac;margin-top:6px">✓ Coordenadas: ${e.latlng.lat.toFixed(5)}, ${e.latlng.lng.toFixed(5)}</div>`;
+      $('locGeoResult').innerHTML = `<div style="font-size:11px;color:#86efac;margin-top:6px">✓ ${e.latlng.lat.toFixed(5)}, ${e.latlng.lng.toFixed(5)}</div>`;
     }
+    STATE.pickingCoord = false;
+    STATE.pickingTarget = null;
   });
 
   renderMarkers();
@@ -430,52 +745,126 @@ function initMap() {
 
 function renderMarkers() {
   STATE.cluster.clearLayers();
-  const filtered = STATE.locations.filter(l => !STATE.filterSindico || l.sindicoId === STATE.filterSindico);
+  STATE.homeMarkersGroup.clearLayers();
+  const filterId = STATE.filterSindico || STATE.selectedSindico;
+  const filtered = filterId
+    ? STATE.locations.filter(l => l.sindicoId === filterId)
+    : STATE.locations;
+
   for (const loc of filtered) {
-    const sindico = STATE.sindicosMap.get(loc.sindicoId);
-    if (!sindico) continue;
+    const s = STATE.sindicosMap.get(loc.sindicoId);
+    if (!s) continue;
     const icon = L.divIcon({
-      html: `<div style="width:18px;height:18px;border-radius:50%;background:${sindico.color};border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.4)"></div>`,
-      className: '',
-      iconSize: [18, 18],
-      iconAnchor: [9, 9],
+      html: `<div style="width:18px;height:18px;border-radius:50%;background:${s.color};border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.4);cursor:pointer"></div>`,
+      className: '', iconSize: [18, 18], iconAnchor: [9, 9],
     });
-    const marker = L.marker([loc.lat, loc.lng], { icon });
-    marker.bindPopup(`
-      <span class="badge" style="background:${sindico.color}40;color:${sindico.color}">${escH(sindico.region || 'Localização')}</span>
-      <h3>${escH(sindico.name)}</h3>
-      <div>📍 ${escH(loc.bairro)}</div>
-      ${sindico.phone ? `<div class="meta">📞 ${escH(sindico.phone)}</div>` : ''}
-      ${sindico.email ? `<div class="meta">✉️ <a href="mailto:${escH(sindico.email)}" style="color:#a5b4fc">${escH(sindico.email)}</a></div>` : ''}
-      ${sindico.notes ? `<div class="meta" style="margin-top:8px;padding-top:8px;border-top:1px solid #2a2a32">${escH(sindico.notes)}</div>` : ''}
-      <div class="meta" style="font-size:10.5px;opacity:0.7;margin-top:8px">${loc.lat.toFixed(4)}, ${loc.lng.toFixed(4)}</div>
-    `, { maxWidth: 280 });
-    STATE.cluster.addLayer(marker);
+    const m = L.marker([loc.lat, loc.lng], { icon });
+    m.on('click', () => selectSindico(loc.sindicoId));
+    m.bindTooltip(`<strong>${escH(s.name)}</strong><br>${escH(loc.bairro)}${loc.distanceKm != null ? ` · ${loc.distanceKm.toFixed(1)} km` : ''}`, { direction: 'top' });
+    STATE.cluster.addLayer(m);
+  }
+
+  // Home markers (mostra todos quando "todos", ou só do selecionado quando filtrado)
+  const homesToShow = filterId
+    ? STATE.sindicos.filter(s => s.id === filterId && s.home)
+    : STATE.sindicos.filter(s => s.home);
+  for (const s of homesToShow) {
+    const homeIcon = L.divIcon({
+      html: `<div style="width:24px;height:24px;border-radius:50%;background:${s.color};border:3px solid #fbbf24;box-shadow:0 0 0 4px rgba(251,191,36,0.2),0 4px 10px rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;font-size:11px">🏠</div>`,
+      className: '', iconSize: [24, 24], iconAnchor: [12, 12],
+    });
+    const m = L.marker([s.home.lat, s.home.lng], { icon: homeIcon, zIndexOffset: 1000 });
+    m.on('click', () => selectSindico(s.id));
+    m.bindTooltip(`<strong>${escH(s.name)} (residência)</strong><br>${escH(s.home.raw || '')}`, { direction: 'top' });
+    m.addTo(STATE.homeMarkersGroup);
+  }
+
+  renderLines();
+}
+
+function renderLines() {
+  STATE.linesGroup.clearLayers();
+  if (!STATE.showLines) return;
+  const filterId = STATE.filterSindico || STATE.selectedSindico;
+  const sindicos = filterId
+    ? STATE.sindicos.filter(s => s.id === filterId && s.home)
+    : STATE.sindicos.filter(s => s.home);
+  for (const s of sindicos) {
+    const locs = STATE.locations.filter(l => l.sindicoId === s.id);
+    for (const loc of locs) {
+      const line = L.polyline([[s.home.lat, s.home.lng], [loc.lat, loc.lng]], {
+        color: s.color, weight: 1.5, opacity: 0.5, dashArray: '4,6',
+      });
+      line.addTo(STATE.linesGroup);
+    }
   }
 }
 
-function fitMapToFilter() {
-  const filtered = STATE.locations.filter(l => !STATE.filterSindico || l.sindicoId === STATE.filterSindico);
-  if (!filtered.length) return;
-  const bounds = L.latLngBounds(filtered.map(l => [l.lat, l.lng]));
-  STATE.map.fitBounds(bounds, { padding: [50, 50], maxZoom: 14 });
-}
-
-// ============ SEARCH ============
+// ============ SEARCH/TABS ============
 $('searchInput').addEventListener('input', e => {
   STATE.searchQuery = e.target.value;
   renderSindicosList();
 });
+document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => switchTab(t.dataset.tab)));
+function switchTab(name) {
+  STATE.currentTab = name;
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === name));
+  $('tabSindicos').hidden = name !== 'sindicos';
+  $('tabRegiao').hidden = name !== 'regiao';
+}
 
-// ============ TOGGLE ASIDE (mobile) ============
-$('toggleAside').addEventListener('click', () => {
-  $('aside').classList.toggle('hidden-mobile');
+// Region search
+let regionDebounce;
+$('regionInput').addEventListener('input', e => {
+  clearTimeout(regionDebounce);
+  const q = e.target.value.trim();
+  regionDebounce = setTimeout(() => searchRegion(q), 250);
 });
 
-// ============ SHOW ALL ============
+async function searchRegion(q) {
+  if (!q) {
+    $('regionResults').innerHTML = '<div style="padding:30px 20px;text-align:center;color:var(--text-dim);font-size:12.5px">Comece digitando uma região acima 👆</div>';
+    return;
+  }
+  try {
+    const r = await fetch(`/api/sindico-map?region=${encodeURIComponent(q)}`, { credentials: 'include' });
+    if (!r.ok) return;
+    const j = await r.json();
+    const m = j.region;
+    if (!m || !m.items.length) {
+      $('regionResults').innerHTML = `<div style="padding:30px 20px;text-align:center;color:var(--text-dim);font-size:12.5px">Nenhum síndico atende "${escH(q)}".</div>`;
+      return;
+    }
+    $('regionResults').innerHTML = `
+      <div class="region-summary">
+        <strong>${m.sindicosCount}</strong> síndicos atendem <strong style="color:var(--text);font-size:13px;font-weight:600">"${escH(q)}"</strong> num total de <strong>${m.locationsCount}</strong> ${m.locationsCount === 1 ? 'local' : 'locais'}.
+      </div>
+      ${m.items.map(it => `
+        <div class="region-sindico-card">
+          <div class="head">
+            <div class="dot" style="background:${it.sindico.color}"></div>
+            <div class="name">${escH(it.sindico.name)}</div>
+            <div class="count">${it.locations.length} ${it.locations.length === 1 ? 'local' : 'locais'}</div>
+          </div>
+          <div class="locs">📍 ${it.locations.map(l => escH(l.bairro)).join(' · ')}</div>
+          <div class="actions">
+            <button data-id="${escH(it.sindico.id)}" class="open">Ver detalhes</button>
+            ${it.sindico.phone ? `<button onclick="window.open('https://wa.me/${onlyDigits(it.sindico.phone)}','_blank')">WhatsApp</button>` : ''}
+          </div>
+        </div>
+      `).join('')}
+    `;
+    document.querySelectorAll('.region-sindico-card .open').forEach(btn => {
+      btn.addEventListener('click', () => selectSindico(btn.dataset.id));
+    });
+  } catch (e) { console.warn(e); }
+}
+
+// ============ ACTIONS ============
 $('showAllBtn').addEventListener('click', () => {
   STATE.filterSindico = null;
-  renderSindicosList();
+  STATE.selectedSindico = null;
+  closeDetail();
   renderMarkers();
   if (STATE.locations.length) {
     const bounds = L.latLngBounds(STATE.locations.map(l => [l.lat, l.lng]));
@@ -483,24 +872,66 @@ $('showAllBtn').addEventListener('click', () => {
   }
 });
 
-// ============ ADD SINDICO ============
-$('addSindicoBtn').addEventListener('click', () => {
-  $('addSindicoMsg').innerHTML = '';
-  $('addSindicoForm').reset();
-  $('addSindicoOverlay').hidden = false;
+$('toggleLines').addEventListener('click', () => {
+  STATE.showLines = !STATE.showLines;
+  $('toggleLines').classList.toggle('active', STATE.showLines);
+  renderLines();
 });
+
+$('toggleAside').addEventListener('click', () => $('aside').classList.toggle('hidden-mobile'));
+
+// ============ ADD SINDICO ============
+function openAddSindico() {
+  $('addSindicoTitle').textContent = '+ Novo Síndico';
+  $('saveSindicoBtn').textContent = 'Adicionar';
+  $('editSindicoId').value = '';
+  $('addSindicoForm').reset();
+  $('addSindicoMsg').innerHTML = '';
+  $('homeGeoResult').innerHTML = '';
+  $('addSindicoOverlay').hidden = false;
+}
+function openEditSindico(s) {
+  $('addSindicoTitle').textContent = 'Editar Síndico';
+  $('saveSindicoBtn').textContent = 'Salvar alterações';
+  $('editSindicoId').value = s.id;
+  $('newSindicoName').value = s.name || '';
+  $('newSindicoRegion').value = s.region || 'São Paulo';
+  $('newSindicoPhone').value = s.phone || '';
+  $('newSindicoEmail').value = s.email || '';
+  $('newSindicoNotes').value = s.notes || '';
+  if (s.home) {
+    $('newSindicoHomeAddr').value = s.home.raw || '';
+    $('newSindicoHomeLat').value = s.home.lat;
+    $('newSindicoHomeLng').value = s.home.lng;
+  } else {
+    $('newSindicoHomeAddr').value = '';
+    $('newSindicoHomeLat').value = '';
+    $('newSindicoHomeLng').value = '';
+  }
+  $('addSindicoMsg').innerHTML = '';
+  $('homeGeoResult').innerHTML = '';
+  $('addSindicoOverlay').hidden = false;
+}
+$('addSindicoBtn').addEventListener('click', openAddSindico);
 
 $('addSindicoForm').addEventListener('submit', async e => {
   e.preventDefault();
   $('addSindicoMsg').innerHTML = '';
+  const editId = $('editSindicoId').value;
+  const homeLat = parseFloat($('newSindicoHomeLat').value);
+  const homeLng = parseFloat($('newSindicoHomeLng').value);
+  const homeAddr = $('newSindicoHomeAddr').value.trim();
+  const home = isFinite(homeLat) && isFinite(homeLng) ? { lat: homeLat, lng: homeLng, raw: homeAddr } : null;
   const payload = {
     password: STATE.password,
-    sindico: {
+    [editId ? 'updateSindico' : 'sindico']: {
+      id: editId || undefined,
       name: $('newSindicoName').value.trim(),
       region: $('newSindicoRegion').value,
       phone: $('newSindicoPhone').value.trim(),
       email: $('newSindicoEmail').value.trim(),
       notes: $('newSindicoNotes').value.trim(),
+      home,
     },
   };
   try {
@@ -511,62 +942,87 @@ $('addSindicoForm').addEventListener('submit', async e => {
     });
     const j = await r.json();
     if (!r.ok || !j.ok) throw new Error(j.error || 'falha');
-    $('addSindicoMsg').innerHTML = `<div class="msg ok">✓ Síndico adicionado!</div>`;
+    $('addSindicoMsg').innerHTML = `<div class="msg ok">✓ Salvo!</div>`;
     setTimeout(() => {
       $('addSindicoOverlay').hidden = true;
       loadData();
-    }, 800);
+    }, 600);
   } catch (e) {
     $('addSindicoMsg').innerHTML = `<div class="msg err">${escH(e.message)}</div>`;
   }
 });
 
+// Geocode home
+$('geocodeHomeBtn').addEventListener('click', () => geocodeInto('newSindicoHomeAddr', 'newSindicoHomeLat', 'newSindicoHomeLng', 'homeGeoResult'));
+
+// ============ DELETE SINDICO ============
+async function deleteSindico(s) {
+  if (!confirm(`Apagar "${s.name}" e TODOS os ${STATE.locations.filter(l => l.sindicoId === s.id).length} locais que ele atende? Não desfaz.`)) return;
+  try {
+    const r = await fetch('/api/sindico-map', {
+      method: 'POST', credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: STATE.password, delete: s.id }),
+    });
+    const j = await r.json();
+    if (!r.ok || !j.ok) throw new Error(j.error || 'falha');
+    closeDetail();
+    loadData();
+  } catch (e) { alert('Erro: ' + e.message); }
+}
+
 // ============ ADD LOCATION ============
-$('addLocationBtn').addEventListener('click', () => {
-  if (!STATE.sindicos.length) {
-    alert('Crie um síndico primeiro');
-    return;
-  }
-  $('addLocationMsg').innerHTML = '';
-  $('geocodeResult').innerHTML = '';
+function openAddLocation() {
+  if (!STATE.sindicos.length) { alert('Crie um síndico primeiro'); return; }
   $('addLocationForm').reset();
+  $('addLocationMsg').innerHTML = '';
+  $('locGeoResult').innerHTML = '';
+  if (STATE.selectedSindico) $('newLocSindico').value = STATE.selectedSindico;
   $('addLocationOverlay').hidden = false;
   STATE.pickingCoord = true;
-  // Após abrir, deixa o usuário clicar no mapa
-  setTimeout(() => {
-    $('geocodeResult').innerHTML = `<div class="geocode-suggestion">💡 Clica diretamente no mapa pra pegar lat/lng — ou escreve o endereço acima e clica em "📍 Buscar coordenadas"</div>`;
-  }, 200);
-});
+  STATE.pickingTarget = 'loc';
+}
+$('addLocationBtn').addEventListener('click', openAddLocation);
 
-// Geocoding via Nominatim (free, sem API key)
-$('geocodeBtn').addEventListener('click', async () => {
-  const addr = $('newLocAddress').value.trim();
-  if (!addr) {
-    $('geocodeResult').innerHTML = `<div class="msg err">Digite um endereço primeiro</div>`;
-    return;
-  }
-  $('geocodeResult').innerHTML = `<div class="geocode-suggestion">🔍 Buscando "${escH(addr)}"...</div>`;
+$('geocodeLocBtn').addEventListener('click', () => geocodeInto('newLocAddress', 'newLocLat', 'newLocLng', 'locGeoResult'));
+
+// Auto-popula bairro a partir do endereço geocodificado
+async function geocodeInto(addrId, latId, lngId, resultId) {
+  const addr = $(addrId).value.trim();
+  if (!addr) { $(resultId).innerHTML = `<div class="msg err">Digite um endereço primeiro</div>`; return; }
+  $(resultId).innerHTML = `<div style="font-size:11px;color:var(--text-dim);margin-top:6px">🔍 Buscando "${escH(addr)}"...</div>`;
   try {
-    const r = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(addr + ', Brasil')}&format=json&limit=1&countrycodes=br`, {
+    const r = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(addr + ', Brasil')}&format=json&limit=1&countrycodes=br&addressdetails=1`, {
       headers: { 'User-Agent': 'Sindicompany Hub' },
     });
     const arr = await r.json();
     if (!arr.length) {
-      $('geocodeResult').innerHTML = `<div class="msg err">Endereço não encontrado. Tenta clicar no mapa.</div>`;
+      $(resultId).innerHTML = `<div class="msg err">Não encontrado. Clica no mapa.</div>`;
       return;
     }
     const top = arr[0];
-    $('newLocLat').value = parseFloat(top.lat).toFixed(6);
-    $('newLocLng').value = parseFloat(top.lon).toFixed(6);
-    $('geocodeResult').innerHTML = `<div class="msg ok">✓ Achado: ${escH(top.display_name.slice(0,80))}</div>`;
-  } catch (e) {
-    $('geocodeResult').innerHTML = `<div class="msg err">Erro: ${escH(e.message)}</div>`;
-  }
-});
+    $(latId).value = parseFloat(top.lat).toFixed(6);
+    $(lngId).value = parseFloat(top.lon).toFixed(6);
+    $(resultId).innerHTML = `<div class="msg ok">✓ ${escH(top.display_name.slice(0, 80))}</div>`;
+    // Auto-popula bairro se for o de local
+    if (latId === 'newLocLat' && top.address) {
+      const bairro = top.address.suburb || top.address.neighbourhood || top.address.city_district || '';
+      if (bairro && !$('newLocBairro').value) $('newLocBairro').value = bairro;
+    }
+  } catch (e) { $(resultId).innerHTML = `<div class="msg err">${escH(e.message)}</div>`; }
+}
 
 $('addLocationForm').addEventListener('submit', async e => {
   e.preventDefault();
   $('addLocationMsg').innerHTML = '';
+  const addrFull = $('newLocAddress').value.trim();
+  // Split em rua + número
+  let street = '', number = '';
+  if (addrFull) {
+    const m = addrFull.match(/^(.+?),\s*(\d+\w*)/);
+    if (m) { street = m[1].trim(); number = m[2].trim(); }
+    else street = addrFull;
+  }
   const sindicoId = $('newLocSindico').value;
   const sindico = STATE.sindicosMap.get(sindicoId);
   const payload = {
@@ -576,7 +1032,10 @@ $('addLocationForm').addEventListener('submit', async e => {
       bairro: $('newLocBairro').value.trim(),
       lat: parseFloat($('newLocLat').value),
       lng: parseFloat($('newLocLng').value),
-      region: sindico?.region || 'São Paulo',
+      region: $('newLocRegion').value || sindico?.region || 'São Paulo',
+      street, number,
+      complement: '',
+      condoName: $('newLocCondoName').value.trim(),
     },
   };
   try {
@@ -592,7 +1051,7 @@ $('addLocationForm').addEventListener('submit', async e => {
       $('addLocationOverlay').hidden = true;
       STATE.pickingCoord = false;
       loadData();
-    }, 800);
+    }, 600);
   } catch (e) {
     $('addLocationMsg').innerHTML = `<div class="msg err">${escH(e.message)}</div>`;
   }
@@ -601,11 +1060,13 @@ $('addLocationForm').addEventListener('submit', async e => {
 function closeModal(id) {
   $(id).hidden = true;
   STATE.pickingCoord = false;
+  STATE.pickingTarget = null;
 }
 
 function escH(s) {
   return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
 }
+function onlyDigits(s) { return String(s||'').replace(/\D/g, ''); }
 
 if (window.trackUsage) trackUsage('mapa-sindicos', {});
 </script>

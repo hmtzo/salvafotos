@@ -1,17 +1,29 @@
 // =====================================================================
-// API SINDICO-MAP — banco de síndicos e localizações (acesso protegido)
+// API SINDICO-MAP — banco de síndicos, locais de atuação e distâncias
 // =====================================================================
-// Dados seed em /api/_sindico-map-seed.json (gerado do KML original).
-// Adições/edições persistidas em KV (chave sindi-map-data).
+// Senha pra editar/apagar: env SINDICO_MAP_PASSWORD (default 9090@@)
 //
-// Acesso protegido por senha (env: SINDICO_MAP_PASSWORD, default 9090@@).
-// Cliente envia X-Map-Auth header com a senha em cada chamada que muda.
+// Modelo de dados:
+//   sindico = {
+//     id, name, color, region,
+//     phone, email, notes,
+//     home: { lat, lng, raw }  // endereço residencial (opcional)
+//   }
+//   location = {
+//     id, sindicoId, bairro,
+//     street, number, complement,  // opcionais: endereço específico
+//     condoName,                    // opcional: nome do condomínio
+//     lat, lng, region
+//   }
 //
+// Endpoints:
 //   GET  /api/sindico-map                       → seed + custom
+//   GET  /api/sindico-map?region=Vila%20Mariana → todos síndicos que atendem
+//   POST /api/sindico-map  { auth }                       → testa senha
 //   POST /api/sindico-map  { sindico: {...}, password }   → add síndico
 //   POST /api/sindico-map  { location: {...}, password }  → add local
 //   POST /api/sindico-map  { delete: 'id', password }     → soft-delete
-//   POST /api/sindico-map  { auth: '9090@@' }             → testa senha
+//   POST /api/sindico-map  { updateSindico: {...}, password } → editar
 // =====================================================================
 
 import seedRaw from './_sindico-map-seed.json' with { type: 'json' };
@@ -72,6 +84,17 @@ function colorFor(name) {
   return `hsl(${h % 360}, 65%, 50%)`;
 }
 
+// Haversine distance em km
+function distanceKm(lat1, lng1, lat2, lng2) {
+  if (!isFinite(lat1) || !isFinite(lat2)) return null;
+  const R = 6371;
+  const toRad = d => d * Math.PI / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLng = toRad(lng2 - lng1);
+  const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
 function jsonResp(obj, status = 200) {
   return new Response(JSON.stringify(obj), {
     status, headers: { 'Content-Type': 'application/json' },
@@ -79,20 +102,65 @@ function jsonResp(obj, status = 200) {
 }
 
 async function loadData() {
-  const stored = (await kvGet(KV_KEY)) || { addedSindicos: [], addedLocations: [], deletedIds: [] };
-  const sindicosMap = new Map(seedRaw.sindicos.map(s => [s.id, s]));
+  const stored = (await kvGet(KV_KEY)) || { sindicoOverrides: {}, addedSindicos: [], addedLocations: [], deletedIds: [] };
+  // Merge sindicos: seed + overrides (home, phone, email) + adicionados
+  const sindicosMap = new Map();
+  for (const s of seedRaw.sindicos) {
+    const ov = stored.sindicoOverrides?.[s.id] || {};
+    sindicosMap.set(s.id, { ...s, ...ov });
+  }
   for (const s of stored.addedSindicos || []) sindicosMap.set(s.id, s);
   for (const id of stored.deletedIds || []) sindicosMap.delete(id);
 
   const allLocations = [
     ...seedRaw.locations,
     ...(stored.addedLocations || []),
-  ].filter(loc => !(stored.deletedIds || []).includes(loc.id));
+  ].filter(loc => {
+    if ((stored.deletedIds || []).includes(loc.id)) return false;
+    if ((stored.deletedIds || []).includes(loc.sindicoId)) return false;
+    return true;
+  });
+
+  // Enriquece locais com distância do home do síndico
+  const enrichedLocations = allLocations.map(loc => {
+    const sindico = sindicosMap.get(loc.sindicoId);
+    let distanceKmFromHome = null;
+    if (sindico?.home?.lat && sindico?.home?.lng) {
+      distanceKmFromHome = distanceKm(sindico.home.lat, sindico.home.lng, loc.lat, loc.lng);
+    }
+    return { ...loc, distanceKm: distanceKmFromHome };
+  });
 
   return {
     sindicos: Array.from(sindicosMap.values()),
-    locations: allLocations,
+    locations: enrichedLocations,
     stored,
+  };
+}
+
+// Métricas por região: lista síndicos que atendem
+function metricsByRegion(locations, sindicos, regionQuery) {
+  const q = String(regionQuery || '').toLowerCase().trim();
+  if (!q) return null;
+  const sindicosMap = new Map(sindicos.map(s => [s.id, s]));
+  const matchedLocations = locations.filter(l =>
+    (l.bairro || '').toLowerCase().includes(q) ||
+    (l.region || '').toLowerCase().includes(q) ||
+    (l.condoName || '').toLowerCase().includes(q)
+  );
+  const bySindico = new Map();
+  for (const loc of matchedLocations) {
+    if (!bySindico.has(loc.sindicoId)) bySindico.set(loc.sindicoId, { sindico: sindicosMap.get(loc.sindicoId), locations: [] });
+    bySindico.get(loc.sindicoId).locations.push(loc);
+  }
+  const items = Array.from(bySindico.values())
+    .filter(x => x.sindico)
+    .sort((a, b) => b.locations.length - a.locations.length);
+  return {
+    query: regionQuery,
+    sindicosCount: items.length,
+    locationsCount: matchedLocations.length,
+    items,
   };
 }
 
@@ -100,9 +168,25 @@ export default async function handler(request) {
   const user = getUserFromCookie(request);
   if (!user) return jsonResp({ error: 'no auth' }, 401);
 
+  const url = new URL(request.url);
+
   // ============ GET ============
   if (request.method === 'GET') {
     const data = await loadData();
+    const regionQ = url.searchParams.get('region');
+    const sindicoQ = url.searchParams.get('sindico');
+
+    if (regionQ) {
+      const m = metricsByRegion(data.locations, data.sindicos, regionQ);
+      return jsonResp({ ok: true, region: m });
+    }
+    if (sindicoQ) {
+      const sindico = data.sindicos.find(s => s.id === sindicoQ);
+      if (!sindico) return jsonResp({ error: 'síndico não encontrado' }, 404);
+      const locs = data.locations.filter(l => l.sindicoId === sindicoQ);
+      return jsonResp({ ok: true, sindico, locations: locs });
+    }
+
     return jsonResp({
       ok: true,
       sindicos: data.sindicos,
@@ -120,9 +204,8 @@ export default async function handler(request) {
   let body = {};
   try { body = await request.json(); } catch { return jsonResp({ error: 'bad json' }, 400); }
 
-  // Verificar senha de mapa (separada da senha de login)
-  // body.auth: só checa senha
-  if (body.auth !== undefined && !body.sindico && !body.location && !body.delete) {
+  // Só testa senha
+  if (body.auth !== undefined && !body.sindico && !body.location && !body.delete && !body.updateSindico) {
     return jsonResp({ ok: checkPassword(body.auth) });
   }
 
@@ -130,17 +213,23 @@ export default async function handler(request) {
     return jsonResp({ error: 'senha do mapa incorreta' }, 403);
   }
 
-  const stored = (await kvGet(KV_KEY)) || { addedSindicos: [], addedLocations: [], deletedIds: [] };
+  const stored = (await kvGet(KV_KEY)) || {};
+  stored.sindicoOverrides = stored.sindicoOverrides || {};
   stored.addedSindicos = stored.addedSindicos || [];
   stored.addedLocations = stored.addedLocations || [];
   stored.deletedIds = stored.deletedIds || [];
 
-  // Adicionar síndico
+  // ---------- Adicionar síndico ----------
   if (body.sindico) {
     const s = body.sindico;
     const name = String(s.name || '').trim().slice(0, 80);
     if (!name) return jsonResp({ error: 'nome obrigatório' }, 400);
     const id = s.id || slug(name);
+    const home = s.home && isFinite(s.home.lat) && isFinite(s.home.lng) ? {
+      lat: Number(s.home.lat),
+      lng: Number(s.home.lng),
+      raw: String(s.home.raw || '').slice(0, 200),
+    } : null;
     const newSindico = {
       id,
       name,
@@ -149,16 +238,50 @@ export default async function handler(request) {
       phone: String(s.phone || '').slice(0, 30),
       email: String(s.email || '').slice(0, 80),
       notes: String(s.notes || '').slice(0, 500),
+      home,
       addedBy: user,
       addedAt: Date.now(),
     };
+    // Remove se já existe (replace)
     stored.addedSindicos = stored.addedSindicos.filter(x => x.id !== id);
     stored.addedSindicos.push(newSindico);
+    // Se era um seed deletado, "ressuscita"
+    stored.deletedIds = stored.deletedIds.filter(x => x !== id);
     await kvSet(KV_KEY, stored);
     return jsonResp({ ok: true, sindico: newSindico });
   }
 
-  // Adicionar localização
+  // ---------- Atualizar síndico (do seed ou custom) ----------
+  if (body.updateSindico) {
+    const s = body.updateSindico;
+    if (!s.id) return jsonResp({ error: 'id obrigatório' }, 400);
+    // Se é um síndico adicionado pelo user, atualiza inline
+    const customIdx = stored.addedSindicos.findIndex(x => x.id === s.id);
+    if (customIdx >= 0) {
+      stored.addedSindicos[customIdx] = { ...stored.addedSindicos[customIdx], ...s, updatedBy: user, updatedAt: Date.now() };
+    } else {
+      // Síndico do seed → cria override
+      const home = s.home && isFinite(s.home.lat) && isFinite(s.home.lng) ? {
+        lat: Number(s.home.lat),
+        lng: Number(s.home.lng),
+        raw: String(s.home.raw || '').slice(0, 200),
+      } : (s.home === null ? null : (stored.sindicoOverrides[s.id]?.home || null));
+      stored.sindicoOverrides[s.id] = {
+        ...(stored.sindicoOverrides[s.id] || {}),
+        ...(s.name ? { name: String(s.name).slice(0,80) } : {}),
+        ...(s.region ? { region: String(s.region).slice(0,40) } : {}),
+        ...(s.phone !== undefined ? { phone: String(s.phone).slice(0,30) } : {}),
+        ...(s.email !== undefined ? { email: String(s.email).slice(0,80) } : {}),
+        ...(s.notes !== undefined ? { notes: String(s.notes).slice(0,500) } : {}),
+        ...(s.home !== undefined ? { home } : {}),
+        updatedBy: user, updatedAt: Date.now(),
+      };
+    }
+    await kvSet(KV_KEY, stored);
+    return jsonResp({ ok: true });
+  }
+
+  // ---------- Adicionar localização ----------
   if (body.location) {
     const l = body.location;
     const sindicoId = String(l.sindicoId || '').trim();
@@ -175,9 +298,12 @@ export default async function handler(request) {
       id: `loc-custom-${Date.now()}-${Math.random().toString(36).slice(2,6)}`,
       sindicoId,
       bairro,
-      lat,
-      lng,
+      lat, lng,
       region: String(l.region || 'São Paulo').slice(0, 40),
+      street: String(l.street || '').slice(0, 120),
+      number: String(l.number || '').slice(0, 20),
+      complement: String(l.complement || '').slice(0, 80),
+      condoName: String(l.condoName || '').slice(0, 120),
       addedBy: user,
       addedAt: Date.now(),
     };
@@ -186,17 +312,17 @@ export default async function handler(request) {
     return jsonResp({ ok: true, location: newLoc });
   }
 
-  // Apagar (soft-delete)
+  // ---------- Apagar (soft-delete + cascade) ----------
   if (body.delete) {
     const id = String(body.delete).trim();
     if (!id) return jsonResp({ error: 'id obrigatório' }, 400);
     if (!stored.deletedIds.includes(id)) stored.deletedIds.push(id);
-    // Remove dos arrays customizados também
     stored.addedSindicos = stored.addedSindicos.filter(x => x.id !== id);
-    stored.addedLocations = stored.addedLocations.filter(x => x.id !== id);
+    stored.addedLocations = stored.addedLocations.filter(x => x.id !== id && x.sindicoId !== id);
+    delete stored.sindicoOverrides[id];
     await kvSet(KV_KEY, stored);
     return jsonResp({ ok: true });
   }
 
-  return jsonResp({ error: 'precisa de sindico, location, delete ou auth' }, 400);
+  return jsonResp({ error: 'precisa de sindico, location, delete, updateSindico ou auth' }, 400);
 }
