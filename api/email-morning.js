@@ -57,26 +57,56 @@ function todayKey() {
   return local.toISOString().slice(0, 10);
 }
 
-// Gera UMA frase motivacional do dia (compartilhada pra todos), com cache
-// de 30 últimas pra evitar repetição. Frase é gerada uma vez e reusada
-// pra todos os emails do mesmo dia.
-async function generateDailyQuote() {
+// Pool de fallback (usado SÓ se Gemini falhar) — 12 frases pra rotacionar
+// por dia do ano (índice = dia juliano % 12). Garante variação mesmo offline.
+const FALLBACK_QUOTES = [
+  { text: 'Cada dia é uma página nova — escreve bonito.', author: null },
+  { text: 'O sucesso é a soma de pequenos esforços repetidos dia após dia.', author: 'Robert Collier' },
+  { text: 'Comece o dia com gratidão e termine com orgulho do que construiu.', author: null },
+  { text: 'Não espere por oportunidades — crie elas.', author: 'George Bernard Shaw' },
+  { text: 'Disciplina é a ponte entre objetivos e conquistas.', author: 'Jim Rohn' },
+  { text: 'A jornada de mil milhas começa com um único passo.', author: 'Lao Tsé' },
+  { text: 'Faça hoje o que os outros não querem, viva amanhã o que os outros não podem.', author: 'Jerry Rice' },
+  { text: 'Pequenas ações consistentes geram grandes transformações.', author: null },
+  { text: 'O melhor momento pra plantar uma árvore foi há 20 anos. O segundo melhor é hoje.', author: 'Provérbio chinês' },
+  { text: 'Você não precisa ser perfeito — só precisa começar.', author: null },
+  { text: 'Quem busca, encontra. Quem persiste, conquista.', author: null },
+  { text: 'A diferença entre o impossível e o possível está na sua determinação.', author: 'Tommy Lasorda' },
+];
+
+function pickFallbackByDate() {
+  const d = new Date();
+  const start = new Date(d.getFullYear(), 0, 0);
+  const diff = d - start;
+  const dayOfYear = Math.floor(diff / 86400000);
+  return FALLBACK_QUOTES[dayOfYear % FALLBACK_QUOTES.length];
+}
+
+// Gera UMA frase motivacional do dia. Por padrão usa cache (todos do dia
+// recebem a mesma — pra dar consistência de "frase do dia" pra equipe).
+// Se `fresh=true`, IGNORA cache e gera nova (pra teste/preview).
+async function generateDailyQuote(fresh = false) {
   const cacheKey = `sindi-email-morning-quote:${todayKey()}`;
-  const cached = await kvGet(cacheKey);
-  if (cached) return cached;
+  if (!fresh) {
+    const cached = await kvGet(cacheKey);
+    if (cached) return cached;
+  }
 
   const apiKey = process.env.GOOGLE_API_KEY;
-  if (!apiKey) {
-    return {
-      text: 'Cada dia é uma página nova — escreve bonito.',
-      author: null,
-    };
-  }
+  if (!apiKey) return pickFallbackByDate();
+
   const recent = (await kvGet('sindi-wpp-recent-quotes')) || [];
-  const prompt = `Gere uma frase motivacional curta (até 18 palavras) pra começar o dia da equipe Sindicompany (administradora de condomínios). Tom leve, otimista, brasileiro, sem pieguice. Pode ser citação famosa OU original.
+  // Inclui timestamp pra forçar variação entre chamadas no mesmo dia (modo fresh)
+  const seed = fresh ? `\n\n[seed pra variar: ${Date.now()}]` : '';
+  const prompt = `Gere UMA frase motivacional curta (até 18 palavras) pra começar o dia da equipe Sindicompany (administradora de condomínios em São Paulo). Tom leve, otimista, brasileiro, sem pieguice nem clichê manjado. Pode ser:
+- Citação famosa de autor brasileiro/internacional
+- Provérbio popular
+- Frase original sua
+
+VARIA os temas (não fique só em "persistência"): foco, gratidão, equilíbrio, coragem, presença, simplicidade, generosidade, descanso, alegria no trabalho, propósito.
 
 Evite repetir estas que já foram usadas recentemente:
-${recent.slice(0, 30).map(q => '- ' + q).join('\n') || '(nenhuma ainda)'}
+${recent.slice(0, 30).map(q => '- ' + q).join('\n') || '(nenhuma ainda)'}${seed}
 
 Devolva APENAS um JSON válido:
 {"text": "a frase", "author": "Autor ou null se for original"}`;
@@ -90,7 +120,8 @@ Devolva APENAS um JSON válido:
         body: JSON.stringify({
           contents: [{ role: 'user', parts: [{ text: prompt }] }],
           generationConfig: {
-            temperature: 0.9,
+            temperature: 1.1,        // ↑ era 0.9 — mais criatividade
+            topP: 0.95,
             maxOutputTokens: 200,
             responseMimeType: 'application/json',
           },
@@ -102,19 +133,18 @@ Devolva APENAS um JSON válido:
     const txt = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
     const j = JSON.parse(txt);
     if (j.text) {
-      // Atualiza recent quotes (compartilhado com WhatsApp cron)
-      const updated = [j.text, ...recent].slice(0, 30);
-      await kvSet('sindi-wpp-recent-quotes', updated);
-      await kvSet(cacheKey, j, 86400 * 2); // cache do dia
+      // Atualiza recent quotes só se NÃO for modo fresh (pra não poluir histórico com testes)
+      if (!fresh) {
+        const updated = [j.text, ...recent].slice(0, 30);
+        await kvSet('sindi-wpp-recent-quotes', updated);
+        await kvSet(cacheKey, j, 86400 * 2); // cache do dia
+      }
       return j;
     }
   } catch (e) {
     console.warn('quote gen failed', e.message);
   }
-  return {
-    text: 'Cada dia é uma página nova — escreve bonito.',
-    author: null,
-  };
+  return pickFallbackByDate();
 }
 
 function buildMorningHtml({ name, quote }) {
@@ -183,12 +213,15 @@ export default async function handler(request) {
 
   const testEmail = url.searchParams.get('testEmail');
   const force = url.searchParams.get('force') === '1' || !!testEmail;
+  // Em teste manual (admin via cookie ou testEmail), sempre gera frase nova
+  // pra não mostrar a mesma cacheada do envio real do dia
+  const fresh = !!testEmail || isAdminTest;
 
   const recipients = testEmail ? [testEmail.toLowerCase()] : TEAM_EMAILS;
   const day = todayKey();
 
   // Gera frase do dia (1x — todos recebem a mesma)
-  const quote = await generateDailyQuote();
+  const quote = await generateDailyQuote(fresh);
 
   const log = [];
   for (const email of recipients) {
