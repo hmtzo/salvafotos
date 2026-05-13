@@ -185,6 +185,12 @@
       "name": "Carina Trindade/Alessandro",
       "color": "hsl(208, 65%, 50%)",
       "region": "Barueri e Região"
+    },
+    {
+      "id": "eduardo-campos",
+      "name": "Eduardo Campos",
+      "color": "hsl(273, 65%, 50%)",
+      "region": "São Paulo"
     }
   ],
   "locations": [
@@ -1675,6 +1681,86 @@
       "lat": -23.9947975,
       "lng": -46.2568564,
       "region": "Barueri e Região"
+    },
+    {
+      "id": "loc-187",
+      "sindicoId": "eduardo-campos",
+      "bairro": "Zona Sul",
+      "lat": -23.6432,
+      "lng": -46.6071,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-188",
+      "sindicoId": "eduardo-campos",
+      "bairro": "Vila Liviero",
+      "lat": -23.6446,
+      "lng": -46.5936,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-189",
+      "sindicoId": "eduardo-campos",
+      "bairro": "Ipiranga",
+      "lat": -23.5893,
+      "lng": -46.6062,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-190",
+      "sindicoId": "eduardo-campos",
+      "bairro": "Mooca",
+      "lat": -23.5607,
+      "lng": -46.5972,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-191",
+      "sindicoId": "eduardo-campos",
+      "bairro": "Saverio",
+      "lat": -23.6043,
+      "lng": -46.5099,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-192",
+      "sindicoId": "eduardo-campos",
+      "bairro": "Cursino",
+      "lat": -23.6276,
+      "lng": -46.6193,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-193",
+      "sindicoId": "eduardo-campos",
+      "bairro": "Saúde",
+      "lat": -23.6152,
+      "lng": -46.6434,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-194",
+      "sindicoId": "eduardo-campos",
+      "bairro": "Jardim Celeste",
+      "lat": -23.67,
+      "lng": -46.68,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-195",
+      "sindicoId": "eduardo-campos",
+      "bairro": "Anchieta",
+      "lat": -23.6769,
+      "lng": -46.5894,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-196",
+      "sindicoId": "eduardo-campos",
+      "bairro": "São Caetano",
+      "lat": -23.6196,
+      "lng": -46.5688,
+      "region": "São Paulo"
     }
   ]
 }
