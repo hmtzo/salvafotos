@@ -1761,6 +1761,62 @@
       "lat": -23.6196,
       "lng": -46.5688,
       "region": "São Paulo"
+    },
+    {
+      "id": "loc-197",
+      "sindicoId": "adriana-cavalcante",
+      "bairro": "Vila Mariana",
+      "lat": -23.5837,
+      "lng": -46.6327408,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-198",
+      "sindicoId": "adriana-cavalcante",
+      "bairro": "Moema",
+      "lat": -23.597085,
+      "lng": -46.6628884,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-199",
+      "sindicoId": "adriana-cavalcante",
+      "bairro": "Saúde",
+      "lat": -23.615178,
+      "lng": -46.6433933,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-200",
+      "sindicoId": "adriana-cavalcante",
+      "bairro": "Campo Belo",
+      "lat": -23.6299339,
+      "lng": -46.670417,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-201",
+      "sindicoId": "adriana-cavalcante",
+      "bairro": "Morumbi",
+      "lat": -23.5974288,
+      "lng": -46.7067746,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-202",
+      "sindicoId": "adriana-cavalcante",
+      "bairro": "Santo Amaro",
+      "lat": -23.6556547,
+      "lng": -46.7209734,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-203",
+      "sindicoId": "adriana-cavalcante",
+      "bairro": "Ipiranga",
+      "lat": -23.5892725,
+      "lng": -46.6061621,
+      "region": "São Paulo"
     }
   ]
 }
