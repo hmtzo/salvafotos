@@ -217,6 +217,14 @@
   .loc-item .bairro{font-size:12.5px;font-weight:600;color:var(--text);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .loc-item .dist{font-size:10.5px;font-weight:700;color:#5eead4;background:rgba(20,184,166,0.12);padding:2px 7px;border-radius:100px;white-space:nowrap}
   .loc-item .addr{font-size:11px;color:var(--text-dim);line-height:1.4;margin-top:2px}
+  .loc-item .actions{display:flex;gap:4px;margin-top:6px;opacity:0;transition:opacity .15s}
+  .loc-item:hover .actions{opacity:1}
+  .loc-item .actions button{
+    padding:3px 8px;font-size:10.5px;font-weight:600;border-radius:5px;cursor:pointer;font-family:inherit;
+    border:1px solid var(--border);background:rgba(255,255,255,0.04);color:var(--text-dim);
+  }
+  .loc-item .actions button:hover{background:rgba(255,255,255,0.1);color:var(--text)}
+  .loc-item .actions .del:hover{background:rgba(239,68,68,0.15);color:#fca5a5;border-color:rgba(239,68,68,0.3)}
 
   .detail-foot{padding:14px 18px;border-top:1px solid var(--border);display:flex;gap:6px;flex-wrap:wrap}
   .detail-foot button{
@@ -424,9 +432,10 @@
 <!-- MODAL: adicionar local -->
 <div class="modal-overlay" id="addLocationOverlay" hidden>
   <div class="modal">
-    <h2>+ Novo Local de Atuação</h2>
+    <h2 id="addLocationTitle">+ Novo Local de Atuação</h2>
     <p class="sub">Bairro inteiro, condomínio específico ou endereço pontual.</p>
     <form id="addLocationForm">
+      <input type="hidden" id="editLocationId" value="">
       <label><span>Síndico*</span><select id="newLocSindico" required></select></label>
 
       <div class="row three">
@@ -461,7 +470,7 @@
 
       <div class="actions">
         <button type="button" class="btn-secondary" onclick="closeModal('addLocationOverlay')">Cancelar</button>
-        <button type="submit" class="btn-primary">Adicionar</button>
+        <button type="submit" class="btn-primary" id="saveLocationBtn">Adicionar</button>
       </div>
       <div id="addLocationMsg"></div>
     </form>
@@ -665,10 +674,14 @@ function showSindicoDetail(s) {
           ${locs.length ? locs.map(l => `
             <div class="loc-item" data-loc-id="${escH(l.id)}">
               <div class="top">
-                <div class="bairro">${escH(l.bairro)}${l.condoName ? ' · ' + escH(l.condoName) : ''}</div>
+                <div class="bairro" data-action="zoom">${escH(l.bairro)}${l.condoName ? ' · ' + escH(l.condoName) : ''}</div>
                 ${l.distanceKm != null ? `<div class="dist">${l.distanceKm.toFixed(1)} km</div>` : ''}
               </div>
               <div class="addr">${[l.street, l.number, l.complement, l.region].filter(Boolean).map(escH).join(', ') || `${l.lat.toFixed(4)}, ${l.lng.toFixed(4)}`}</div>
+              <div class="actions">
+                <button data-action="edit-loc" data-loc-id="${escH(l.id)}">✎ Editar</button>
+                <button class="del" data-action="del-loc" data-loc-id="${escH(l.id)}">🗑</button>
+              </div>
             </div>
           `).join('') : '<div style="font-size:12px;color:var(--text-dim);padding:8px 10px">Nenhum local cadastrado ainda.</div>'}
         </div>
@@ -694,10 +707,37 @@ function showSindicoDetail(s) {
     openAddLocation();
   });
   $('deleteSindicoBtn').addEventListener('click', () => deleteSindico(s));
-  document.querySelectorAll('[data-loc-id]').forEach(el => {
+  // Click no nome do local = zoom
+  document.querySelectorAll('[data-action="zoom"]').forEach(el => {
     el.addEventListener('click', () => {
-      const loc = locs.find(l => l.id === el.dataset.locId);
+      const item = el.closest('[data-loc-id]');
+      const loc = locs.find(l => l.id === item.dataset.locId);
       if (loc) STATE.map.setView([loc.lat, loc.lng], 16);
+    });
+  });
+  document.querySelectorAll('[data-action="edit-loc"]').forEach(el => {
+    el.addEventListener('click', e => {
+      e.stopPropagation();
+      const loc = locs.find(l => l.id === el.dataset.locId);
+      if (loc) openEditLocation(loc);
+    });
+  });
+  document.querySelectorAll('[data-action="del-loc"]').forEach(el => {
+    el.addEventListener('click', async e => {
+      e.stopPropagation();
+      const loc = locs.find(l => l.id === el.dataset.locId);
+      if (!loc) return;
+      if (!confirm(`Apagar o local "${loc.bairro}"? Não desfaz.`)) return;
+      try {
+        const r = await fetch('/api/sindico-map', {
+          method: 'POST', credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password: STATE.password, delete: loc.id }),
+        });
+        const j = await r.json();
+        if (!r.ok || !j.ok) throw new Error(j.error || 'falha');
+        loadData();
+      } catch (e) { alert('Erro: ' + e.message); }
     });
   });
 
@@ -974,10 +1014,32 @@ async function deleteSindico(s) {
 // ============ ADD LOCATION ============
 function openAddLocation() {
   if (!STATE.sindicos.length) { alert('Crie um síndico primeiro'); return; }
+  $('addLocationTitle').textContent = '+ Novo Local de Atuação';
+  $('saveLocationBtn').textContent = 'Adicionar';
+  $('editLocationId').value = '';
   $('addLocationForm').reset();
   $('addLocationMsg').innerHTML = '';
   $('locGeoResult').innerHTML = '';
   if (STATE.selectedSindico) $('newLocSindico').value = STATE.selectedSindico;
+  $('addLocationOverlay').hidden = false;
+  STATE.pickingCoord = true;
+  STATE.pickingTarget = 'loc';
+}
+function openEditLocation(loc) {
+  $('addLocationTitle').textContent = 'Editar Local';
+  $('saveLocationBtn').textContent = 'Salvar alterações';
+  $('editLocationId').value = loc.id;
+  $('addLocationForm').reset();
+  $('addLocationMsg').innerHTML = '';
+  $('locGeoResult').innerHTML = '';
+  $('newLocSindico').value = loc.sindicoId;
+  $('newLocBairro').value = loc.bairro || '';
+  $('newLocRegion').value = loc.region || 'São Paulo';
+  $('newLocLat').value = loc.lat;
+  $('newLocLng').value = loc.lng;
+  $('newLocCondoName').value = loc.condoName || '';
+  const addr = [loc.street, loc.number, loc.complement].filter(Boolean).join(', ');
+  $('newLocAddress').value = addr;
   $('addLocationOverlay').hidden = false;
   STATE.pickingCoord = true;
   STATE.pickingTarget = 'loc';
@@ -1015,6 +1077,7 @@ async function geocodeInto(addrId, latId, lngId, resultId) {
 $('addLocationForm').addEventListener('submit', async e => {
   e.preventDefault();
   $('addLocationMsg').innerHTML = '';
+  const editId = $('editLocationId').value;
   const addrFull = $('newLocAddress').value.trim();
   // Split em rua + número
   let street = '', number = '';
@@ -1025,19 +1088,19 @@ $('addLocationForm').addEventListener('submit', async e => {
   }
   const sindicoId = $('newLocSindico').value;
   const sindico = STATE.sindicosMap.get(sindicoId);
-  const payload = {
-    password: STATE.password,
-    location: {
-      sindicoId,
-      bairro: $('newLocBairro').value.trim(),
-      lat: parseFloat($('newLocLat').value),
-      lng: parseFloat($('newLocLng').value),
-      region: $('newLocRegion').value || sindico?.region || 'São Paulo',
-      street, number,
-      complement: '',
-      condoName: $('newLocCondoName').value.trim(),
-    },
+  const locData = {
+    sindicoId,
+    bairro: $('newLocBairro').value.trim(),
+    lat: parseFloat($('newLocLat').value),
+    lng: parseFloat($('newLocLng').value),
+    region: $('newLocRegion').value || sindico?.region || 'São Paulo',
+    street, number,
+    complement: '',
+    condoName: $('newLocCondoName').value.trim(),
   };
+  const payload = editId
+    ? { password: STATE.password, updateLocation: { id: editId, ...locData } }
+    : { password: STATE.password, location: locData };
   try {
     const r = await fetch('/api/sindico-map', {
       method: 'POST', credentials: 'include',
@@ -1046,7 +1109,7 @@ $('addLocationForm').addEventListener('submit', async e => {
     });
     const j = await r.json();
     if (!r.ok || !j.ok) throw new Error(j.error || 'falha');
-    $('addLocationMsg').innerHTML = `<div class="msg ok">✓ Local adicionado!</div>`;
+    $('addLocationMsg').innerHTML = `<div class="msg ok">✓ ${editId ? 'Salvo' : 'Local adicionado'}!</div>`;
     setTimeout(() => {
       $('addLocationOverlay').hidden = true;
       STATE.pickingCoord = false;

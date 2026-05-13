@@ -102,8 +102,8 @@ function jsonResp(obj, status = 200) {
 }
 
 async function loadData() {
-  const stored = (await kvGet(KV_KEY)) || { sindicoOverrides: {}, addedSindicos: [], addedLocations: [], deletedIds: [] };
-  // Merge sindicos: seed + overrides (home, phone, email) + adicionados
+  const stored = (await kvGet(KV_KEY)) || { sindicoOverrides: {}, locationOverrides: {}, addedSindicos: [], addedLocations: [], deletedIds: [] };
+  // Merge sindicos: seed + overrides + adicionados
   const sindicosMap = new Map();
   for (const s of seedRaw.sindicos) {
     const ov = stored.sindicoOverrides?.[s.id] || {};
@@ -112,8 +112,11 @@ async function loadData() {
   for (const s of stored.addedSindicos || []) sindicosMap.set(s.id, s);
   for (const id of stored.deletedIds || []) sindicosMap.delete(id);
 
+  // Merge locations: seed (com overrides) + adicionados, minus deleted
+  const locOverrides = stored.locationOverrides || {};
+  const seededLocations = seedRaw.locations.map(l => ({ ...l, ...(locOverrides[l.id] || {}) }));
   const allLocations = [
-    ...seedRaw.locations,
+    ...seededLocations,
     ...(stored.addedLocations || []),
   ].filter(loc => {
     if ((stored.deletedIds || []).includes(loc.id)) return false;
@@ -312,6 +315,45 @@ export default async function handler(request) {
     return jsonResp({ ok: true, location: newLoc });
   }
 
+  // ---------- Atualizar localização ----------
+  if (body.updateLocation) {
+    const l = body.updateLocation;
+    if (!l.id) return jsonResp({ error: 'id obrigatório' }, 400);
+    stored.locationOverrides = stored.locationOverrides || {};
+    const customIdx = stored.addedLocations.findIndex(x => x.id === l.id);
+    if (customIdx >= 0) {
+      // Local custom: edita inline
+      stored.addedLocations[customIdx] = {
+        ...stored.addedLocations[customIdx],
+        ...(l.bairro ? { bairro: String(l.bairro).slice(0,80) } : {}),
+        ...(l.lat !== undefined ? { lat: Number(l.lat) } : {}),
+        ...(l.lng !== undefined ? { lng: Number(l.lng) } : {}),
+        ...(l.region ? { region: String(l.region).slice(0,40) } : {}),
+        ...(l.street !== undefined ? { street: String(l.street).slice(0,120) } : {}),
+        ...(l.number !== undefined ? { number: String(l.number).slice(0,20) } : {}),
+        ...(l.complement !== undefined ? { complement: String(l.complement).slice(0,80) } : {}),
+        ...(l.condoName !== undefined ? { condoName: String(l.condoName).slice(0,120) } : {}),
+        updatedBy: user, updatedAt: Date.now(),
+      };
+    } else {
+      // Local do seed → cria override
+      stored.locationOverrides[l.id] = {
+        ...(stored.locationOverrides[l.id] || {}),
+        ...(l.bairro ? { bairro: String(l.bairro).slice(0,80) } : {}),
+        ...(l.lat !== undefined ? { lat: Number(l.lat) } : {}),
+        ...(l.lng !== undefined ? { lng: Number(l.lng) } : {}),
+        ...(l.region ? { region: String(l.region).slice(0,40) } : {}),
+        ...(l.street !== undefined ? { street: String(l.street).slice(0,120) } : {}),
+        ...(l.number !== undefined ? { number: String(l.number).slice(0,20) } : {}),
+        ...(l.complement !== undefined ? { complement: String(l.complement).slice(0,80) } : {}),
+        ...(l.condoName !== undefined ? { condoName: String(l.condoName).slice(0,120) } : {}),
+        updatedBy: user, updatedAt: Date.now(),
+      };
+    }
+    await kvSet(KV_KEY, stored);
+    return jsonResp({ ok: true });
+  }
+
   // ---------- Apagar (soft-delete + cascade) ----------
   if (body.delete) {
     const id = String(body.delete).trim();
@@ -320,9 +362,10 @@ export default async function handler(request) {
     stored.addedSindicos = stored.addedSindicos.filter(x => x.id !== id);
     stored.addedLocations = stored.addedLocations.filter(x => x.id !== id && x.sindicoId !== id);
     delete stored.sindicoOverrides[id];
+    if (stored.locationOverrides) delete stored.locationOverrides[id];
     await kvSet(KV_KEY, stored);
     return jsonResp({ ok: true });
   }
 
-  return jsonResp({ error: 'precisa de sindico, location, delete, updateSindico ou auth' }, 400);
+  return jsonResp({ error: 'precisa de sindico, location, updateSindico, updateLocation, delete ou auth' }, 400);
 }
