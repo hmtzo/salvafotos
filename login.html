@@ -11,342 +11,535 @@
 <meta name="robots" content="noindex, nofollow">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 <link rel="icon" type="image/png" href="/assets/brand/icon-color.png">
 <style>
   :root{
-    --bg:#0a0a0c;
+    --bg:#070709;
     --fg:#fafafa;
     --fg-dim:#a1a1aa;
     --fg-muted:#71717a;
-    --primary:#6366f1;
-    --primary-hover:#818cf8;
-    --secondary:#84c7d3;
+    --teal:#84c7d3;
+    --teal-bright:#5eead4;
+    --indigo:#6366f1;
+    --purple:#8b5cf6;
+    --orange:#fb923c;
     --danger:#ef4444;
-    --card-bg:rgba(24,24,27,0.6);
-    --border:rgba(250,250,250,0.08);
-    --input-bg:rgba(255,255,255,0.03);
-    --input-border:rgba(255,255,255,0.1);
+    --success:#10b981;
+    --border:rgba(255,255,255,0.08);
+    --border-bright:rgba(255,255,255,0.14);
   }
   *{box-sizing:border-box;margin:0;padding:0}
-  html,body{height:100%;background:var(--bg);color:var(--fg)}
+  html,body{height:100%;background:var(--bg);color:var(--fg);overflow:hidden}
   body{
     font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,sans-serif;
     -webkit-font-smoothing:antialiased;
-    min-height:100vh;
-    display:flex;align-items:center;justify-content:center;
-    padding:24px;position:relative;overflow:hidden;
+    position:relative;
+    background:#050507;
   }
-  /* Aurora background */
-  body::before{
-    content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+
+  /* ===== ANIMATED MESH GRADIENT BACKGROUND ===== */
+  .bg-mesh{
+    position:fixed;inset:0;z-index:0;overflow:hidden;
     background:
-      radial-gradient(ellipse 1000px 600px at 20% 0%, rgba(99,102,241,0.15), transparent 60%),
-      radial-gradient(ellipse 800px 500px at 80% 100%, rgba(132,199,211,0.08), transparent 70%);
+      radial-gradient(circle at 20% 30%, rgba(132,199,211,0.18) 0%, transparent 35%),
+      radial-gradient(circle at 80% 70%, rgba(99,102,241,0.22) 0%, transparent 40%),
+      radial-gradient(circle at 50% 50%, rgba(139,92,246,0.10) 0%, transparent 50%),
+      radial-gradient(circle at 90% 20%, rgba(251,146,60,0.08) 0%, transparent 30%),
+      #050507;
   }
-  /* Subtle grid */
-  body::after{
-    content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
-    background-size:60px 60px;
+  .bg-mesh::before, .bg-mesh::after{
+    content:'';position:absolute;border-radius:50%;
+    filter:blur(80px);opacity:0.5;
+  }
+  .bg-mesh::before{
+    width:600px;height:600px;
+    background:radial-gradient(circle,var(--teal),transparent 70%);
+    top:-200px;left:-200px;
+    animation:drift1 22s ease-in-out infinite;
+  }
+  .bg-mesh::after{
+    width:700px;height:700px;
+    background:radial-gradient(circle,var(--indigo),transparent 70%);
+    bottom:-250px;right:-250px;
+    animation:drift2 28s ease-in-out infinite;
+  }
+  @keyframes drift1{
+    0%,100%{transform:translate(0,0)}
+    50%{transform:translate(120px,80px) scale(1.15)}
+  }
+  @keyframes drift2{
+    0%,100%{transform:translate(0,0)}
+    50%{transform:translate(-100px,-60px) scale(1.1)}
+  }
+
+  /* ===== GRID OVERLAY ===== */
+  .bg-grid{
+    position:fixed;inset:0;z-index:1;pointer-events:none;
+    background-size:50px 50px;
     background-image:
       linear-gradient(to right, rgba(255,255,255,0.025) 1px, transparent 1px),
       linear-gradient(to bottom, rgba(255,255,255,0.025) 1px, transparent 1px);
-    -webkit-mask-image:radial-gradient(ellipse at center, black 0%, transparent 70%);
-            mask-image:radial-gradient(ellipse at center, black 0%, transparent 70%);
+    -webkit-mask-image:radial-gradient(ellipse 60% 60% at center, black 30%, transparent 90%);
+            mask-image:radial-gradient(ellipse 60% 60% at center, black 30%, transparent 90%);
   }
 
-  /* Particle canvas */
-  .particles-canvas{
-    position:fixed;inset:0;z-index:1;pointer-events:none;
+  /* ===== PARTICLE CANVAS ===== */
+  .particles{position:fixed;inset:0;z-index:2;pointer-events:none}
+
+  /* ===== LAYOUT ===== */
+  .stage{
+    position:relative;z-index:10;
+    display:grid;grid-template-columns:1fr 1fr;
+    min-height:100vh;
+    width:100%;
   }
 
-  /* Login card */
+  /* ===== LEFT PANE (DESKTOP ONLY) ===== */
+  .pane-left{
+    display:flex;flex-direction:column;justify-content:space-between;
+    padding:56px 60px;
+    position:relative;
+  }
+  .pane-left .logo-wrap{
+    animation:logoIn 0.9s cubic-bezier(0.16,1,0.3,1) 0.1s both;
+  }
+  .pane-left .logo-wrap img{
+    height:60px;width:auto;display:block;
+    filter:drop-shadow(0 6px 24px rgba(132,199,211,0.25));
+  }
+  .pane-left .hero{
+    max-width:520px;
+  }
+  .pane-left .hero h1{
+    font-size:clamp(38px, 4.5vw, 56px);
+    font-weight:800;letter-spacing:-0.035em;line-height:1.05;
+    margin-bottom:18px;color:var(--fg);
+    animation:fadeUp 0.9s cubic-bezier(0.16,1,0.3,1) 0.25s both;
+  }
+  .pane-left .hero h1 .accent{
+    background:linear-gradient(135deg,var(--teal-bright),var(--indigo) 60%,var(--purple));
+    -webkit-background-clip:text;background-clip:text;
+    -webkit-text-fill-color:transparent;
+    display:inline-block;
+  }
+  .pane-left .hero p{
+    font-size:17px;line-height:1.6;color:var(--fg-dim);
+    max-width:460px;margin-bottom:32px;
+    animation:fadeUp 0.9s cubic-bezier(0.16,1,0.3,1) 0.4s both;
+  }
+  .pane-left .stats{
+    display:flex;gap:28px;flex-wrap:wrap;
+    animation:fadeUp 0.9s cubic-bezier(0.16,1,0.3,1) 0.55s both;
+  }
+  .pane-left .stat{display:flex;flex-direction:column;gap:2px}
+  .pane-left .stat .v{
+    font-size:30px;font-weight:800;letter-spacing:-0.02em;
+    background:linear-gradient(180deg,#fff,rgba(255,255,255,0.65));
+    -webkit-background-clip:text;background-clip:text;
+    -webkit-text-fill-color:transparent;
+  }
+  .pane-left .stat .l{
+    font-size:11.5px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;
+    color:var(--fg-muted);
+  }
+  .pane-left .foot{
+    display:flex;align-items:center;gap:10px;font-size:12px;color:var(--fg-muted);
+    animation:fadeUp 0.9s cubic-bezier(0.16,1,0.3,1) 0.7s both;
+  }
+  .pane-left .live-dot{
+    width:8px;height:8px;border-radius:50%;background:var(--success);
+    box-shadow:0 0 12px var(--success);
+    animation:pulse-dot 2s ease-in-out infinite;
+  }
+  @keyframes pulse-dot{
+    0%,100%{opacity:1;transform:scale(1)}
+    50%{opacity:0.6;transform:scale(1.2)}
+  }
+
+  /* ===== RIGHT PANE (FORM) ===== */
+  .pane-right{
+    display:flex;align-items:center;justify-content:center;
+    padding:32px 24px;position:relative;
+  }
+
   .login-card{
-    position:relative;z-index:10;width:100%;max-width:420px;
-    background:var(--card-bg);
+    position:relative;width:100%;max-width:440px;
+    background:linear-gradient(180deg, rgba(28,28,32,0.7) 0%, rgba(14,14,18,0.6) 100%);
     border:1px solid var(--border);
     border-radius:24px;
     padding:42px 36px 32px;
-    backdrop-filter:blur(24px) saturate(180%);
-    -webkit-backdrop-filter:blur(24px) saturate(180%);
+    backdrop-filter:blur(28px) saturate(180%);
+    -webkit-backdrop-filter:blur(28px) saturate(180%);
     box-shadow:
-      0 1px 0 rgba(255,255,255,0.05) inset,
+      0 1px 0 rgba(255,255,255,0.06) inset,
       0 30px 80px -20px rgba(0,0,0,0.7),
       0 12px 30px -10px rgba(0,0,0,0.5);
-    animation:card-in 0.7s cubic-bezier(0.2,0.8,0.2,1) both;
+    animation:cardIn 0.8s cubic-bezier(0.16,1,0.3,1) 0.2s both;
+    overflow:hidden;
   }
-  @keyframes card-in{
-    from{opacity:0;transform:translateY(24px) scale(0.96)}
+  @keyframes cardIn{
+    from{opacity:0;transform:translateY(28px) scale(0.96)}
     to{opacity:1;transform:translateY(0) scale(1)}
   }
 
-  .brand{display:flex;justify-content:center;margin-bottom:24px}
-  .brand img{height:64px;width:auto;display:block;filter:drop-shadow(0 4px 12px rgba(0,0,0,0.4))}
-
-  .login-header{text-align:center;margin-bottom:30px}
-  .login-header h1{
-    font-size:26px;font-weight:800;letter-spacing:-0.02em;
-    background:linear-gradient(180deg, #fff 0%, rgba(255,255,255,0.6) 100%);
-    -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
-    margin-bottom:6px;
+  /* Animated gradient border on card */
+  .login-card::before{
+    content:'';position:absolute;inset:0;border-radius:24px;padding:1px;
+    background:linear-gradient(135deg, rgba(132,199,211,0.5), transparent 30%, transparent 70%, rgba(99,102,241,0.4));
+    -webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+            mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite:xor;mask-composite:exclude;
+    opacity:0.6;pointer-events:none;
   }
-  .login-header p{font-size:13px;color:var(--fg-dim);font-weight:400}
 
-  /* Form fields with floating label */
-  .login-form{display:flex;flex-direction:column;gap:18px}
+  /* Logo (mobile only - shows here when left pane is hidden) */
+  .brand-mobile{
+    display:none;margin-bottom:28px;text-align:center;
+    animation:fadeUp 0.7s cubic-bezier(0.16,1,0.3,1) 0.3s both;
+  }
+  .brand-mobile img{
+    height:48px;width:auto;display:inline-block;
+    filter:drop-shadow(0 4px 16px rgba(132,199,211,0.3));
+  }
+
+  /* Header */
+  .login-header{margin-bottom:28px}
+  .login-header h1{
+    font-size:28px;font-weight:800;letter-spacing:-0.025em;margin-bottom:6px;line-height:1.1;
+    animation:fadeUp 0.6s cubic-bezier(0.16,1,0.3,1) 0.4s both;
+  }
+  .login-header p{
+    color:var(--fg-dim);font-size:14.5px;line-height:1.5;
+    animation:fadeUp 0.6s cubic-bezier(0.16,1,0.3,1) 0.5s both;
+  }
+
+  /* Form */
+  .login-form{display:flex;flex-direction:column;gap:14px}
   .form-field{
     position:relative;
+    animation:fadeUp 0.6s cubic-bezier(0.16,1,0.3,1) both;
   }
+  .form-field:nth-child(1){animation-delay:0.55s}
+  .form-field:nth-child(2){animation-delay:0.65s}
+  .form-options{animation:fadeUp 0.6s cubic-bezier(0.16,1,0.3,1) 0.75s both}
+  .login-button{animation:fadeUp 0.6s cubic-bezier(0.16,1,0.3,1) 0.85s both}
+
   .form-field input{
-    width:100%;
-    padding:18px 14px 8px;
-    background:var(--input-bg);
-    border:1.5px solid var(--input-border);
+    width:100%;padding:18px 16px 14px;
+    background:rgba(255,255,255,0.025);
+    border:1px solid rgba(255,255,255,0.08);
     border-radius:12px;
-    color:var(--fg);
-    font-family:inherit;font-size:14px;font-weight:500;
-    outline:none;
-    transition:all 0.25s cubic-bezier(0.2,0.8,0.2,1);
+    color:var(--fg);font-family:inherit;font-size:15px;font-weight:500;
+    transition:all 0.2s cubic-bezier(0.16,1,0.3,1);
   }
   .form-field input:focus{
-    border-color:var(--primary);
-    background:rgba(99,102,241,0.04);
-    box-shadow:0 0 0 4px rgba(99,102,241,0.12);
+    outline:none;
+    background:rgba(255,255,255,0.04);
+    border-color:rgba(132,199,211,0.5);
+    box-shadow:0 0 0 4px rgba(132,199,211,0.08);
   }
   .form-field label{
-    position:absolute;
-    left:14px;top:50%;transform:translateY(-50%);
-    font-size:13px;color:var(--fg-muted);font-weight:500;
+    position:absolute;top:18px;left:16px;
+    color:var(--fg-muted);font-size:14.5px;font-weight:500;
     pointer-events:none;
-    transition:all 0.2s cubic-bezier(0.2,0.8,0.2,1);
+    transition:all 0.2s cubic-bezier(0.16,1,0.3,1);
     background:transparent;padding:0 4px;
   }
   .form-field.active label,
   .form-field input:focus + label{
-    top:8px;transform:translateY(0);
-    font-size:10px;font-weight:700;
-    color:var(--primary);
-    text-transform:uppercase;letter-spacing:0.08em;
-  }
-  .form-field.invalid input{border-color:var(--danger);box-shadow:0 0 0 4px rgba(239,68,68,0.12)}
-  .form-field.invalid label{color:var(--danger)}
-  .form-field .error-message{
-    display:block;font-size:11px;color:var(--danger);
-    margin-top:6px;margin-left:4px;font-weight:500;
+    top:-7px;left:11px;font-size:11px;font-weight:600;letter-spacing:0.02em;
+    color:var(--teal-bright);
+    background:linear-gradient(180deg, #1a1a1f, #14141a);
   }
 
+  /* Password toggle */
   .toggle-password{
     position:absolute;right:12px;top:50%;transform:translateY(-50%);
-    background:transparent;border:none;cursor:pointer;
-    color:var(--fg-muted);padding:6px;border-radius:6px;
-    display:flex;align-items:center;justify-content:center;
-    transition:color 0.2s, background 0.2s;
+    background:none;border:none;color:var(--fg-muted);cursor:pointer;
+    padding:8px;border-radius:8px;
+    transition:all 0.2s;
   }
-  .toggle-password:hover{color:var(--fg);background:rgba(255,255,255,0.04)}
+  .toggle-password:hover{color:var(--teal-bright);background:rgba(255,255,255,0.04)}
   .toggle-password svg{width:18px;height:18px}
 
+  /* Form options */
   .form-options{
-    display:flex;align-items:center;justify-content:space-between;
-    font-size:12px;
+    display:flex;align-items:center;justify-content:space-between;gap:10px;
+    padding:4px 0 6px;font-size:13px;
   }
   .remember-me{
-    display:flex;align-items:center;gap:8px;cursor:pointer;
-    color:var(--fg-dim);font-weight:500;user-select:none;
+    display:flex;align-items:center;gap:8px;color:var(--fg-dim);cursor:pointer;
+    font-weight:500;user-select:none;
   }
-  .remember-me input{
+  .remember-me input[type=checkbox]{
     appearance:none;-webkit-appearance:none;
-    width:16px;height:16px;border:1.5px solid var(--input-border);
-    border-radius:5px;cursor:pointer;
-    transition:all 0.2s;position:relative;
-    background:var(--input-bg);
+    width:16px;height:16px;border-radius:5px;
+    background:rgba(255,255,255,0.04);
+    border:1.5px solid rgba(255,255,255,0.15);
+    cursor:pointer;position:relative;
+    transition:all 0.2s;flex-shrink:0;
   }
-  .remember-me input:checked{
-    background:var(--primary);border-color:var(--primary);
+  .remember-me input[type=checkbox]:checked{
+    background:linear-gradient(135deg, var(--teal), var(--indigo));
+    border-color:transparent;
   }
-  .remember-me input:checked::after{
-    content:'';position:absolute;left:4px;top:1px;
-    width:5px;height:9px;
-    border:solid white;border-width:0 2px 2px 0;
-    transform:rotate(45deg);
+  .remember-me input[type=checkbox]:checked::after{
+    content:'';position:absolute;top:2px;left:5px;width:4px;height:8px;
+    border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg);
   }
-  .forgot-password{color:var(--fg-dim);text-decoration:none;font-weight:500;transition:color 0.15s}
-  .forgot-password:hover{color:var(--fg)}
 
+  .forgot-link{
+    color:var(--fg-dim);font-size:12.5px;text-decoration:none;
+    transition:color 0.2s;font-weight:500;
+  }
+  .forgot-link:hover{color:var(--teal-bright)}
+
+  /* Button */
   .login-button{
-    width:100%;padding:14px;
-    background:linear-gradient(180deg, var(--primary) 0%, var(--primary-hover) 100%);
-    color:#fff;border:none;border-radius:12px;
-    font-family:inherit;font-size:14px;font-weight:700;
-    cursor:pointer;letter-spacing:-0.01em;
-    transition:all 0.25s cubic-bezier(0.2,0.8,0.2,1);
-    box-shadow:
-      0 8px 20px -4px rgba(99,102,241,0.5),
-      inset 0 1px 0 rgba(255,255,255,0.2);
+    position:relative;
+    width:100%;padding:15px 20px;margin-top:6px;
+    background:linear-gradient(135deg, var(--teal) 0%, var(--indigo) 60%, var(--purple) 100%);
+    color:#fff;font-family:inherit;font-size:15px;font-weight:700;letter-spacing:-0.01em;
+    border:none;border-radius:14px;
+    cursor:pointer;overflow:hidden;
     display:flex;align-items:center;justify-content:center;gap:8px;
+    transition:transform 0.18s cubic-bezier(0.16,1,0.3,1), box-shadow 0.18s;
+    box-shadow:0 8px 24px -6px rgba(99,102,241,0.5), 0 2px 6px rgba(0,0,0,0.3);
   }
-  .login-button:hover:not(:disabled){
+  .login-button::before{
+    content:'';position:absolute;inset:0;
+    background:linear-gradient(135deg, transparent, rgba(255,255,255,0.2), transparent);
+    transform:translateX(-100%);transition:transform 0.6s;
+  }
+  .login-button:hover{
     transform:translateY(-1px);
-    box-shadow:0 14px 32px -6px rgba(99,102,241,0.65), inset 0 1px 0 rgba(255,255,255,0.25);
+    box-shadow:0 12px 32px -6px rgba(99,102,241,0.6), 0 4px 8px rgba(0,0,0,0.4);
   }
-  .login-button:active:not(:disabled){transform:translateY(0)}
+  .login-button:hover::before{transform:translateX(100%)}
+  .login-button:active{transform:translateY(0)}
   .login-button:disabled{opacity:0.6;cursor:not-allowed}
-  .login-button svg{width:16px;height:16px}
+  .login-button svg{width:18px;height:18px;transition:transform 0.2s}
+  .login-button:hover svg{transform:translateX(3px)}
 
-  .login-form.form-success .login-button{
-    background:linear-gradient(180deg, #10b981 0%, #34d399 100%);
-    box-shadow:0 14px 32px -6px rgba(16,185,129,0.65);
-  }
-
+  /* Error */
   .error-banner{
-    display:none;margin-top:14px;padding:11px 14px;
-    background:rgba(239,68,68,0.08);
-    border:1px solid rgba(239,68,68,0.25);
-    border-radius:10px;
-    color:#fca5a5;font-size:12px;font-weight:500;text-align:center;
+    display:none;padding:11px 14px;
+    background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);
+    color:#fca5a5;border-radius:10px;
+    font-size:13px;text-align:center;margin-top:6px;
+    animation:shake 0.4s ease-in-out;
   }
-  .error-banner.show{display:block;animation:shake 0.4s}
+  .error-banner.show{display:block}
   @keyframes shake{
     0%,100%{transform:translateX(0)}
-    25%{transform:translateX(-4px)}
-    75%{transform:translateX(4px)}
+    20%,60%{transform:translateX(-6px)}
+    40%,80%{transform:translateX(6px)}
   }
 
+  /* Footer info */
   .footer-info{
-    margin-top:24px;padding-top:24px;
-    border-top:1px solid var(--border);
-    text-align:center;font-size:11px;color:var(--fg-muted);
-    line-height:1.55;letter-spacing:0.02em;
+    margin-top:22px;padding-top:18px;border-top:1px solid var(--border);
+    text-align:center;font-size:11.5px;color:var(--fg-muted);line-height:1.6;
+    animation:fadeUp 0.6s cubic-bezier(0.16,1,0.3,1) 0.95s both;
   }
   .footer-info strong{color:var(--fg-dim);font-weight:600}
 
+  /* Success state */
+  .form-success input, .form-success button{pointer-events:none;opacity:0.6}
+  .form-success .login-button{
+    background:linear-gradient(135deg, var(--success), #34d399) !important;
+  }
+
+  /* ===== ANIMATIONS ===== */
+  @keyframes fadeUp{
+    from{opacity:0;transform:translateY(16px)}
+    to{opacity:1;transform:translateY(0)}
+  }
+  @keyframes logoIn{
+    from{opacity:0;transform:translateY(-20px) scale(0.92)}
+    to{opacity:1;transform:translateY(0) scale(1)}
+  }
+
+  /* ===== BACK LINK ===== */
   .back-link{
-    position:fixed;top:24px;left:24px;z-index:20;
-    display:inline-flex;align-items:center;gap:6px;
+    position:fixed;top:20px;left:20px;z-index:100;
+    display:flex;align-items:center;gap:6px;
+    color:var(--fg-dim);text-decoration:none;font-size:12.5px;font-weight:500;
     padding:8px 14px;border-radius:100px;
-    background:rgba(24,24,27,0.6);border:1px solid var(--border);
-    color:var(--fg-dim);text-decoration:none;
-    font-size:12px;font-weight:600;
-    backdrop-filter:blur(20px);
+    background:rgba(20,20,24,0.6);
+    border:1px solid var(--border);
+    backdrop-filter:blur(12px);
     transition:all 0.2s;
   }
-  .back-link:hover{color:var(--fg);border-color:rgba(255,255,255,0.2)}
-  .back-link svg{width:14px;height:14px}
+  .back-link:hover{color:var(--fg);background:rgba(30,30,36,0.8);transform:translateY(-1px)}
+  .back-link svg{width:14px;height:14px;transition:transform 0.2s}
+  .back-link:hover svg{transform:translateX(-2px)}
 
-  /* === MOBILE ============================================================ */
-  @media (max-width: 640px){
-    body{padding:14px;align-items:flex-start;padding-top:72px}
-    .login-card{padding:30px 22px 26px;border-radius:20px;max-width:100%}
-    .brand img{height:54px}
-    .login-header{margin-bottom:22px}
-    .login-header h1{font-size:22px;margin-bottom:4px}
-    .login-header p{font-size:12px}
-    .login-form{gap:14px}
-    .form-field input{font-size:16px;padding:18px 14px 8px}  /* 16px evita zoom no iOS */
-    .form-options{font-size:11px}
-    .login-button{padding:13px;font-size:13px}
-    .footer-info{margin-top:20px;padding-top:20px;font-size:10px}
-    .back-link{top:14px;left:14px;padding:7px 12px;font-size:11px}
+  /* ===== RESPONSIVE OVERRIDES (no fim pra ganhar do cascade) ===== */
+  @media (max-width:900px){
+    .stage{grid-template-columns:1fr}
+    .pane-left{display:none}
+    .brand-mobile{display:block}
+    .pane-right{min-height:100vh;padding:32px 24px}
+  }
+  @media (max-width:480px){
+    .login-card{padding:32px 24px 24px;border-radius:20px}
+  }
+
+  /* Reduced motion */
+  @media (prefers-reduced-motion: reduce){
+    *, *::before, *::after{
+      animation-duration:0.01ms !important;
+      animation-iteration-count:1 !important;
+      transition-duration:0.01ms !important;
+    }
   }
 </style>
 </head>
 <body>
-<canvas id="particles" class="particles-canvas"></canvas>
+
+<div class="bg-mesh"></div>
+<div class="bg-grid"></div>
+<canvas class="particles" id="particles"></canvas>
 
 <a href="/" class="back-link">
-  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-  Voltar
+  <svg fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+  Voltar ao site
 </a>
 
-<div class="login-card">
-  <div class="brand">
-    <img src="/assets/brand/icon-color.png" alt="Sindicompany">
-  </div>
+<div class="stage">
 
-  <div class="login-header">
-    <h1>Bem-vindo</h1>
-    <p>Acesse o hub interno Sindicompany</p>
-  </div>
-
-  <form class="login-form" id="loginForm" autocomplete="on">
-    <div class="form-field" id="emailField">
-      <input type="text" id="user" name="user" autocomplete="username" required>
-      <label for="user">Usuário ou e-mail</label>
+  <!-- LEFT (desktop only): branding -->
+  <section class="pane-left">
+    <div class="logo-wrap">
+      <img src="/assets/brand/logo-full-white.png" alt="Sindicompany">
     </div>
 
-    <div class="form-field" id="passField">
-      <input type="password" id="pass" name="pass" autocomplete="current-password" required>
-      <label for="pass">Senha</label>
-      <button type="button" class="toggle-password" id="togglePass" aria-label="Mostrar senha">
-        <svg id="eyeIcon" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
-      </button>
+    <div class="hero">
+      <h1>O hub<br><span class="accent">interno</span> da Sindicompany.</h1>
+      <p>52 ferramentas, IA integrada e tudo num só lugar. Acesse com seu email corporativo pra começar.</p>
+      <div class="stats">
+        <div class="stat"><div class="v">52</div><div class="l">ferramentas</div></div>
+        <div class="stat"><div class="v">31</div><div class="l">síndicos</div></div>
+        <div class="stat"><div class="v">∞</div><div class="l">possibilidades</div></div>
+      </div>
     </div>
 
-    <div class="form-options">
-      <label class="remember-me">
-        <input type="checkbox" id="remember" checked>
-        Manter conectado por 30 dias
-      </label>
+    <div class="foot">
+      <span class="live-dot"></span>
+      <span>Sistema operacional · painel.sindicompany.com.br</span>
     </div>
+  </section>
 
-    <button type="submit" class="login-button" id="submitBtn">
-      <span id="btnText">Entrar</span>
-      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
-    </button>
+  <!-- RIGHT: form -->
+  <section class="pane-right">
+    <div class="login-card">
+      <div class="brand-mobile">
+        <img src="/assets/brand/logo-full-white.png" alt="Sindicompany">
+      </div>
 
-    <div class="error-banner" id="errorBanner"></div>
-  </form>
+      <div class="login-header">
+        <h1>Bem-vindo</h1>
+        <p>Entre com seu email e senha pra acessar o painel.</p>
+      </div>
 
-  <div class="footer-info">
-    Acesso restrito a colaboradores Sindicompany.<br>
-    <strong>Em caso de dúvidas, contate o administrador.</strong>
-  </div>
+      <form class="login-form" id="loginForm" autocomplete="on">
+        <div class="form-field" id="emailField">
+          <input type="text" id="user" name="user" autocomplete="username" required>
+          <label for="user">Usuário ou e-mail</label>
+        </div>
+
+        <div class="form-field" id="passField">
+          <input type="password" id="pass" name="pass" autocomplete="current-password" required>
+          <label for="pass">Senha</label>
+          <button type="button" class="toggle-password" id="togglePass" aria-label="Mostrar senha">
+            <svg id="eyeIcon" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+
+        <div class="form-options">
+          <label class="remember-me">
+            <input type="checkbox" id="remember" checked>
+            Manter conectado por 30 dias
+          </label>
+          <a href="#" class="forgot-link" id="forgotLink">Esqueci a senha</a>
+        </div>
+
+        <button type="submit" class="login-button" id="submitBtn">
+          <span id="btnText">Entrar</span>
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+        </button>
+
+        <div class="error-banner" id="errorBanner"></div>
+      </form>
+
+      <div class="footer-info">
+        Acesso restrito a colaboradores Sindicompany.<br>
+        <strong>Em caso de dúvidas, fale com o administrador.</strong>
+      </div>
+    </div>
+  </section>
+
 </div>
 
 <script>
-// === Particle background ===
+// === Particles (lightweight, smooth) ===
 const canvas = document.getElementById('particles');
 const ctx = canvas.getContext('2d');
+let particles = [];
+let dpr = Math.min(window.devicePixelRatio || 1, 2);
+
 function resize() {
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
+  canvas.width = window.innerWidth * dpr;
+  canvas.height = window.innerHeight * dpr;
+  canvas.style.width = window.innerWidth + 'px';
+  canvas.style.height = window.innerHeight + 'px';
+  ctx.scale(dpr, dpr);
 }
 resize();
-window.addEventListener('resize', resize);
+window.addEventListener('resize', () => { resize(); seedParticles(); });
 
+const COLORS = ['132,199,211', '99,102,241', '139,92,246', '94,234,212'];
 class Particle {
-  constructor() {
-    this.reset();
-    this.y = Math.random() * canvas.height;
-  }
-  reset() {
-    this.x = Math.random() * canvas.width;
-    this.y = Math.random() * canvas.height;
+  constructor() { this.reset(true); }
+  reset(initial = false) {
+    this.x = Math.random() * window.innerWidth;
+    this.y = initial ? Math.random() * window.innerHeight : window.innerHeight + 10;
     this.size = Math.random() * 2 + 0.5;
-    this.speedX = (Math.random() - 0.5) * 0.3;
-    this.speedY = (Math.random() - 0.5) * 0.3;
-    this.opacity = Math.random() * 0.4 + 0.1;
+    this.speedX = (Math.random() - 0.5) * 0.25;
+    this.speedY = -Math.random() * 0.4 - 0.1;
+    this.opacity = Math.random() * 0.4 + 0.15;
+    this.color = COLORS[Math.floor(Math.random() * COLORS.length)];
+    this.life = 1;
+    this.fadeIn = 0;
   }
   update() {
     this.x += this.speedX;
     this.y += this.speedY;
-    if (this.x < 0) this.x = canvas.width;
-    if (this.x > canvas.width) this.x = 0;
-    if (this.y < 0) this.y = canvas.height;
-    if (this.y > canvas.height) this.y = 0;
+    this.fadeIn = Math.min(1, this.fadeIn + 0.01);
+    if (this.y < -10 || this.x < -10 || this.x > window.innerWidth + 10) this.reset();
   }
   draw() {
-    ctx.fillStyle = `rgba(180, 200, 255, ${this.opacity})`;
+    const grd = ctx.createRadialGradient(this.x, this.y, 0, this.x, this.y, this.size * 3);
+    grd.addColorStop(0, `rgba(${this.color}, ${this.opacity * this.fadeIn})`);
+    grd.addColorStop(1, `rgba(${this.color}, 0)`);
+    ctx.fillStyle = grd;
     ctx.beginPath();
-    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+    ctx.arc(this.x, this.y, this.size * 3, 0, Math.PI * 2);
     ctx.fill();
   }
 }
-const particles = [];
-const isMobile = window.innerWidth < 768;
-const count = isMobile
-  ? Math.min(30, Math.floor((canvas.width * canvas.height) / 35000))
-  : Math.min(80, Math.floor((canvas.width * canvas.height) / 18000));
-for (let i = 0; i < count; i++) particles.push(new Particle());
+
+function seedParticles() {
+  particles = [];
+  const isMobile = window.innerWidth < 768;
+  const count = isMobile
+    ? Math.min(35, Math.floor((window.innerWidth * window.innerHeight) / 30000))
+    : Math.min(70, Math.floor((window.innerWidth * window.innerHeight) / 18000));
+  for (let i = 0; i < count; i++) particles.push(new Particle());
+}
+seedParticles();
 
 (function animate() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -354,7 +547,7 @@ for (let i = 0; i < count; i++) particles.push(new Particle());
   requestAnimationFrame(animate);
 })();
 
-// === Floating label trigger ===
+// === Floating label ===
 function setupField(fieldId, inputId) {
   const field = document.getElementById(fieldId);
   const input = document.getElementById(inputId);
@@ -380,6 +573,12 @@ togglePass.addEventListener('click', () => {
   passInput.type = isPwd ? 'text' : 'password';
   eyeIcon.innerHTML = isPwd ? eyeOff : eyeOpen;
   togglePass.setAttribute('aria-label', isPwd ? 'Ocultar senha' : 'Mostrar senha');
+});
+
+// === Forgot password (dica) ===
+document.getElementById('forgotLink').addEventListener('click', (e) => {
+  e.preventDefault();
+  alert('Pra resetar sua senha, fale com a Luciane ou Heitor (admins). Após o reset, troque em /perfil.html.');
 });
 
 // === Form submission ===
@@ -414,7 +613,7 @@ form.addEventListener('submit', async (e) => {
       const params = new URLSearchParams(location.search);
       const next = params.get('next') || '/hub.html';
       location.href = next;
-    }, 400);
+    }, 500);
   } catch (err) {
     errorBanner.textContent = err.message;
     errorBanner.classList.add('show');
@@ -422,6 +621,16 @@ form.addEventListener('submit', async (e) => {
     btnText.textContent = 'Entrar';
   }
 });
+
+// === Subtle parallax: card shifts a hair with mouse ===
+if (window.innerWidth > 900 && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+  const card = document.querySelector('.login-card');
+  document.addEventListener('mousemove', (e) => {
+    const x = (e.clientX / window.innerWidth - 0.5) * 6;
+    const y = (e.clientY / window.innerHeight - 0.5) * 6;
+    card.style.transform = `translate(${x}px, ${y}px)`;
+  });
+}
 </script>
 </body>
 </html>
