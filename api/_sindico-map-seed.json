@@ -166,13 +166,13 @@
       "id": "juliani-pardal-rj",
       "name": "Juliani Pardal (RJ)",
       "color": "hsl(52, 65%, 50%)",
-      "region": "São Paulo"
+      "region": "Rio de Janeiro"
     },
     {
       "id": "claudia-monica-smith-balagna-rj",
       "name": "Claudia Mônica Smith Balagna (RJ)",
       "color": "hsl(290, 65%, 50%)",
-      "region": "São Paulo"
+      "region": "Rio de Janeiro"
     },
     {
       "id": "flavio-martins",
@@ -1432,7 +1432,7 @@
       "bairro": "Jacarepaguá",
       "lat": -22.9667347,
       "lng": -43.412237,
-      "region": "São Paulo"
+      "region": "Rio de Janeiro"
     },
     {
       "id": "loc-156",
@@ -1440,7 +1440,7 @@
       "bairro": "Barra da Tijuca",
       "lat": -23.0040194,
       "lng": -43.3661069,
-      "region": "São Paulo"
+      "region": "Rio de Janeiro"
     },
     {
       "id": "loc-157",
@@ -1448,7 +1448,7 @@
       "bairro": "Recreio dos Bandeirantes",
       "lat": -23.0178705,
       "lng": -43.4647479,
-      "region": "São Paulo"
+      "region": "Rio de Janeiro"
     },
     {
       "id": "loc-158",
@@ -1456,7 +1456,7 @@
       "bairro": "Tijuca",
       "lat": -22.9324433,
       "lng": -43.2411073,
-      "region": "São Paulo"
+      "region": "Rio de Janeiro"
     },
     {
       "id": "loc-159",
@@ -1464,7 +1464,7 @@
       "bairro": "Tijuca",
       "lat": -22.9324433,
       "lng": -43.2411073,
-      "region": "São Paulo"
+      "region": "Rio de Janeiro"
     },
     {
       "id": "loc-160",
@@ -1472,7 +1472,7 @@
       "bairro": "Grajaú",
       "lat": -22.923666,
       "lng": -43.2583192,
-      "region": "São Paulo"
+      "region": "Rio de Janeiro"
     },
     {
       "id": "loc-161",
@@ -1480,7 +1480,7 @@
       "bairro": "Andaraí",
       "lat": -22.922329,
       "lng": -43.2477454,
-      "region": "São Paulo"
+      "region": "Rio de Janeiro"
     },
     {
       "id": "loc-162",
@@ -1488,7 +1488,7 @@
       "bairro": "Vila Isabel",
       "lat": -22.9165886,
       "lng": -43.2502461,
-      "region": "São Paulo"
+      "region": "Rio de Janeiro"
     },
     {
       "id": "loc-163",
@@ -1496,7 +1496,7 @@
       "bairro": "Vila Isabel",
       "lat": -22.9165886,
       "lng": -43.2502461,
-      "region": "São Paulo"
+      "region": "Rio de Janeiro"
     },
     {
       "id": "loc-164",
@@ -1504,7 +1504,7 @@
       "bairro": "Boca do Mato",
       "lat": -22.5341018,
       "lng": -43.7975211,
-      "region": "São Paulo"
+      "region": "Rio de Janeiro"
     },
     {
       "id": "loc-165",
@@ -1512,7 +1512,7 @@
       "bairro": "Usina",
       "lat": -22.9449745,
       "lng": -43.2585135,
-      "region": "São Paulo"
+      "region": "Rio de Janeiro"
     },
     {
       "id": "loc-166",
@@ -1520,7 +1520,7 @@
       "bairro": "Engenho Novo",
       "lat": -22.9019487,
       "lng": -43.2690737,
-      "region": "São Paulo"
+      "region": "Rio de Janeiro"
     },
     {
       "id": "loc-167",
@@ -1528,7 +1528,7 @@
       "bairro": "Maracanã",
       "lat": -22.9123598,
       "lng": -43.2265474,
-      "region": "São Paulo"
+      "region": "Rio de Janeiro"
     },
     {
       "id": "loc-168",
@@ -1536,7 +1536,7 @@
       "bairro": "Praça da Bandeira",
       "lat": -22.9122663,
       "lng": -43.2133348,
-      "region": "São Paulo"
+      "region": "Rio de Janeiro"
     },
     {
       "id": "loc-169",
@@ -1544,7 +1544,7 @@
       "bairro": "Alto da Boa Vista",
       "lat": -22.9726463,
       "lng": -43.2841586,
-      "region": "São Paulo"
+      "region": "Rio de Janeiro"
     },
     {
       "id": "loc-170",
@@ -1552,7 +1552,7 @@
       "bairro": "Praça Saenz Peña",
       "lat": -22.9246844,
       "lng": -43.2322176,
-      "region": "São Paulo"
+      "region": "Rio de Janeiro"
     },
     {
       "id": "loc-171",
