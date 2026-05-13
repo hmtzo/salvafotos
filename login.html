@@ -103,9 +103,10 @@
   }
   .pane-left .logo-wrap{
     animation:logoIn 0.9s cubic-bezier(0.16,1,0.3,1) 0.1s both;
+    padding-top:4px;overflow:visible;
   }
   .pane-left .logo-wrap img{
-    height:60px;width:auto;display:block;
+    height:48px;width:auto;display:block;
     filter:drop-shadow(0 6px 24px rgba(132,199,211,0.25));
   }
   .pane-left .hero{
@@ -193,15 +194,6 @@
     opacity:0.6;pointer-events:none;
   }
 
-  /* Logo (mobile only - shows here when left pane is hidden) */
-  .brand-mobile{
-    display:none;margin-bottom:28px;text-align:center;
-    animation:fadeUp 0.7s cubic-bezier(0.16,1,0.3,1) 0.3s both;
-  }
-  .brand-mobile img{
-    height:48px;width:auto;display:inline-block;
-    filter:drop-shadow(0 4px 16px rgba(132,199,211,0.3));
-  }
 
   /* Header */
   .login-header{margin-bottom:28px}
@@ -379,9 +371,11 @@
   /* ===== RESPONSIVE OVERRIDES (no fim pra ganhar do cascade) ===== */
   @media (max-width:900px){
     .stage{grid-template-columns:1fr}
-    .pane-left{display:none}
-    .brand-mobile{display:block}
-    .pane-right{min-height:100vh;padding:32px 24px}
+    .pane-left{display:flex;justify-content:center;align-items:center;padding:72px 28px 0;min-height:auto}
+    .pane-left .hero, .pane-left .foot{display:none}
+    .pane-left .logo-wrap{padding-top:0;text-align:center}
+    .pane-left .logo-wrap img{height:36px;margin:0 auto}
+    .pane-right{min-height:auto;padding:24px 24px 40px;align-items:flex-start}
   }
   @media (max-width:480px){
     .login-card{padding:32px 24px 24px;border-radius:20px}
@@ -435,10 +429,6 @@
   <!-- RIGHT: form -->
   <section class="pane-right">
     <div class="login-card">
-      <div class="brand-mobile">
-        <img src="/assets/brand/logo-full-white.png" alt="Sindicompany">
-      </div>
-
       <div class="login-header">
         <h1>Bem-vindo</h1>
         <p>Entre com seu email e senha pra acessar o painel.</p>
