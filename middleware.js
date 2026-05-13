@@ -34,7 +34,7 @@ async function kvGet(key) {
 
 export const config = {
   // Protege APENAS rotas autenticadas. Resto (/, /login.html, /assets/*, /api/login etc) público.
-  matcher: ['/hub.html', '/tools/:path*', '/dashboard.html', '/perfil.html', '/admin.html', '/api/sindi', '/api/sindi-chats', '/api/sindi-os', '/api/corretor', '/api/transcribe', '/api/gemini-doc', '/api/track-usage', '/api/email-invite', '/api/email-broadcast', '/api/presence', '/api/quick-capture', '/api/chat', '/api/team', '/api/change-password'],
+  matcher: ['/hub.html', '/tools/:path*', '/dashboard.html', '/perfil.html', '/admin.html', '/api/sindi', '/api/sindi-chats', '/api/sindi-os', '/api/corretor', '/api/transcribe', '/api/gemini-doc', '/api/track-usage', '/api/email-invite', '/api/email-broadcast', '/api/presence', '/api/quick-capture', '/api/chat', '/api/team', '/api/change-password', '/api/sindico-map'],
 };
 
 export default async function middleware(request) {

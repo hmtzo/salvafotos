@@ -1,0 +1,1680 @@
+{
+  "sindicos": [
+    {
+      "id": "rose-brandao",
+      "name": "Rose Brandão",
+      "color": "hsl(296, 65%, 50%)",
+      "region": "São Paulo"
+    },
+    {
+      "id": "hellen-barba",
+      "name": "Hellen Barba",
+      "color": "hsl(126, 65%, 50%)",
+      "region": "São Paulo"
+    },
+    {
+      "id": "gustavo-rosendo",
+      "name": "Gustavo Rosendo",
+      "color": "hsl(219, 65%, 50%)",
+      "region": "São Paulo"
+    },
+    {
+      "id": "diego-leite",
+      "name": "Diego Leite",
+      "color": "hsl(272, 65%, 50%)",
+      "region": "São Paulo"
+    },
+    {
+      "id": "armando-miranda",
+      "name": "Armando Miranda",
+      "color": "hsl(42, 65%, 50%)",
+      "region": "São Paulo"
+    },
+    {
+      "id": "everton-e-luiz",
+      "name": "Everton e Luiz",
+      "color": "hsl(134, 65%, 50%)",
+      "region": "São Paulo"
+    },
+    {
+      "id": "ana-carolina-goncalves-oliveira",
+      "name": "Ana Carolina Gonçalves Oliveira",
+      "color": "hsl(129, 65%, 50%)",
+      "region": "São Paulo"
+    },
+    {
+      "id": "amanda-accioli",
+      "name": "Amanda Accioli",
+      "color": "hsl(211, 65%, 50%)",
+      "region": "São Paulo"
+    },
+    {
+      "id": "luciana-tolentino",
+      "name": "Luciana Tolentino",
+      "color": "hsl(204, 65%, 50%)",
+      "region": "São Paulo"
+    },
+    {
+      "id": "corina-abreu",
+      "name": "Corina Abreu",
+      "color": "hsl(315, 65%, 50%)",
+      "region": "São Paulo"
+    },
+    {
+      "id": "rosana-marin",
+      "name": "Rosana Marin",
+      "color": "hsl(150, 65%, 50%)",
+      "region": "São Paulo"
+    },
+    {
+      "id": "sindicando",
+      "name": "Sindicando",
+      "color": "hsl(346, 65%, 50%)",
+      "region": "São Paulo"
+    },
+    {
+      "id": "silzer-draghi",
+      "name": "Silzer Draghi",
+      "color": "hsl(167, 65%, 50%)",
+      "region": "São Paulo"
+    },
+    {
+      "id": "ana-paula-silvestre-de-queiroz",
+      "name": "Ana Paula Silvestre de Queiroz",
+      "color": "hsl(209, 65%, 50%)",
+      "region": "São Paulo"
+    },
+    {
+      "id": "edson",
+      "name": "Edson",
+      "color": "hsl(164, 65%, 50%)",
+      "region": "São Paulo"
+    },
+    {
+      "id": "carlos-theodoro",
+      "name": "Carlos Theodoro",
+      "color": "hsl(351, 65%, 50%)",
+      "region": "São Paulo"
+    },
+    {
+      "id": "diogenes",
+      "name": "Diógenes",
+      "color": "hsl(266, 65%, 50%)",
+      "region": "São Paulo"
+    },
+    {
+      "id": "carlos-consenza",
+      "name": "Carlos Consenza",
+      "color": "hsl(228, 65%, 50%)",
+      "region": "São Paulo"
+    },
+    {
+      "id": "luiz-fernando-januario-barreto",
+      "name": "Luiz Fernando Januário Barreto",
+      "color": "hsl(300, 65%, 50%)",
+      "region": "São Paulo"
+    },
+    {
+      "id": "murilo-barvelli-de-souza",
+      "name": "Murilo Barvelli de Souza",
+      "color": "hsl(332, 65%, 50%)",
+      "region": "São Paulo"
+    },
+    {
+      "id": "ailton-de-miranda",
+      "name": "Ailton de Miranda",
+      "color": "hsl(146, 65%, 50%)",
+      "region": "São Paulo"
+    },
+    {
+      "id": "adriana-cavalcante",
+      "name": "Adriana Cavalcante",
+      "color": "hsl(291, 65%, 50%)",
+      "region": "São Paulo"
+    },
+    {
+      "id": "maria-ivana-achiles-perches",
+      "name": "Maria Ivana Achiles Perches",
+      "color": "hsl(116, 65%, 50%)",
+      "region": "São Paulo"
+    },
+    {
+      "id": "rodrigo-rosada",
+      "name": "Rodrigo Rosada",
+      "color": "hsl(100, 65%, 50%)",
+      "region": "São Paulo"
+    },
+    {
+      "id": "daniela-paes",
+      "name": "Daniela Paes",
+      "color": "hsl(61, 65%, 50%)",
+      "region": "São Paulo"
+    },
+    {
+      "id": "vanessa-alves",
+      "name": "Vanessa Alves",
+      "color": "hsl(86, 65%, 50%)",
+      "region": "São Paulo"
+    },
+    {
+      "id": "renato-land",
+      "name": "Renato Land",
+      "color": "hsl(38, 65%, 50%)",
+      "region": "São Paulo"
+    },
+    {
+      "id": "juliani-pardal-rj",
+      "name": "Juliani Pardal (RJ)",
+      "color": "hsl(52, 65%, 50%)",
+      "region": "São Paulo"
+    },
+    {
+      "id": "claudia-monica-smith-balagna-rj",
+      "name": "Claudia Mônica Smith Balagna (RJ)",
+      "color": "hsl(290, 65%, 50%)",
+      "region": "São Paulo"
+    },
+    {
+      "id": "flavio-martins",
+      "name": "Flavio Martins",
+      "color": "hsl(49, 65%, 50%)",
+      "region": "São Paulo"
+    },
+    {
+      "id": "carina-trindade-alessandro",
+      "name": "Carina Trindade/Alessandro",
+      "color": "hsl(208, 65%, 50%)",
+      "region": "Barueri e Região"
+    }
+  ],
+  "locations": [
+    {
+      "id": "loc-1",
+      "sindicoId": "rose-brandao",
+      "bairro": "Santo Amaro",
+      "lat": -23.6536633,
+      "lng": -46.7066927,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-2",
+      "sindicoId": "rose-brandao",
+      "bairro": "Alto da Boa Vista",
+      "lat": -23.6352539,
+      "lng": -46.6920665,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-3",
+      "sindicoId": "rose-brandao",
+      "bairro": "Chácara Flora",
+      "lat": -23.6497016,
+      "lng": -46.6866127,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-4",
+      "sindicoId": "rose-brandao",
+      "bairro": "Campo Belo",
+      "lat": -23.6220296,
+      "lng": -46.6720199,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-5",
+      "sindicoId": "hellen-barba",
+      "bairro": "Zona Leste",
+      "lat": -23.533889,
+      "lng": -46.503333,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-6",
+      "sindicoId": "gustavo-rosendo",
+      "bairro": "Ipiranga",
+      "lat": -23.5880611,
+      "lng": -46.6040369,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-7",
+      "sindicoId": "gustavo-rosendo",
+      "bairro": "Cambuci",
+      "lat": -23.5644729,
+      "lng": -46.6211126,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-8",
+      "sindicoId": "diego-leite",
+      "bairro": "Osasco",
+      "lat": -23.5318198,
+      "lng": -46.7916315,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-9",
+      "sindicoId": "diego-leite",
+      "bairro": "Carapicuíba",
+      "lat": -23.5195162,
+      "lng": -46.8366591,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-10",
+      "sindicoId": "armando-miranda",
+      "bairro": "Santana",
+      "lat": -23.4989957,
+      "lng": -46.6255918,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-11",
+      "sindicoId": "armando-miranda",
+      "bairro": "Zona Norte",
+      "lat": -23.5153886,
+      "lng": -46.6178042,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-12",
+      "sindicoId": "armando-miranda",
+      "bairro": "Centro de São Paulo",
+      "lat": -23.5406338,
+      "lng": -46.6320967,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-13",
+      "sindicoId": "armando-miranda",
+      "bairro": "Limão",
+      "lat": -23.507445,
+      "lng": -46.6717412,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-14",
+      "sindicoId": "everton-e-luiz",
+      "bairro": "Jardim Saude",
+      "lat": -23.5625736,
+      "lng": -46.3372826,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-15",
+      "sindicoId": "everton-e-luiz",
+      "bairro": "Ipiranga",
+      "lat": -23.5880611,
+      "lng": -46.6040369,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-16",
+      "sindicoId": "everton-e-luiz",
+      "bairro": "Santa Cruz",
+      "lat": -23.5989093,
+      "lng": -46.6368331,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-17",
+      "sindicoId": "everton-e-luiz",
+      "bairro": "Cursino",
+      "lat": -23.6029915,
+      "lng": -46.6255389,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-18",
+      "sindicoId": "everton-e-luiz",
+      "bairro": "Jardim Maria Estela",
+      "lat": -23.6343679,
+      "lng": -46.599914,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-19",
+      "sindicoId": "everton-e-luiz",
+      "bairro": "Vila Gumercindo",
+      "lat": -23.6043043,
+      "lng": -46.6210667,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-20",
+      "sindicoId": "everton-e-luiz",
+      "bairro": "Vila Clementino",
+      "lat": -23.5983156,
+      "lng": -46.6439626,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-21",
+      "sindicoId": "everton-e-luiz",
+      "bairro": "Alto do Ipiranga",
+      "lat": -23.6020094,
+      "lng": -46.6124299,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-22",
+      "sindicoId": "everton-e-luiz",
+      "bairro": "Sacomã",
+      "lat": -23.6149954,
+      "lng": -46.5969541,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-23",
+      "sindicoId": "everton-e-luiz",
+      "bairro": "Moinho Velho",
+      "lat": -23.4932635,
+      "lng": -46.7049487,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-24",
+      "sindicoId": "ana-carolina-goncalves-oliveira",
+      "bairro": "Embu das Artes",
+      "lat": -23.6498318,
+      "lng": -46.8532804,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-25",
+      "sindicoId": "amanda-accioli",
+      "bairro": "Higienópolis",
+      "lat": -23.5457512,
+      "lng": -46.6599426,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-26",
+      "sindicoId": "amanda-accioli",
+      "bairro": "Vila Buarque",
+      "lat": -23.5417051,
+      "lng": -46.650918,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-27",
+      "sindicoId": "amanda-accioli",
+      "bairro": "Santa Cecilia",
+      "lat": -23.5381968,
+      "lng": -46.6572575,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-28",
+      "sindicoId": "amanda-accioli",
+      "bairro": "Centro Histórico de São Paulo",
+      "lat": -23.5406338,
+      "lng": -46.6320967,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-29",
+      "sindicoId": "amanda-accioli",
+      "bairro": "Barra Funda",
+      "lat": -23.5291923,
+      "lng": -46.6609986,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-30",
+      "sindicoId": "amanda-accioli",
+      "bairro": "Pacaembu",
+      "lat": -23.5460244,
+      "lng": -46.6693634,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-31",
+      "sindicoId": "amanda-accioli",
+      "bairro": "Perdizes",
+      "lat": -23.5369017,
+      "lng": -46.6743166,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-32",
+      "sindicoId": "amanda-accioli",
+      "bairro": "Pompeia",
+      "lat": -23.5322908,
+      "lng": -46.6850215,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-33",
+      "sindicoId": "amanda-accioli",
+      "bairro": "Pinheiros",
+      "lat": -23.5635787,
+      "lng": -46.6916068,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-34",
+      "sindicoId": "amanda-accioli",
+      "bairro": "Alto de Pinheiros",
+      "lat": -23.5532742,
+      "lng": -46.7096303,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-35",
+      "sindicoId": "amanda-accioli",
+      "bairro": "Jardins",
+      "lat": -23.5734145,
+      "lng": -46.6729483,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-36",
+      "sindicoId": "luciana-tolentino",
+      "bairro": "Morumbi",
+      "lat": -23.5978856,
+      "lng": -46.7201808,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-37",
+      "sindicoId": "luciana-tolentino",
+      "bairro": "Vila Andrade",
+      "lat": -23.6315085,
+      "lng": -46.7367426,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-38",
+      "sindicoId": "luciana-tolentino",
+      "bairro": "Campo Limpo",
+      "lat": -23.6347959,
+      "lng": -46.7549902,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-39",
+      "sindicoId": "corina-abreu",
+      "bairro": "Santo André",
+      "lat": -23.6876695,
+      "lng": -46.493085,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-40",
+      "sindicoId": "corina-abreu",
+      "bairro": "São Bernardo do Campo",
+      "lat": -23.7018047,
+      "lng": -46.5536333,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-41",
+      "sindicoId": "corina-abreu",
+      "bairro": "São Caetano",
+      "lat": -23.6164434,
+      "lng": -46.567958,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-42",
+      "sindicoId": "rose-brandao",
+      "bairro": "Brooklin",
+      "lat": -23.6193175,
+      "lng": -46.682458,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-43",
+      "sindicoId": "rose-brandao",
+      "bairro": "Vila Sofia",
+      "lat": -23.659547,
+      "lng": -46.6910592,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-44",
+      "sindicoId": "rose-brandao",
+      "bairro": "Morumbi",
+      "lat": -23.5978856,
+      "lng": -46.7201808,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-45",
+      "sindicoId": "rosana-marin",
+      "bairro": "Zona Leste",
+      "lat": -23.533889,
+      "lng": -46.503333,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-46",
+      "sindicoId": "sindicando",
+      "bairro": "Zona Leste",
+      "lat": -23.533889,
+      "lng": -46.503333,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-47",
+      "sindicoId": "sindicando",
+      "bairro": "Zona Norte",
+      "lat": -23.480278,
+      "lng": -46.670833,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-48",
+      "sindicoId": "silzer-draghi",
+      "bairro": "Go! Barra Funda",
+      "lat": -23.5223285,
+      "lng": -46.6651599,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-49",
+      "sindicoId": "gustavo-rosendo",
+      "bairro": "Plano Rio Bonito",
+      "lat": -23.6748027,
+      "lng": -46.7090034,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-50",
+      "sindicoId": "gustavo-rosendo",
+      "bairro": "Resid. Plano & Mooca - Praça Lion III",
+      "lat": -23.5626352,
+      "lng": -46.6106096,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-51",
+      "sindicoId": "ana-paula-silvestre-de-queiroz",
+      "bairro": "Tatuapé",
+      "lat": -23.5352452,
+      "lng": -46.575463,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-52",
+      "sindicoId": "ana-paula-silvestre-de-queiroz",
+      "bairro": "Mooca",
+      "lat": -23.5603265,
+      "lng": -46.5995903,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-53",
+      "sindicoId": "ana-paula-silvestre-de-queiroz",
+      "bairro": "Belém",
+      "lat": -23.5470833,
+      "lng": -46.5911994,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-54",
+      "sindicoId": "ana-paula-silvestre-de-queiroz",
+      "bairro": "Penha de França",
+      "lat": -23.5258058,
+      "lng": -46.5488813,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-55",
+      "sindicoId": "edson",
+      "bairro": "Barra Funda",
+      "lat": -23.5291923,
+      "lng": -46.6609986,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-56",
+      "sindicoId": "edson",
+      "bairro": "Pompeia",
+      "lat": -23.5322908,
+      "lng": -46.6850215,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-57",
+      "sindicoId": "edson",
+      "bairro": "Perdizes",
+      "lat": -23.5369017,
+      "lng": -46.6743166,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-58",
+      "sindicoId": "edson",
+      "bairro": "Santa Cecilia",
+      "lat": -23.5381968,
+      "lng": -46.6572575,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-59",
+      "sindicoId": "edson",
+      "bairro": "Bom Retiro",
+      "lat": -23.5256699,
+      "lng": -46.640706,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-60",
+      "sindicoId": "edson",
+      "bairro": "Lapa",
+      "lat": -23.5227337,
+      "lng": -46.7114185,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-61",
+      "sindicoId": "edson",
+      "bairro": "Casa Verde",
+      "lat": -23.5109881,
+      "lng": -46.6574419,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-62",
+      "sindicoId": "edson",
+      "bairro": "Vila Guilherme",
+      "lat": -23.5144031,
+      "lng": -46.6074484,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-63",
+      "sindicoId": "silzer-draghi",
+      "bairro": "Santana",
+      "lat": -23.4989957,
+      "lng": -46.6255918,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-64",
+      "sindicoId": "silzer-draghi",
+      "bairro": "Casa Verde",
+      "lat": -23.5109881,
+      "lng": -46.6574419,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-65",
+      "sindicoId": "silzer-draghi",
+      "bairro": "Lapa",
+      "lat": -23.5227337,
+      "lng": -46.7114185,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-66",
+      "sindicoId": "silzer-draghi",
+      "bairro": "Barra Funda",
+      "lat": -23.5291923,
+      "lng": -46.6609986,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-67",
+      "sindicoId": "silzer-draghi",
+      "bairro": "Vila Pirituba",
+      "lat": -23.4791158,
+      "lng": -46.7418047,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-68",
+      "sindicoId": "silzer-draghi",
+      "bairro": "Limão",
+      "lat": -23.507445,
+      "lng": -46.6717412,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-69",
+      "sindicoId": "silzer-draghi",
+      "bairro": "Freguesia do Ó",
+      "lat": -23.5014967,
+      "lng": -46.6977016,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-70",
+      "sindicoId": "carlos-theodoro",
+      "bairro": "Jardins",
+      "lat": -23.5734145,
+      "lng": -46.6729483,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-71",
+      "sindicoId": "carlos-theodoro",
+      "bairro": "Bela Vista",
+      "lat": -23.5554048,
+      "lng": -46.6456426,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-72",
+      "sindicoId": "carlos-theodoro",
+      "bairro": "Pacaembu",
+      "lat": -23.5460244,
+      "lng": -46.6693634,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-73",
+      "sindicoId": "carlos-theodoro",
+      "bairro": "Perdizes",
+      "lat": -23.5369017,
+      "lng": -46.6743166,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-74",
+      "sindicoId": "diogenes",
+      "bairro": "Morumbi",
+      "lat": -23.5978856,
+      "lng": -46.7201808,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-75",
+      "sindicoId": "diogenes",
+      "bairro": "Campo Limpo",
+      "lat": -23.6347959,
+      "lng": -46.7549902,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-76",
+      "sindicoId": "carlos-consenza",
+      "bairro": "Mairinque",
+      "lat": -23.5451019,
+      "lng": -47.1902389,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-77",
+      "sindicoId": "carlos-consenza",
+      "bairro": "Cotia",
+      "lat": -23.6026939,
+      "lng": -46.9194755,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-78",
+      "sindicoId": "carlos-consenza",
+      "bairro": "Caucaia do Alto",
+      "lat": -23.6845818,
+      "lng": -47.0218397,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-79",
+      "sindicoId": "carlos-consenza",
+      "bairro": "Butantã",
+      "lat": -23.5634872,
+      "lng": -46.7210095,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-80",
+      "sindicoId": "carlos-consenza",
+      "bairro": "Vargem Grande Paulista",
+      "lat": -23.6053279,
+      "lng": -47.022617,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-81",
+      "sindicoId": "carlos-consenza",
+      "bairro": "Granja Viana",
+      "lat": -23.5890232,
+      "lng": -46.830733,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-82",
+      "sindicoId": "luiz-fernando-januario-barreto",
+      "bairro": "Casa Verde",
+      "lat": -23.5109881,
+      "lng": -46.6574419,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-83",
+      "sindicoId": "luiz-fernando-januario-barreto",
+      "bairro": "Santana",
+      "lat": -23.4989957,
+      "lng": -46.6255918,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-84",
+      "sindicoId": "luiz-fernando-januario-barreto",
+      "bairro": "Limão",
+      "lat": -23.507445,
+      "lng": -46.6717412,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-85",
+      "sindicoId": "luiz-fernando-januario-barreto",
+      "bairro": "Vila Mariana",
+      "lat": -23.589702,
+      "lng": -46.6346381,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-86",
+      "sindicoId": "luiz-fernando-januario-barreto",
+      "bairro": "Freguesia do Ó",
+      "lat": -23.5014967,
+      "lng": -46.6977016,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-87",
+      "sindicoId": "luiz-fernando-januario-barreto",
+      "bairro": "Tucuruvi",
+      "lat": -23.473904,
+      "lng": -46.6108174,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-88",
+      "sindicoId": "luiz-fernando-januario-barreto",
+      "bairro": "Barra Funda",
+      "lat": -23.5291923,
+      "lng": -46.6609986,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-89",
+      "sindicoId": "luiz-fernando-januario-barreto",
+      "bairro": "Pacaembu",
+      "lat": -23.5460244,
+      "lng": -46.6693634,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-90",
+      "sindicoId": "luiz-fernando-januario-barreto",
+      "bairro": "Perdizes",
+      "lat": -23.5369017,
+      "lng": -46.6743166,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-91",
+      "sindicoId": "murilo-barvelli-de-souza",
+      "bairro": "Chácara Klabin",
+      "lat": -23.5917441,
+      "lng": -46.6295089,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-92",
+      "sindicoId": "murilo-barvelli-de-souza",
+      "bairro": "Vila Clementino",
+      "lat": -23.5983156,
+      "lng": -46.6439626,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-93",
+      "sindicoId": "murilo-barvelli-de-souza",
+      "bairro": "Aclimação",
+      "lat": -23.571487,
+      "lng": -46.6309716,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-94",
+      "sindicoId": "murilo-barvelli-de-souza",
+      "bairro": "Paraíso",
+      "lat": -23.5747597,
+      "lng": -46.6487863,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-95",
+      "sindicoId": "murilo-barvelli-de-souza",
+      "bairro": "Moema",
+      "lat": -23.6020214,
+      "lng": -46.6721032,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-96",
+      "sindicoId": "murilo-barvelli-de-souza",
+      "bairro": "Jardins",
+      "lat": -23.5734145,
+      "lng": -46.6729483,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-97",
+      "sindicoId": "murilo-barvelli-de-souza",
+      "bairro": "Ipiranga",
+      "lat": -23.5880611,
+      "lng": -46.6040369,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-98",
+      "sindicoId": "murilo-barvelli-de-souza",
+      "bairro": "Chacara Inglesa",
+      "lat": -23.6049933,
+      "lng": -46.6294103,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-99",
+      "sindicoId": "murilo-barvelli-de-souza",
+      "bairro": "Mirandópolis",
+      "lat": -23.6070642,
+      "lng": -46.642778,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-100",
+      "sindicoId": "murilo-barvelli-de-souza",
+      "bairro": "Vila da Saúde",
+      "lat": -23.6183379,
+      "lng": -46.6354972,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-101",
+      "sindicoId": "murilo-barvelli-de-souza",
+      "bairro": "Indianópolis",
+      "lat": -23.6104058,
+      "lng": -46.6686253,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-102",
+      "sindicoId": "murilo-barvelli-de-souza",
+      "bairro": "Itaim Bibi",
+      "lat": -23.5837476,
+      "lng": -46.6780743,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-103",
+      "sindicoId": "murilo-barvelli-de-souza",
+      "bairro": "Vila Nova Conceição",
+      "lat": -23.5917828,
+      "lng": -46.6727333,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-104",
+      "sindicoId": "murilo-barvelli-de-souza",
+      "bairro": "Cambuci",
+      "lat": -23.5644729,
+      "lng": -46.6211126,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-105",
+      "sindicoId": "murilo-barvelli-de-souza",
+      "bairro": "Bela Vista",
+      "lat": -23.5554048,
+      "lng": -46.6456426,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-106",
+      "sindicoId": "murilo-barvelli-de-souza",
+      "bairro": "Bosque da Saúde",
+      "lat": -23.6114521,
+      "lng": -46.6233355,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-107",
+      "sindicoId": "ailton-de-miranda",
+      "bairro": "Campo Belo",
+      "lat": -23.6185902,
+      "lng": -46.6822481,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-108",
+      "sindicoId": "ailton-de-miranda",
+      "bairro": "Brooklin Novo",
+      "lat": -23.6148608,
+      "lng": -46.6773968,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-109",
+      "sindicoId": "ailton-de-miranda",
+      "bairro": "Brooklin",
+      "lat": -23.6193175,
+      "lng": -46.682458,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-110",
+      "sindicoId": "adriana-cavalcante",
+      "bairro": "Santo André",
+      "lat": -23.6876695,
+      "lng": -46.493085,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-111",
+      "sindicoId": "adriana-cavalcante",
+      "bairro": "São Bernardo do Campo",
+      "lat": -23.7018047,
+      "lng": -46.5536333,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-112",
+      "sindicoId": "adriana-cavalcante",
+      "bairro": "São Caetano do Sul",
+      "lat": -23.6164434,
+      "lng": -46.567958,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-113",
+      "sindicoId": "adriana-cavalcante",
+      "bairro": "Diadema",
+      "lat": -23.6879922,
+      "lng": -46.6251796,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-114",
+      "sindicoId": "maria-ivana-achiles-perches",
+      "bairro": "Santa Cecilia",
+      "lat": -23.5381968,
+      "lng": -46.6572575,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-115",
+      "sindicoId": "maria-ivana-achiles-perches",
+      "bairro": "Higienópolis",
+      "lat": -23.5457512,
+      "lng": -46.6599426,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-116",
+      "sindicoId": "maria-ivana-achiles-perches",
+      "bairro": "Campos Elíseos",
+      "lat": -23.5321694,
+      "lng": -46.6455786,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-117",
+      "sindicoId": "maria-ivana-achiles-perches",
+      "bairro": "Perdizes",
+      "lat": -23.5369017,
+      "lng": -46.6743166,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-118",
+      "sindicoId": "maria-ivana-achiles-perches",
+      "bairro": "Pompeia",
+      "lat": -23.5322908,
+      "lng": -46.6850215,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-119",
+      "sindicoId": "maria-ivana-achiles-perches",
+      "bairro": "Sumaré",
+      "lat": -23.5444153,
+      "lng": -46.6851971,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-120",
+      "sindicoId": "maria-ivana-achiles-perches",
+      "bairro": "Centro",
+      "lat": -23.5711135,
+      "lng": -46.6401295,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-121",
+      "sindicoId": "maria-ivana-achiles-perches",
+      "bairro": "Bela Vista",
+      "lat": -23.5554048,
+      "lng": -46.6456426,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-122",
+      "sindicoId": "maria-ivana-achiles-perches",
+      "bairro": "Pinheiros",
+      "lat": -23.5635787,
+      "lng": -46.6916068,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-123",
+      "sindicoId": "rodrigo-rosada",
+      "bairro": "Perdizes",
+      "lat": -23.5369017,
+      "lng": -46.6743166,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-124",
+      "sindicoId": "rodrigo-rosada",
+      "bairro": "Pompeia",
+      "lat": -23.5322908,
+      "lng": -46.6850215,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-125",
+      "sindicoId": "rodrigo-rosada",
+      "bairro": "Vila Romana",
+      "lat": -23.5291898,
+      "lng": -46.6979238,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-126",
+      "sindicoId": "rodrigo-rosada",
+      "bairro": "Lapa",
+      "lat": -23.5227337,
+      "lng": -46.7114185,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-127",
+      "sindicoId": "rodrigo-rosada",
+      "bairro": "Alto da Lapa",
+      "lat": -23.5289889,
+      "lng": -46.7200857,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-128",
+      "sindicoId": "rodrigo-rosada",
+      "bairro": "Vila Leopoldina",
+      "lat": -23.5324298,
+      "lng": -46.7335886,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-129",
+      "sindicoId": "rodrigo-rosada",
+      "bairro": "Alto de Pinheiros",
+      "lat": -23.5532742,
+      "lng": -46.7096303,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-130",
+      "sindicoId": "rodrigo-rosada",
+      "bairro": "Pinheiros",
+      "lat": -23.5635787,
+      "lng": -46.6916068,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-131",
+      "sindicoId": "rodrigo-rosada",
+      "bairro": "Vila Madalena",
+      "lat": -23.5514369,
+      "lng": -46.6975656,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-132",
+      "sindicoId": "rodrigo-rosada",
+      "bairro": "Sumaré",
+      "lat": -23.5444153,
+      "lng": -46.6851971,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-133",
+      "sindicoId": "rodrigo-rosada",
+      "bairro": "Barra Funda",
+      "lat": -23.5291923,
+      "lng": -46.6609986,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-134",
+      "sindicoId": "rodrigo-rosada",
+      "bairro": "Santa Cecilia",
+      "lat": -23.5381968,
+      "lng": -46.6572575,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-135",
+      "sindicoId": "rodrigo-rosada",
+      "bairro": "Higienópolis",
+      "lat": -23.5457512,
+      "lng": -46.6599426,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-136",
+      "sindicoId": "rodrigo-rosada",
+      "bairro": "Pacaembu",
+      "lat": -23.5460244,
+      "lng": -46.6693634,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-137",
+      "sindicoId": "rodrigo-rosada",
+      "bairro": "Bela Vista",
+      "lat": -23.5554048,
+      "lng": -46.6456426,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-138",
+      "sindicoId": "rodrigo-rosada",
+      "bairro": "Consolação",
+      "lat": -23.5520577,
+      "lng": -46.6525766,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-139",
+      "sindicoId": "rodrigo-rosada",
+      "bairro": "Jardim Paulista",
+      "lat": -23.5739787,
+      "lng": -46.6606906,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-140",
+      "sindicoId": "rodrigo-rosada",
+      "bairro": "Freguesia do Ó",
+      "lat": -23.5014967,
+      "lng": -46.6977016,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-141",
+      "sindicoId": "daniela-paes",
+      "bairro": "Tatuapé",
+      "lat": -23.5352452,
+      "lng": -46.575463,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-142",
+      "sindicoId": "rodrigo-rosada",
+      "bairro": "Limão",
+      "lat": -23.507445,
+      "lng": -46.6717412,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-143",
+      "sindicoId": "vanessa-alves",
+      "bairro": "Vila Pirituba",
+      "lat": -23.4791158,
+      "lng": -46.7418047,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-144",
+      "sindicoId": "vanessa-alves",
+      "bairro": "Lapa",
+      "lat": -23.5227337,
+      "lng": -46.7114185,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-145",
+      "sindicoId": "vanessa-alves",
+      "bairro": "Barra Funda",
+      "lat": -23.5291923,
+      "lng": -46.6609986,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-146",
+      "sindicoId": "vanessa-alves",
+      "bairro": "Casa Verde",
+      "lat": -23.5109881,
+      "lng": -46.6574419,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-147",
+      "sindicoId": "vanessa-alves",
+      "bairro": "Limão",
+      "lat": -23.507445,
+      "lng": -46.6717412,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-148",
+      "sindicoId": "vanessa-alves",
+      "bairro": "Freguesia do Ó",
+      "lat": -23.5014967,
+      "lng": -46.6977016,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-149",
+      "sindicoId": "vanessa-alves",
+      "bairro": "Osasco",
+      "lat": -23.5318198,
+      "lng": -46.7916315,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-150",
+      "sindicoId": "renato-land",
+      "bairro": "Santa Cecilia",
+      "lat": -23.5381968,
+      "lng": -46.6572575,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-151",
+      "sindicoId": "renato-land",
+      "bairro": "Barra Funda",
+      "lat": -23.5291923,
+      "lng": -46.6609986,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-152",
+      "sindicoId": "renato-land",
+      "bairro": "Higienópolis",
+      "lat": -23.5457512,
+      "lng": -46.6599426,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-153",
+      "sindicoId": "renato-land",
+      "bairro": "Perdizes",
+      "lat": -23.5369017,
+      "lng": -46.6743166,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-154",
+      "sindicoId": "renato-land",
+      "bairro": "Pinheiros",
+      "lat": -23.5635787,
+      "lng": -46.6916068,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-155",
+      "sindicoId": "juliani-pardal-rj",
+      "bairro": "Jacarepaguá",
+      "lat": -22.9667347,
+      "lng": -43.412237,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-156",
+      "sindicoId": "juliani-pardal-rj",
+      "bairro": "Barra da Tijuca",
+      "lat": -23.0040194,
+      "lng": -43.3661069,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-157",
+      "sindicoId": "juliani-pardal-rj",
+      "bairro": "Recreio dos Bandeirantes",
+      "lat": -23.0178705,
+      "lng": -43.4647479,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-158",
+      "sindicoId": "juliani-pardal-rj",
+      "bairro": "Tijuca",
+      "lat": -22.9324433,
+      "lng": -43.2411073,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-159",
+      "sindicoId": "claudia-monica-smith-balagna-rj",
+      "bairro": "Tijuca",
+      "lat": -22.9324433,
+      "lng": -43.2411073,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-160",
+      "sindicoId": "claudia-monica-smith-balagna-rj",
+      "bairro": "Grajaú",
+      "lat": -22.923666,
+      "lng": -43.2583192,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-161",
+      "sindicoId": "claudia-monica-smith-balagna-rj",
+      "bairro": "Andaraí",
+      "lat": -22.922329,
+      "lng": -43.2477454,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-162",
+      "sindicoId": "claudia-monica-smith-balagna-rj",
+      "bairro": "Vila Isabel",
+      "lat": -22.9165886,
+      "lng": -43.2502461,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-163",
+      "sindicoId": "claudia-monica-smith-balagna-rj",
+      "bairro": "Vila Isabel",
+      "lat": -22.9165886,
+      "lng": -43.2502461,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-164",
+      "sindicoId": "claudia-monica-smith-balagna-rj",
+      "bairro": "Boca do Mato",
+      "lat": -22.5341018,
+      "lng": -43.7975211,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-165",
+      "sindicoId": "claudia-monica-smith-balagna-rj",
+      "bairro": "Usina",
+      "lat": -22.9449745,
+      "lng": -43.2585135,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-166",
+      "sindicoId": "claudia-monica-smith-balagna-rj",
+      "bairro": "Engenho Novo",
+      "lat": -22.9019487,
+      "lng": -43.2690737,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-167",
+      "sindicoId": "claudia-monica-smith-balagna-rj",
+      "bairro": "Maracanã",
+      "lat": -22.9123598,
+      "lng": -43.2265474,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-168",
+      "sindicoId": "claudia-monica-smith-balagna-rj",
+      "bairro": "Praça da Bandeira",
+      "lat": -22.9122663,
+      "lng": -43.2133348,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-169",
+      "sindicoId": "claudia-monica-smith-balagna-rj",
+      "bairro": "Alto da Boa Vista",
+      "lat": -22.9726463,
+      "lng": -43.2841586,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-170",
+      "sindicoId": "claudia-monica-smith-balagna-rj",
+      "bairro": "Praça Saenz Peña",
+      "lat": -22.9246844,
+      "lng": -43.2322176,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-171",
+      "sindicoId": "flavio-martins",
+      "bairro": "Santo André",
+      "lat": -23.6876695,
+      "lng": -46.493085,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-172",
+      "sindicoId": "flavio-martins",
+      "bairro": "São Caetano do Sul",
+      "lat": -23.6164434,
+      "lng": -46.567958,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-173",
+      "sindicoId": "flavio-martins",
+      "bairro": "São Bernardo do Campo",
+      "lat": -23.7018047,
+      "lng": -46.5536333,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-174",
+      "sindicoId": "flavio-martins",
+      "bairro": "Mauá",
+      "lat": -23.666558,
+      "lng": -46.4599145,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-175",
+      "sindicoId": "flavio-martins",
+      "bairro": "Região Metropolitana da Baixada Santista",
+      "lat": -23.9255803,
+      "lng": -46.3809813,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-176",
+      "sindicoId": "flavio-martins",
+      "bairro": "São Vicente",
+      "lat": -23.9603273,
+      "lng": -46.3968727,
+      "region": "São Paulo"
+    },
+    {
+      "id": "loc-177",
+      "sindicoId": "carina-trindade-alessandro",
+      "bairro": "Barueri",
+      "lat": -23.5035117,
+      "lng": -46.8785468,
+      "region": "Barueri e Região"
+    },
+    {
+      "id": "loc-178",
+      "sindicoId": "carina-trindade-alessandro",
+      "bairro": "Jandira",
+      "lat": -23.530218,
+      "lng": -46.8981019,
+      "region": "Barueri e Região"
+    },
+    {
+      "id": "loc-179",
+      "sindicoId": "carina-trindade-alessandro",
+      "bairro": "Itapevi",
+      "lat": -23.5507572,
+      "lng": -46.9388116,
+      "region": "Barueri e Região"
+    },
+    {
+      "id": "loc-180",
+      "sindicoId": "carina-trindade-alessandro",
+      "bairro": "Cotia",
+      "lat": -23.6026939,
+      "lng": -46.9194755,
+      "region": "Barueri e Região"
+    },
+    {
+      "id": "loc-181",
+      "sindicoId": "carina-trindade-alessandro",
+      "bairro": "Vargem Grande Paulista",
+      "lat": -23.6053279,
+      "lng": -47.022617,
+      "region": "Barueri e Região"
+    },
+    {
+      "id": "loc-182",
+      "sindicoId": "daniela-paes",
+      "bairro": "Mooca",
+      "lat": -23.5603265,
+      "lng": -46.5995903,
+      "region": "Barueri e Região"
+    },
+    {
+      "id": "loc-183",
+      "sindicoId": "daniela-paes",
+      "bairro": "Santos",
+      "lat": -23.9592038,
+      "lng": -46.3317806,
+      "region": "Barueri e Região"
+    },
+    {
+      "id": "loc-184",
+      "sindicoId": "daniela-paes",
+      "bairro": "São Vicente",
+      "lat": -23.9603273,
+      "lng": -46.3968727,
+      "region": "Barueri e Região"
+    },
+    {
+      "id": "loc-185",
+      "sindicoId": "daniela-paes",
+      "bairro": "Praia Grande",
+      "lat": -24.0030855,
+      "lng": -46.4178426,
+      "region": "Barueri e Região"
+    },
+    {
+      "id": "loc-186",
+      "sindicoId": "daniela-paes",
+      "bairro": "Guarujá",
+      "lat": -23.9947975,
+      "lng": -46.2568564,
+      "region": "Barueri e Região"
+    }
+  ]
+}

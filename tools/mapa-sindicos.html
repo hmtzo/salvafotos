@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0a0a0c">
+<title>Mapa dos Síndicos — Sindicompany</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="icon" type="image/png" href="/assets/brand/icon-color.png">
+<link rel="stylesheet" href="/assets/shared.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css">
+<script src="/assets/shared.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+<style>
+  body{margin:0;overflow:hidden}
+  main.map-page{
+    display:grid;grid-template-columns:340px 1fr;
+    height:calc(100dvh - 60px);min-height:560px;
+  }
+  @media (max-width:780px){
+    main.map-page{grid-template-columns:1fr;height:calc(100dvh - 56px)}
+    .map-aside.hidden-mobile{display:none}
+  }
+
+  .map-aside{
+    background:#0e0e13;border-right:1px solid var(--border);
+    display:flex;flex-direction:column;overflow:hidden;
+  }
+  .map-aside-head{padding:14px 16px;border-bottom:1px solid var(--border)}
+  .map-aside-head h2{font-size:16px;margin:0 0 4px;font-weight:700}
+  .map-aside-head .sub{font-size:11.5px;color:var(--text-dim)}
+  .map-stats{display:flex;gap:8px;margin-top:10px}
+  .map-stat{
+    flex:1;padding:8px 10px;background:rgba(255,255,255,0.03);border-radius:8px;text-align:center;
+  }
+  .map-stat .v{font-size:20px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums}
+  .map-stat .l{font-size:9.5px;color:var(--text-dim);font-weight:700;letter-spacing:0.05em;text-transform:uppercase;margin-top:3px}
+
+  .map-search{padding:10px 16px;border-bottom:1px solid var(--border)}
+  .map-search input{
+    width:100%;padding:8px 12px 8px 32px;border-radius:8px;
+    background:rgba(255,255,255,0.05);border:1px solid var(--border);
+    color:var(--text);font-family:inherit;font-size:13px;
+    background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' fill='none' stroke='%23a1a1aa' stroke-width='2' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='M21 21l-4.35-4.35'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;background-position:10px center;background-size:14px;
+  }
+
+  .map-actions{display:flex;gap:6px;padding:10px 16px;border-bottom:1px solid var(--border)}
+  .map-actions button{
+    flex:1;padding:8px 10px;background:rgba(99,102,241,0.1);border:1px solid rgba(99,102,241,0.3);
+    border-radius:8px;color:#a5b4fc;font-family:inherit;font-size:11.5px;font-weight:600;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;gap:6px;
+  }
+  .map-actions button:hover{background:rgba(99,102,241,0.18)}
+  .map-actions button svg{width:13px;height:13px}
+
+  .map-sindicos-list{flex:1;overflow-y:auto;padding:4px 0}
+  .sindico-row{
+    display:flex;align-items:center;gap:10px;padding:8px 16px;cursor:pointer;
+    border-left:3px solid transparent;
+  }
+  .sindico-row:hover{background:rgba(255,255,255,0.04)}
+  .sindico-row.active{background:rgba(99,102,241,0.08);border-left-color:#6366f1}
+  .sindico-row .dot{
+    width:14px;height:14px;border-radius:50%;flex:0 0 14px;
+    box-shadow:0 0 0 2px rgba(255,255,255,0.1);
+  }
+  .sindico-row .info{flex:1;min-width:0}
+  .sindico-row .name{font-size:13px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .sindico-row .meta{font-size:11px;color:var(--text-dim);margin-top:1px}
+
+  .map-stage{position:relative}
+  #map{height:100%;width:100%;background:#1a1a1f}
+  .leaflet-popup-content-wrapper{background:#1c1c22;color:#fff;border-radius:12px;box-shadow:0 12px 32px rgba(0,0,0,0.6)}
+  .leaflet-popup-tip{background:#1c1c22}
+  .leaflet-popup-content{font-family:'Inter',sans-serif;margin:14px 16px;font-size:13px;line-height:1.55}
+  .leaflet-popup-content h3{margin:0 0 6px;font-size:14.5px;font-weight:700;color:#fff}
+  .leaflet-popup-content .badge{display:inline-block;padding:2px 8px;border-radius:100px;font-size:10.5px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;margin-bottom:6px}
+  .leaflet-popup-content .meta{font-size:11.5px;color:#a1a1aa;margin-top:6px}
+  .leaflet-popup-close-button{color:#a1a1aa !important;font-size:18px !important;margin-top:4px !important;margin-right:4px !important}
+  .leaflet-control-zoom a{background:#1c1c22 !important;color:#fff !important;border:1px solid #2a2a32 !important}
+  .leaflet-control-zoom a:hover{background:#2a2a32 !important}
+  .leaflet-control-attribution{background:rgba(0,0,0,0.6) !important;color:#a1a1aa !important;font-size:9.5px !important}
+  .leaflet-control-attribution a{color:#a5b4fc !important}
+
+  /* Mobile toggle */
+  .map-toggle-aside{
+    display:none;position:absolute;top:14px;left:14px;z-index:500;
+    padding:8px 14px;background:#1c1c22;border:1px solid var(--border);border-radius:8px;
+    color:var(--text);font-family:inherit;font-size:12px;font-weight:600;cursor:pointer;
+    box-shadow:0 4px 12px rgba(0,0,0,0.4);
+  }
+  @media (max-width:780px){.map-toggle-aside{display:block}}
+
+  /* === MODAL/GATE === */
+  .gate-overlay{
+    position:fixed;inset:0;z-index:9999;
+    background:rgba(0,0,0,0.85);backdrop-filter:blur(8px);
+    display:flex;align-items:center;justify-content:center;padding:20px;
+  }
+  .gate-overlay[hidden]{display:none}
+  .gate-card{
+    width:100%;max-width:380px;padding:28px 28px 24px;
+    background:linear-gradient(180deg,#1a1a22 0%,#0e0e13 100%);
+    border:1px solid var(--border-bright);border-radius:18px;
+    box-shadow:0 24px 60px rgba(0,0,0,0.6);
+  }
+  .gate-card h1{font-size:22px;font-weight:800;margin:0 0 6px;letter-spacing:-0.02em}
+  .gate-card p{font-size:13px;color:var(--text-dim);margin:0 0 18px;line-height:1.5}
+  .gate-card .ico{width:50px;height:50px;border-radius:14px;background:linear-gradient(135deg,#6366f1,#8b5cf6);display:flex;align-items:center;justify-content:center;margin-bottom:14px;font-size:24px}
+  .gate-card input{
+    width:100%;padding:12px 14px;background:rgba(255,255,255,0.04);border:1px solid var(--border);
+    border-radius:10px;color:var(--text);font-family:inherit;font-size:14.5px;
+  }
+  .gate-card input:focus{outline:none;border-color:#6366f1}
+  .gate-card .err{font-size:12px;color:#fca5a5;margin-top:8px;min-height:16px}
+  .gate-card button{
+    width:100%;padding:12px;margin-top:14px;
+    background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;
+    border:none;border-radius:10px;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;
+  }
+
+  /* === ADD MODAL === */
+  .add-overlay{
+    position:fixed;inset:0;z-index:9998;
+    background:rgba(0,0,0,0.7);backdrop-filter:blur(6px);
+    display:flex;align-items:center;justify-content:center;padding:20px;
+  }
+  .add-overlay[hidden]{display:none}
+  .add-card{
+    width:100%;max-width:460px;max-height:90vh;overflow-y:auto;
+    background:#0e0e13;border:1px solid var(--border-bright);border-radius:16px;
+    padding:24px;
+  }
+  .add-card h2{margin:0 0 4px;font-size:18px;font-weight:700}
+  .add-card .sub{font-size:12.5px;color:var(--text-dim);margin-bottom:16px}
+  .add-card label{display:block;margin-bottom:12px}
+  .add-card label > span{display:block;font-size:11px;font-weight:700;color:var(--text-dim);letter-spacing:0.05em;text-transform:uppercase;margin-bottom:5px}
+  .add-card input, .add-card select, .add-card textarea{
+    width:100%;padding:9px 12px;background:rgba(255,255,255,0.04);border:1px solid var(--border);
+    border-radius:8px;color:var(--text);font-family:inherit;font-size:13.5px;
+  }
+  .add-card textarea{resize:vertical;min-height:60px}
+  .add-card .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .add-card .actions{display:flex;gap:8px;margin-top:14px}
+  .add-card .actions button{
+    flex:1;padding:11px;border-radius:10px;border:none;cursor:pointer;
+    font-family:inherit;font-size:13px;font-weight:700;
+  }
+  .add-card .btn-primary{background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff}
+  .add-card .btn-secondary{background:rgba(255,255,255,0.06);color:var(--text);border:1px solid var(--border)}
+  .add-card .msg{font-size:12px;margin-top:8px;padding:8px 12px;border-radius:8px}
+  .add-card .msg.err{background:rgba(239,68,68,0.1);color:#fca5a5;border:1px solid rgba(239,68,68,0.3)}
+  .add-card .msg.ok{background:rgba(34,197,94,0.1);color:#86efac;border:1px solid rgba(34,197,94,0.3)}
+  .geocode-suggestion{
+    padding:8px 12px;background:rgba(99,102,241,0.06);border:1px solid rgba(99,102,241,0.3);
+    border-radius:8px;font-size:12px;color:#a5b4fc;cursor:pointer;margin-top:6px;
+  }
+</style>
+</head>
+<body class="map-page-body">
+<div id="app-nav"></div>
+
+<!-- GATE: senha obrigatória -->
+<div class="gate-overlay" id="gateOverlay">
+  <div class="gate-card">
+    <div class="ico">🔒</div>
+    <h1>Mapa dos Síndicos</h1>
+    <p>Esta área é restrita. Digite a senha do mapa pra continuar.</p>
+    <form id="gateForm">
+      <input type="password" id="gatePassword" placeholder="Senha do mapa" autocomplete="off" autofocus>
+      <div class="err" id="gateErr"></div>
+      <button type="submit">Acessar mapa</button>
+    </form>
+  </div>
+</div>
+
+<main class="map-page" id="mapMain" hidden>
+  <aside class="map-aside" id="aside">
+    <div class="map-aside-head">
+      <h2>Mapa dos Síndicos</h2>
+      <div class="sub">Localizações de atendimento da equipe</div>
+      <div class="map-stats">
+        <div class="map-stat"><div class="v" id="statSindicos">–</div><div class="l">Síndicos</div></div>
+        <div class="map-stat"><div class="v" id="statLocations">–</div><div class="l">Locais</div></div>
+      </div>
+    </div>
+
+    <div class="map-search">
+      <input id="searchInput" placeholder="Buscar síndico ou bairro…" autocomplete="off">
+    </div>
+
+    <div class="map-actions">
+      <button id="addSindicoBtn">
+        <svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+        <span>Síndico</span>
+      </button>
+      <button id="addLocationBtn">
+        <svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        <span>Local</span>
+      </button>
+      <button id="showAllBtn">
+        <svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/></svg>
+        <span>Todos</span>
+      </button>
+    </div>
+
+    <div class="map-sindicos-list" id="sindicosList"></div>
+  </aside>
+
+  <div class="map-stage">
+    <button class="map-toggle-aside" id="toggleAside">📋 Lista</button>
+    <div id="map"></div>
+  </div>
+</main>
+
+<!-- MODAL: adicionar síndico -->
+<div class="add-overlay" id="addSindicoOverlay" hidden>
+  <div class="add-card">
+    <h2>+ Novo Síndico</h2>
+    <p class="sub">Adicione um síndico ao mapa. Depois pode adicionar os bairros que ele atende.</p>
+    <form id="addSindicoForm">
+      <label><span>Nome*</span><input type="text" id="newSindicoName" required maxlength="80"></label>
+      <div class="row">
+        <label><span>Região</span>
+          <select id="newSindicoRegion">
+            <option>São Paulo</option>
+            <option>Barueri e Região</option>
+            <option>Rio de Janeiro</option>
+            <option>ABC Paulista</option>
+            <option>Interior SP</option>
+            <option>Outras</option>
+          </select>
+        </label>
+        <label><span>Telefone</span><input type="tel" id="newSindicoPhone" maxlength="30" placeholder="(11) 9..."></label>
+      </div>
+      <label><span>E-mail</span><input type="email" id="newSindicoEmail" maxlength="80"></label>
+      <label><span>Observações</span><textarea id="newSindicoNotes" maxlength="500" placeholder="Especialidades, restrições, contato preferido..."></textarea></label>
+      <div class="actions">
+        <button type="button" class="btn-secondary" onclick="closeModal('addSindicoOverlay')">Cancelar</button>
+        <button type="submit" class="btn-primary">Adicionar</button>
+      </div>
+      <div id="addSindicoMsg"></div>
+    </form>
+  </div>
+</div>
+
+<!-- MODAL: adicionar local -->
+<div class="add-overlay" id="addLocationOverlay" hidden>
+  <div class="add-card">
+    <h2>+ Novo Local</h2>
+    <p class="sub">Adicione um bairro/local de atendimento pra um síndico existente.</p>
+    <form id="addLocationForm">
+      <label><span>Síndico*</span><select id="newLocSindico" required></select></label>
+      <label><span>Bairro / Local*</span><input type="text" id="newLocBairro" required maxlength="80" placeholder="Ex: Vila Mariana"></label>
+      <label><span>Endereço aproximado (pra geocoding)</span>
+        <input type="text" id="newLocAddress" placeholder="Ex: Vila Mariana, São Paulo, SP" autocomplete="off">
+      </label>
+      <button type="button" id="geocodeBtn" class="btn-secondary" style="padding:8px 12px;width:auto;font-size:12px;font-weight:600;background:rgba(99,102,241,0.1);color:#a5b4fc;border:1px solid rgba(99,102,241,0.3);border-radius:8px;cursor:pointer;margin-bottom:8px">📍 Buscar coordenadas</button>
+      <div id="geocodeResult"></div>
+      <div class="row">
+        <label><span>Latitude*</span><input type="number" id="newLocLat" step="any" required></label>
+        <label><span>Longitude*</span><input type="number" id="newLocLng" step="any" required></label>
+      </div>
+      <p style="font-size:11.5px;color:var(--text-dim);margin:0 0 6px">Dica: clica diretamente no mapa pra pegar lat/lng exato</p>
+      <div class="actions">
+        <button type="button" class="btn-secondary" onclick="closeModal('addLocationOverlay')">Cancelar</button>
+        <button type="submit" class="btn-primary">Adicionar</button>
+      </div>
+      <div id="addLocationMsg"></div>
+    </form>
+  </div>
+</div>
+
+<script>
+const SESSION_KEY = 'sindico-map-pass';
+const STATE = {
+  password: sessionStorage.getItem(SESSION_KEY) || '',
+  sindicos: [],
+  locations: [],
+  sindicosMap: new Map(),
+  filterSindico: null,  // id ou null pra todos
+  searchQuery: '',
+  map: null,
+  cluster: null,
+  pickingCoord: false,
+};
+const $ = id => document.getElementById(id);
+
+// ============ GATE ============
+async function tryAuth(pwd) {
+  try {
+    const r = await fetch('/api/sindico-map', {
+      method: 'POST', credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ auth: pwd }),
+    });
+    const j = await r.json();
+    return !!j.ok;
+  } catch { return false; }
+}
+
+$('gateForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  const pwd = $('gatePassword').value;
+  $('gateErr').textContent = '';
+  const ok = await tryAuth(pwd);
+  if (!ok) {
+    $('gateErr').textContent = 'Senha incorreta. Tenta de novo.';
+    $('gatePassword').value = '';
+    $('gatePassword').focus();
+    return;
+  }
+  STATE.password = pwd;
+  sessionStorage.setItem(SESSION_KEY, pwd);
+  $('gateOverlay').hidden = true;
+  $('mapMain').hidden = false;
+  await loadData();
+  initMap();
+});
+
+// Tenta auto-login se já tem senha em sessionStorage
+(async () => {
+  if (STATE.password) {
+    const ok = await tryAuth(STATE.password);
+    if (ok) {
+      $('gateOverlay').hidden = true;
+      $('mapMain').hidden = false;
+      await loadData();
+      initMap();
+    } else {
+      sessionStorage.removeItem(SESSION_KEY);
+      STATE.password = '';
+    }
+  }
+})();
+
+// ============ DATA ============
+async function loadData() {
+  const r = await fetch('/api/sindico-map', { credentials: 'include' });
+  if (!r.ok) return;
+  const j = await r.json();
+  STATE.sindicos = j.sindicos || [];
+  STATE.locations = j.locations || [];
+  STATE.sindicosMap = new Map(STATE.sindicos.map(s => [s.id, s]));
+  $('statSindicos').textContent = STATE.sindicos.length;
+  $('statLocations').textContent = STATE.locations.length;
+  renderSindicosList();
+  populateSindicoSelect();
+  if (STATE.map) renderMarkers();
+}
+
+function renderSindicosList() {
+  const q = STATE.searchQuery.toLowerCase();
+  const filtered = STATE.sindicos
+    .filter(s => !q || s.name.toLowerCase().includes(q) || (s.region||'').toLowerCase().includes(q))
+    .sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
+  $('sindicosList').innerHTML = filtered.map(s => {
+    const count = STATE.locations.filter(l => l.sindicoId === s.id).length;
+    const active = STATE.filterSindico === s.id ? 'active' : '';
+    return `<div class="sindico-row ${active}" data-id="${s.id}">
+      <div class="dot" style="background:${s.color}"></div>
+      <div class="info">
+        <div class="name">${escH(s.name)}</div>
+        <div class="meta">${count} ${count === 1 ? 'local' : 'locais'} · ${escH(s.region || '')}</div>
+      </div>
+    </div>`;
+  }).join('');
+  $('sindicosList').querySelectorAll('[data-id]').forEach(el => {
+    el.addEventListener('click', () => {
+      const id = el.dataset.id;
+      STATE.filterSindico = STATE.filterSindico === id ? null : id;
+      renderSindicosList();
+      renderMarkers();
+      fitMapToFilter();
+    });
+  });
+}
+
+function populateSindicoSelect() {
+  const sel = $('newLocSindico');
+  sel.innerHTML = '<option value="">— escolher síndico —</option>' +
+    STATE.sindicos.map(s => `<option value="${s.id}">${escH(s.name)}</option>`).join('');
+}
+
+// ============ MAP ============
+function initMap() {
+  STATE.map = L.map('map', { zoomControl: true, attributionControl: true }).setView([-23.5505, -46.6333], 11);
+
+  // OSM dark theme via CartoDB
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    attribution: '© OpenStreetMap, © CARTO',
+    subdomains: 'abcd',
+    maxZoom: 19,
+  }).addTo(STATE.map);
+
+  STATE.cluster = L.markerClusterGroup({
+    showCoverageOnHover: false,
+    spiderfyOnMaxZoom: true,
+    maxClusterRadius: 40,
+    iconCreateFunction: cluster => {
+      const n = cluster.getChildCount();
+      return L.divIcon({
+        html: `<div style="background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;border-radius:50%;width:36px;height:36px;line-height:36px;text-align:center;font-weight:700;font-size:13px;border:2px solid rgba(255,255,255,0.2);box-shadow:0 4px 10px rgba(0,0,0,0.3)">${n}</div>`,
+        className: '',
+        iconSize: [36, 36],
+      });
+    },
+  });
+  STATE.map.addLayer(STATE.cluster);
+
+  // Click no mapa = preencher lat/lng se modal aberto
+  STATE.map.on('click', e => {
+    if (!$('addLocationOverlay').hidden && STATE.pickingCoord) {
+      $('newLocLat').value = e.latlng.lat.toFixed(6);
+      $('newLocLng').value = e.latlng.lng.toFixed(6);
+      STATE.pickingCoord = false;
+      $('geocodeResult').innerHTML = `<div style="font-size:11.5px;color:#86efac;margin-top:6px">✓ Coordenadas: ${e.latlng.lat.toFixed(5)}, ${e.latlng.lng.toFixed(5)}</div>`;
+    }
+  });
+
+  renderMarkers();
+}
+
+function renderMarkers() {
+  STATE.cluster.clearLayers();
+  const filtered = STATE.locations.filter(l => !STATE.filterSindico || l.sindicoId === STATE.filterSindico);
+  for (const loc of filtered) {
+    const sindico = STATE.sindicosMap.get(loc.sindicoId);
+    if (!sindico) continue;
+    const icon = L.divIcon({
+      html: `<div style="width:18px;height:18px;border-radius:50%;background:${sindico.color};border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.4)"></div>`,
+      className: '',
+      iconSize: [18, 18],
+      iconAnchor: [9, 9],
+    });
+    const marker = L.marker([loc.lat, loc.lng], { icon });
+    marker.bindPopup(`
+      <span class="badge" style="background:${sindico.color}40;color:${sindico.color}">${escH(sindico.region || 'Localização')}</span>
+      <h3>${escH(sindico.name)}</h3>
+      <div>📍 ${escH(loc.bairro)}</div>
+      ${sindico.phone ? `<div class="meta">📞 ${escH(sindico.phone)}</div>` : ''}
+      ${sindico.email ? `<div class="meta">✉️ <a href="mailto:${escH(sindico.email)}" style="color:#a5b4fc">${escH(sindico.email)}</a></div>` : ''}
+      ${sindico.notes ? `<div class="meta" style="margin-top:8px;padding-top:8px;border-top:1px solid #2a2a32">${escH(sindico.notes)}</div>` : ''}
+      <div class="meta" style="font-size:10.5px;opacity:0.7;margin-top:8px">${loc.lat.toFixed(4)}, ${loc.lng.toFixed(4)}</div>
+    `, { maxWidth: 280 });
+    STATE.cluster.addLayer(marker);
+  }
+}
+
+function fitMapToFilter() {
+  const filtered = STATE.locations.filter(l => !STATE.filterSindico || l.sindicoId === STATE.filterSindico);
+  if (!filtered.length) return;
+  const bounds = L.latLngBounds(filtered.map(l => [l.lat, l.lng]));
+  STATE.map.fitBounds(bounds, { padding: [50, 50], maxZoom: 14 });
+}
+
+// ============ SEARCH ============
+$('searchInput').addEventListener('input', e => {
+  STATE.searchQuery = e.target.value;
+  renderSindicosList();
+});
+
+// ============ TOGGLE ASIDE (mobile) ============
+$('toggleAside').addEventListener('click', () => {
+  $('aside').classList.toggle('hidden-mobile');
+});
+
+// ============ SHOW ALL ============
+$('showAllBtn').addEventListener('click', () => {
+  STATE.filterSindico = null;
+  renderSindicosList();
+  renderMarkers();
+  if (STATE.locations.length) {
+    const bounds = L.latLngBounds(STATE.locations.map(l => [l.lat, l.lng]));
+    STATE.map.fitBounds(bounds, { padding: [50, 50] });
+  }
+});
+
+// ============ ADD SINDICO ============
+$('addSindicoBtn').addEventListener('click', () => {
+  $('addSindicoMsg').innerHTML = '';
+  $('addSindicoForm').reset();
+  $('addSindicoOverlay').hidden = false;
+});
+
+$('addSindicoForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  $('addSindicoMsg').innerHTML = '';
+  const payload = {
+    password: STATE.password,
+    sindico: {
+      name: $('newSindicoName').value.trim(),
+      region: $('newSindicoRegion').value,
+      phone: $('newSindicoPhone').value.trim(),
+      email: $('newSindicoEmail').value.trim(),
+      notes: $('newSindicoNotes').value.trim(),
+    },
+  };
+  try {
+    const r = await fetch('/api/sindico-map', {
+      method: 'POST', credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const j = await r.json();
+    if (!r.ok || !j.ok) throw new Error(j.error || 'falha');
+    $('addSindicoMsg').innerHTML = `<div class="msg ok">✓ Síndico adicionado!</div>`;
+    setTimeout(() => {
+      $('addSindicoOverlay').hidden = true;
+      loadData();
+    }, 800);
+  } catch (e) {
+    $('addSindicoMsg').innerHTML = `<div class="msg err">${escH(e.message)}</div>`;
+  }
+});
+
+// ============ ADD LOCATION ============
+$('addLocationBtn').addEventListener('click', () => {
+  if (!STATE.sindicos.length) {
+    alert('Crie um síndico primeiro');
+    return;
+  }
+  $('addLocationMsg').innerHTML = '';
+  $('geocodeResult').innerHTML = '';
+  $('addLocationForm').reset();
+  $('addLocationOverlay').hidden = false;
+  STATE.pickingCoord = true;
+  // Após abrir, deixa o usuário clicar no mapa
+  setTimeout(() => {
+    $('geocodeResult').innerHTML = `<div class="geocode-suggestion">💡 Clica diretamente no mapa pra pegar lat/lng — ou escreve o endereço acima e clica em "📍 Buscar coordenadas"</div>`;
+  }, 200);
+});
+
+// Geocoding via Nominatim (free, sem API key)
+$('geocodeBtn').addEventListener('click', async () => {
+  const addr = $('newLocAddress').value.trim();
+  if (!addr) {
+    $('geocodeResult').innerHTML = `<div class="msg err">Digite um endereço primeiro</div>`;
+    return;
+  }
+  $('geocodeResult').innerHTML = `<div class="geocode-suggestion">🔍 Buscando "${escH(addr)}"...</div>`;
+  try {
+    const r = await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(addr + ', Brasil')}&format=json&limit=1&countrycodes=br`, {
+      headers: { 'User-Agent': 'Sindicompany Hub' },
+    });
+    const arr = await r.json();
+    if (!arr.length) {
+      $('geocodeResult').innerHTML = `<div class="msg err">Endereço não encontrado. Tenta clicar no mapa.</div>`;
+      return;
+    }
+    const top = arr[0];
+    $('newLocLat').value = parseFloat(top.lat).toFixed(6);
+    $('newLocLng').value = parseFloat(top.lon).toFixed(6);
+    $('geocodeResult').innerHTML = `<div class="msg ok">✓ Achado: ${escH(top.display_name.slice(0,80))}</div>`;
+  } catch (e) {
+    $('geocodeResult').innerHTML = `<div class="msg err">Erro: ${escH(e.message)}</div>`;
+  }
+});
+
+$('addLocationForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  $('addLocationMsg').innerHTML = '';
+  const sindicoId = $('newLocSindico').value;
+  const sindico = STATE.sindicosMap.get(sindicoId);
+  const payload = {
+    password: STATE.password,
+    location: {
+      sindicoId,
+      bairro: $('newLocBairro').value.trim(),
+      lat: parseFloat($('newLocLat').value),
+      lng: parseFloat($('newLocLng').value),
+      region: sindico?.region || 'São Paulo',
+    },
+  };
+  try {
+    const r = await fetch('/api/sindico-map', {
+      method: 'POST', credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const j = await r.json();
+    if (!r.ok || !j.ok) throw new Error(j.error || 'falha');
+    $('addLocationMsg').innerHTML = `<div class="msg ok">✓ Local adicionado!</div>`;
+    setTimeout(() => {
+      $('addLocationOverlay').hidden = true;
+      STATE.pickingCoord = false;
+      loadData();
+    }, 800);
+  } catch (e) {
+    $('addLocationMsg').innerHTML = `<div class="msg err">${escH(e.message)}</div>`;
+  }
+});
+
+function closeModal(id) {
+  $(id).hidden = true;
+  STATE.pickingCoord = false;
+}
+
+function escH(s) {
+  return String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]);
+}
+
+if (window.trackUsage) trackUsage('mapa-sindicos', {});
+</script>
+</body>
+</html>

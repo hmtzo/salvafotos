@@ -714,6 +714,7 @@ const CMDK_INDEX = [
   { kind: 'tool', id: 'equipe',          name: 'Equipe Online',     desc: 'Veja quem do time tá ativo agora',       url: '/tools/equipe.html',          kw: 'equipe presenca online time ativo pessoas usuarios status' },
   { kind: 'tool', id: 'chat',            name: 'Chat Interno',      desc: '#geral + DMs com a equipe',              url: '/tools/chat.html',            kw: 'chat mensagem dm direto interno conversa time geral' },
   { kind: 'tool', id: 'email-broadcast', name: 'Disparador de Email', desc: 'Comunicado interno pra equipe (admin)', url: '/tools/email-broadcast.html', kw: 'email disparador broadcast comunicado interno admin resend mensagem' },
+  { kind: 'tool', id: 'mapa-sindicos', name: 'Mapa dos Síndicos',  desc: 'Mapa dos 31 síndicos por região (restrito)', url: '/tools/mapa-sindicos.html', kw: 'mapa sindicos localizacao bairro regiao geo coordenadas leaflet google places' },
 
   // --- Documentos ---
   { kind: 'tool', id: 'whatsapp-fotos',  name: 'Fotos do WhatsApp', desc: 'Extrai fotos com legenda/data/remetente', url: '/tools/whatsapp-fotos.html', kw: 'whatsapp fotos midia legenda export zip' },
