@@ -135,6 +135,9 @@
   .leaflet-popup-content-wrapper{background:#1c1c22;color:#fff;border-radius:10px}
   .leaflet-popup-tip{background:#1c1c22}
   .leaflet-popup-content{font-family:'Inter',sans-serif;margin:10px 12px;font-size:12.5px}
+  .leaflet-tooltip{background:rgba(20,20,26,0.95);color:#fff;border:1px solid var(--border);border-radius:8px;font-family:'Inter',sans-serif;font-size:12px;padding:6px 10px;box-shadow:0 8px 20px rgba(0,0,0,0.5)}
+  .leaflet-tooltip-top:before{border-top-color:rgba(20,20,26,0.95)}
+  .distrito-tooltip strong{color:#a5b4fc;display:block;margin-bottom:2px}
 
   .map-overlay-controls{
     position:absolute;top:14px;right:14px;z-index:500;
@@ -372,6 +375,14 @@
     <button class="map-toggle-aside" id="toggleAside">📋 Lista</button>
 
     <div class="map-overlay-controls">
+      <button id="toggleDistritos" title="Distritos oficiais de SP (96)">
+        <svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polygon points="3,7 12,3 21,7 21,17 12,21 3,17"/><line x1="12" y1="3" x2="12" y2="21"/><line x1="3" y1="7" x2="12" y2="13"/><line x1="21" y1="7" x2="12" y2="13"/></svg>
+        <span>Distritos</span>
+      </button>
+      <button id="toggleHeatmap" title="Cor por densidade de síndicos">
+        <svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="9"/></svg>
+        <span>Calor</span>
+      </button>
       <button id="toggleLines" title="Linhas conectando residência → locais">
         <svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M9 17 5 12l4-5M15 7l4 5-4 5"/></svg>
         <span>Linhas</span>
@@ -487,14 +498,18 @@ const STATE = {
   filterSindico: null,
   searchQuery: '',
   currentTab: 'sindicos',
-  selectedSindico: null,  // pra mostrar no detail pane
+  selectedSindico: null,
   map: null,
   cluster: null,
   homeMarkersGroup: null,
   linesGroup: null,
+  distritosLayer: null,
+  distritosData: null,
+  showDistritos: false,
+  showHeatmap: false,
   showLines: false,
   pickingCoord: false,
-  pickingTarget: null,  // 'home' | 'loc'
+  pickingTarget: null,
 };
 const $ = id => document.getElementById(id);
 
@@ -917,6 +932,126 @@ $('toggleLines').addEventListener('click', () => {
   $('toggleLines').classList.toggle('active', STATE.showLines);
   renderLines();
 });
+
+$('toggleDistritos').addEventListener('click', async () => {
+  STATE.showDistritos = !STATE.showDistritos;
+  $('toggleDistritos').classList.toggle('active', STATE.showDistritos);
+  if (STATE.showDistritos) {
+    if (!STATE.distritosData) {
+      $('toggleDistritos').innerHTML = '<span style="font-size:11px">Carregando…</span>';
+      try {
+        const r = await fetch('/assets/sp-distritos.geojson');
+        STATE.distritosData = await r.json();
+      } catch (e) { alert('Erro carregando distritos: ' + e.message); return; }
+      $('toggleDistritos').innerHTML = `<svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><polygon points="3,7 12,3 21,7 21,17 12,21 3,17"/><line x1="12" y1="3" x2="12" y2="21"/><line x1="3" y1="7" x2="12" y2="13"/><line x1="21" y1="7" x2="12" y2="13"/></svg><span>Distritos</span>`;
+    }
+    renderDistritos();
+  } else {
+    if (STATE.distritosLayer) STATE.map.removeLayer(STATE.distritosLayer);
+  }
+});
+
+$('toggleHeatmap').addEventListener('click', () => {
+  STATE.showHeatmap = !STATE.showHeatmap;
+  $('toggleHeatmap').classList.toggle('active', STATE.showHeatmap);
+  // Ativa distritos automaticamente quando heatmap liga
+  if (STATE.showHeatmap && !STATE.showDistritos) {
+    $('toggleDistritos').click();
+  } else if (STATE.distritosLayer) {
+    renderDistritos();
+  }
+});
+
+// Conta locais por distrito (point-in-polygon simples via bounding box do feature)
+function countLocationsInPolygon(feature) {
+  // Polygon point-in-polygon usando ray casting
+  function pip(point, poly) {
+    let inside = false;
+    for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+      const xi = poly[i][0], yi = poly[i][1];
+      const xj = poly[j][0], yj = poly[j][1];
+      const intersect = ((yi > point[1]) !== (yj > point[1])) &&
+        (point[0] < (xj - xi) * (point[1] - yi) / (yj - yi) + xi);
+      if (intersect) inside = !inside;
+    }
+    return inside;
+  }
+  const polygons = feature.geometry.type === 'MultiPolygon'
+    ? feature.geometry.coordinates
+    : [feature.geometry.coordinates];
+  const sindicosSet = new Set();
+  const locsCount = STATE.locations.filter(l => {
+    for (const poly of polygons) {
+      for (const ring of poly) {
+        if (pip([l.lng, l.lat], ring)) {
+          sindicosSet.add(l.sindicoId);
+          return true;
+        }
+      }
+    }
+    return false;
+  }).length;
+  return { locsCount, sindicosCount: sindicosSet.size, sindicosIds: Array.from(sindicosSet) };
+}
+
+// Cor por densidade de síndicos no distrito
+function colorForCount(count, maxCount) {
+  if (count === 0) return 'rgba(255,255,255,0.04)';
+  const t = Math.min(1, count / Math.max(1, maxCount));
+  // Verde → amarelo → vermelho
+  const hue = 140 - t * 140;  // 140 (verde) → 0 (vermelho)
+  return `hsla(${hue}, 80%, 50%, ${0.18 + t * 0.4})`;
+}
+
+function renderDistritos() {
+  if (!STATE.distritosData) return;
+  if (STATE.distritosLayer) STATE.map.removeLayer(STATE.distritosLayer);
+
+  // Pré-calcula contagens pra todos os distritos (pro heatmap)
+  const counts = STATE.distritosData.features.map(f => countLocationsInPolygon(f));
+  const maxCount = Math.max(...counts.map(c => c.sindicosCount));
+
+  STATE.distritosLayer = L.geoJSON(STATE.distritosData, {
+    style: (feature) => {
+      const idx = STATE.distritosData.features.indexOf(feature);
+      const c = counts[idx];
+      return {
+        color: '#a5b4fc',
+        weight: 1,
+        opacity: 0.6,
+        fillColor: STATE.showHeatmap ? colorForCount(c.sindicosCount, maxCount) : 'rgba(99,102,241,0.05)',
+        fillOpacity: STATE.showHeatmap ? 1 : 0.3,
+      };
+    },
+    onEachFeature: (feature, layer) => {
+      const idx = STATE.distritosData.features.indexOf(feature);
+      const c = counts[idx];
+      const name = feature.properties.name;
+      layer.bindTooltip(`<strong>${name}</strong><br>${c.sindicosCount} ${c.sindicosCount === 1 ? 'síndico' : 'síndicos'} · ${c.locsCount} ${c.locsCount === 1 ? 'local' : 'locais'}`, {
+        sticky: true, direction: 'top', className: 'distrito-tooltip',
+      });
+      layer.on({
+        mouseover: (e) => {
+          e.target.setStyle({ weight: 2.5, opacity: 1, fillOpacity: STATE.showHeatmap ? 1 : 0.5 });
+        },
+        mouseout: (e) => {
+          STATE.distritosLayer.resetStyle(e.target);
+        },
+        click: (e) => {
+          // Switch pra tab "Por região" e busca pelo nome
+          switchTab('regiao');
+          $('regionInput').value = name;
+          searchRegion(name);
+          // Highlight visual
+          STATE.distritosLayer.eachLayer(l => {
+            STATE.distritosLayer.resetStyle(l);
+          });
+          e.target.setStyle({ color: '#fbbf24', weight: 3, opacity: 1, fillOpacity: 0.4 });
+        },
+      });
+    },
+  }).addTo(STATE.map);
+}
 
 $('toggleAside').addEventListener('click', () => $('aside').classList.toggle('hidden-mobile'));
 
