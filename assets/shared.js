@@ -1420,14 +1420,164 @@ function setupTeamChatFloat() {
       if (!r.ok) return;
       const j = await r.json();
       state.me = j.you || state.me;
-      state.onlineSet = new Set(j.online || []);
-      state.unread = j.unread || { geral: 0, dm: {} };
+      const newOnline = new Set(j.online || []);
+      // Detecta quem ENTROU online desde o último poll (e não é o próprio user)
+      if (state._previousOnline && state.me) {
+        for (const email of newOnline) {
+          if (email !== state.me && !state._previousOnline.has(email)) {
+            onUserCameOnline(email);
+          }
+        }
+      }
+      state._previousOnline = newOnline;
+      state.onlineSet = newOnline;
+      // Detecta novas mensagens via diff de unread (pra quando widget tá fechado)
+      const newUnread = j.unread || { geral: 0, dm: {} };
+      if (state._previousUnread && state.me) {
+        const prevTotal = (state._previousUnread.geral || 0) + Object.values(state._previousUnread.dm || {}).reduce((a,b)=>a+b,0);
+        const nowTotal = (newUnread.geral || 0) + Object.values(newUnread.dm || {}).reduce((a,b)=>a+b,0);
+        if (nowTotal > prevTotal && !state.open) {
+          // Acha qual conversa cresceu pra mostrar toast
+          for (const partner in (newUnread.dm || {})) {
+            if ((newUnread.dm[partner] || 0) > (state._previousUnread.dm?.[partner] || 0)) {
+              const preview = j.preview?.dm?.[partner];
+              if (preview) {
+                showToast({
+                  title: nameOf(partner),
+                  body: preview.text.slice(0, 80),
+                  color: state.teamByEmail.get(partner)?.color || '#6366f1',
+                  onClick: () => {
+                    state.open = true; persistState();
+                    drawer.hidden = false;
+                    switchTarget(partner);
+                  },
+                });
+                playSound('message');
+              }
+            }
+          }
+          if ((newUnread.geral || 0) > (state._previousUnread.geral || 0)) {
+            const preview = j.preview?.geral;
+            if (preview) {
+              showToast({
+                title: '#geral · ' + nameOf(preview.from),
+                body: preview.text.slice(0, 80),
+                color: '#10b981',
+                onClick: () => {
+                  state.open = true; persistState();
+                  drawer.hidden = false;
+                  switchTarget('geral');
+                },
+              });
+              playSound('message');
+            }
+          }
+        }
+      }
+      state._previousUnread = newUnread;
+      state.unread = newUnread;
       state.preview = j.preview || { geral: null, dm: {} };
       for (const p of Object.keys(state.preview.dm || {})) state.knownDmPartners.add(p);
       for (const p of Object.keys(state.unread.dm || {})) state.knownDmPartners.add(p);
       updateBadge();
       if (state.view === 'list' && state.open) renderList();
     } catch {}
+  }
+
+  // Toast notification quando alguém entra online
+  function onUserCameOnline(email) {
+    const name = nameOf(email);
+    showToast({
+      title: name + ' entrou online',
+      body: 'Clica pra mandar mensagem',
+      color: state.teamByEmail.get(email)?.color || '#10b981',
+      onClick: () => {
+        state.knownDmPartners.add(email);
+        if (!state.open) {
+          state.open = true; persistState();
+          drawer.hidden = false;
+        }
+        switchTarget(email);
+      },
+    });
+    playSound('online');
+  }
+
+  // ============ TOAST SYSTEM ============
+  function ensureToastContainer() {
+    let c = document.getElementById('tc-toast-container');
+    if (!c) {
+      c = document.createElement('div');
+      c.id = 'tc-toast-container';
+      document.body.appendChild(c);
+    }
+    return c;
+  }
+  function showToast({ title, body, color, onClick }) {
+    const c = ensureToastContainer();
+    const toast = document.createElement('div');
+    toast.className = 'tc-toast';
+    toast.innerHTML = `
+      <div class="tc-toast-dot" style="background:${color || '#10b981'}"></div>
+      <div class="tc-toast-info">
+        <div class="tc-toast-title">${escH(title)}</div>
+        <div class="tc-toast-body">${escH(body || '')}</div>
+      </div>
+      <button class="tc-toast-close" type="button" aria-label="Fechar">×</button>
+    `;
+    c.appendChild(toast);
+    requestAnimationFrame(() => toast.classList.add('show'));
+    const close = () => {
+      toast.classList.remove('show');
+      setTimeout(() => toast.remove(), 250);
+    };
+    toast.querySelector('.tc-toast-close').addEventListener('click', e => { e.stopPropagation(); close(); });
+    if (onClick) {
+      toast.style.cursor = 'pointer';
+      toast.addEventListener('click', () => { onClick(); close(); });
+    }
+    setTimeout(close, 6000);
+  }
+
+  // ============ SOUND SYSTEM (WebAudio API — sem assets externos) ============
+  let _audioCtx = null;
+  function getAudioCtx() {
+    if (!_audioCtx) {
+      try { _audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+      catch { return null; }
+    }
+    if (_audioCtx.state === 'suspended') _audioCtx.resume().catch(()=>{});
+    return _audioCtx;
+  }
+  function tone(freq, durationMs, volume = 0.18, type = 'sine', delay = 0) {
+    const ctx = getAudioCtx(); if (!ctx) return;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, ctx.currentTime + delay);
+    gain.gain.setValueAtTime(0, ctx.currentTime + delay);
+    gain.gain.linearRampToValueAtTime(volume, ctx.currentTime + delay + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + delay + durationMs / 1000);
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.start(ctx.currentTime + delay);
+    osc.stop(ctx.currentTime + delay + durationMs / 1000 + 0.02);
+  }
+  function playSound(kind) {
+    if (!state.soundOn) return;
+    if (kind === 'online') {
+      // 2 tons subindo (estilo MSN entrando)
+      tone(587, 120, 0.16, 'sine', 0);     // D5
+      tone(880, 160, 0.18, 'sine', 0.09);  // A5
+    } else if (kind === 'message') {
+      // beep curto
+      tone(880, 80, 0.16, 'sine', 0);
+      tone(1175, 110, 0.14, 'sine', 0.05);
+    } else if (kind === 'mention') {
+      // tom mais marcante (mention)
+      tone(523, 100, 0.18, 'sine', 0);
+      tone(659, 100, 0.18, 'sine', 0.06);
+      tone(784, 160, 0.2, 'sine', 0.13);
+    }
   }
   function updateBadge(){
     const total = (state.unread.geral || 0) + Object.values(state.unread.dm || {}).reduce((a,b) => a+b, 0);
@@ -1461,13 +1611,29 @@ function setupTeamChatFloat() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ read: state.target }),
         }).catch(()=>{});
-        // Sound
-        if (newCount > 0 && state.soundOn) {
+        // Sound + toast
+        if (newCount > 0) {
           const newOnes = fresh.filter(m => m.from !== state.me);
           if (newOnes.length) {
             const isDM = state.target !== 'geral';
             const isMention = newOnes.some(m => (m.mentions||[]).includes(state.me));
-            if (isDM || isMention) playDing();
+            if (isMention) playSound('mention');
+            else if (isDM) playSound('message');
+            else playSound('message');
+            // Toast só se o drawer não está aberto OU se é msg da conversa que não tá aberta
+            if (!state.open) {
+              const lastMsg = newOnes[newOnes.length - 1];
+              showToast({
+                title: nameOf(lastMsg.from),
+                body: lastMsg.text.slice(0, 80),
+                color: state.teamByEmail.get(lastMsg.from)?.color || '#6366f1',
+                onClick: () => {
+                  state.open = true; persistState();
+                  drawer.hidden = false;
+                  if (state.target === 'geral' && lastMsg.to) switchTarget(lastMsg.from);
+                },
+              });
+            }
           }
         }
       }

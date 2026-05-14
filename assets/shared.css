@@ -878,6 +878,44 @@ footer.app-footer strong{color:var(--text-dim)}
 @keyframes tc-bounce{0%,80%,100%{opacity:0.3;transform:translateY(0)}40%{opacity:1;transform:translateY(-3px)}}
 
 /* ==========================================================================
+   TEAM CHAT TOASTS — pop-ups quando alguém entra online ou manda msg
+   ========================================================================== */
+#tc-toast-container{
+  position:fixed;top:14px;right:14px;z-index:9999;
+  display:flex;flex-direction:column;gap:8px;
+  pointer-events:none;max-width:340px;
+}
+.tc-toast{
+  pointer-events:auto;
+  display:flex;align-items:center;gap:11px;
+  padding:11px 14px;
+  background:linear-gradient(180deg,#1c1d24 0%,#13141a 100%);
+  border:1px solid var(--border-bright);border-radius:12px;
+  box-shadow:0 12px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.04) inset;
+  min-width:260px;
+  transform:translateX(110%);opacity:0;
+  transition:transform .35s cubic-bezier(0.16,1,0.3,1), opacity .25s;
+}
+.tc-toast.show{transform:translateX(0);opacity:1}
+.tc-toast:hover{transform:translateX(0) translateY(-2px)}
+.tc-toast-dot{
+  width:10px;height:10px;border-radius:50%;flex-shrink:0;
+  box-shadow:0 0 8px currentColor;
+}
+.tc-toast-info{flex:1;min-width:0}
+.tc-toast-title{font-size:13px;font-weight:700;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tc-toast-body{font-size:11.5px;color:var(--text-dim);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tc-toast-close{
+  background:none;border:none;color:var(--text-dim);cursor:pointer;
+  width:24px;height:24px;border-radius:6px;font-size:18px;line-height:1;flex-shrink:0;
+}
+.tc-toast-close:hover{background:rgba(255,255,255,0.06);color:var(--text)}
+@media (max-width:640px){
+  #tc-toast-container{top:10px;right:10px;left:10px;max-width:none}
+  .tc-toast{min-width:0}
+}
+
+/* ==========================================================================
    ONBOARDING HINT — toast Cmd+K na primeira visita
    ========================================================================== */
 .cmdk-hint{
