@@ -12,6 +12,37 @@
 <link rel="icon" href="/logo.svg">
 <link rel="stylesheet" href="/assets/shared.css">
 <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+<style>
+  /* Drag handle + reorder feedback */
+  .file-item{cursor:default;position:relative;transition:background .15s, transform .15s, opacity .15s}
+  .file-item .drag-handle{
+    flex-shrink:0;display:flex;align-items:center;justify-content:center;
+    width:28px;height:34px;margin-right:4px;
+    color:var(--text-dim,#a1a1aa);cursor:grab;border-radius:6px;
+    user-select:none;
+  }
+  .file-item .drag-handle:hover{background:rgba(255,255,255,0.06);color:var(--text,#fafafa)}
+  .file-item .drag-handle:active{cursor:grabbing}
+  .file-item .drag-handle svg{width:14px;height:14px}
+  .file-item.dragging{opacity:0.4;transform:scale(0.98)}
+  .file-item.drag-over{
+    box-shadow:inset 0 3px 0 0 #6366f1, 0 4px 14px -2px rgba(99,102,241,0.3);
+  }
+  .file-item.drag-over-bottom{
+    box-shadow:inset 0 -3px 0 0 #6366f1, 0 4px 14px -2px rgba(99,102,241,0.3);
+  }
+  .file-actions-bar{
+    display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;
+  }
+  .btn-mini{
+    padding:7px 12px;background:rgba(255,255,255,0.04);border:1px solid var(--border,rgba(255,255,255,0.08));
+    border-radius:8px;color:var(--text-dim,#a1a1aa);cursor:pointer;font-family:inherit;font-size:12px;font-weight:500;
+    display:inline-flex;align-items:center;gap:6px;
+  }
+  .btn-mini:hover{background:rgba(255,255,255,0.08);color:var(--text,#fafafa)}
+  .btn-mini.danger:hover{background:rgba(239,68,68,0.12);color:#fca5a5;border-color:rgba(239,68,68,0.3)}
+  .btn-mini svg{width:13px;height:13px}
+</style>
 </head>
 <body>
 <div id="app-nav"></div>
@@ -19,7 +50,7 @@
   <section class="tool-hero">
     <span class="eyebrow">📑 PDF</span>
     <h1>Juntar PDF</h1>
-    <p>Combine vários PDFs em um único arquivo. Arraste os arquivos e organize na ordem que você quiser.</p>
+    <p>Combine vários PDFs em um único arquivo. <strong>Arraste pra reordenar</strong> (segura no ⋮⋮), inverte a ordem, ou ordena A→Z em 1 clique.</p>
   </section>
 
   <div class="card">
@@ -33,6 +64,20 @@
     <input type="file" id="fileInput" accept="application/pdf" multiple>
 
     <div class="file-list" id="fileList"></div>
+    <div class="file-actions-bar" id="fileActionsBar" style="display:none">
+      <button type="button" class="btn-mini" id="btnReverse" title="Inverter ordem dos arquivos">
+        <svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M7 16V4m0 0L3 8m4-4l4 4M17 8v12m0 0l-4-4m4 4l4-4"/></svg>
+        Inverter ordem
+      </button>
+      <button type="button" class="btn-mini" id="btnSortAZ" title="Ordenar por nome A→Z">
+        <svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M3 6h13M3 12h9M3 18h5M16 14l4 4 4-4M20 4v14"/></svg>
+        Ordenar A → Z
+      </button>
+      <button type="button" class="btn-mini danger" id="btnClearAll" title="Remover todos">
+        <svg fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3"/></svg>
+        Limpar tudo
+      </button>
+    </div>
 
     <button class="btn-primary" id="processBtn" disabled>
       <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
@@ -59,9 +104,14 @@ const statusEl = document.getElementById('status');
 let files = [];
 
 function renderList() {
-  if (!files.length) { fileList.innerHTML = ''; updateBtn(); return; }
+  const bar = document.getElementById('fileActionsBar');
+  if (!files.length) { fileList.innerHTML = ''; bar.style.display = 'none'; updateBtn(); return; }
+  bar.style.display = 'flex';
   fileList.innerHTML = files.map((f, i) => `
-    <div class="file-item">
+    <div class="file-item" draggable="true" data-i="${i}">
+      <div class="drag-handle" title="Arraste pra reordenar" aria-label="Arraste pra reordenar">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M8 6h.01M8 12h.01M8 18h.01M16 6h.01M16 12h.01M16 18h.01"/></svg>
+      </div>
       <div class="file-icon">PDF</div>
       <div class="file-info">
         <div class="file-name">${i + 1}. ${f.name}</div>
@@ -82,6 +132,85 @@ function renderList() {
   `).join('');
   updateBtn();
 }
+
+// ============ DRAG AND DROP ============
+let dragSrcIndex = null;
+
+fileList.addEventListener('dragstart', e => {
+  const item = e.target.closest('.file-item');
+  if (!item) return;
+  dragSrcIndex = parseInt(item.dataset.i, 10);
+  item.classList.add('dragging');
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', String(dragSrcIndex));
+});
+
+fileList.addEventListener('dragend', e => {
+  fileList.querySelectorAll('.file-item').forEach(el => {
+    el.classList.remove('dragging', 'drag-over', 'drag-over-bottom');
+  });
+  dragSrcIndex = null;
+});
+
+fileList.addEventListener('dragover', e => {
+  const item = e.target.closest('.file-item');
+  if (!item || dragSrcIndex === null) return;
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  // Limpa highlights antigos
+  fileList.querySelectorAll('.file-item').forEach(el => {
+    if (el !== item) el.classList.remove('drag-over', 'drag-over-bottom');
+  });
+  // Determina se dropping na metade superior (insere antes) ou inferior (insere depois)
+  const rect = item.getBoundingClientRect();
+  const midY = rect.top + rect.height / 2;
+  if (e.clientY < midY) {
+    item.classList.add('drag-over');
+    item.classList.remove('drag-over-bottom');
+  } else {
+    item.classList.add('drag-over-bottom');
+    item.classList.remove('drag-over');
+  }
+});
+
+fileList.addEventListener('dragleave', e => {
+  const item = e.target.closest('.file-item');
+  if (item) item.classList.remove('drag-over', 'drag-over-bottom');
+});
+
+fileList.addEventListener('drop', e => {
+  e.preventDefault();
+  const target = e.target.closest('.file-item');
+  if (!target || dragSrcIndex === null) return;
+  let dstIndex = parseInt(target.dataset.i, 10);
+  // Se dropou na metade inferior, insere DEPOIS
+  const rect = target.getBoundingClientRect();
+  const midY = rect.top + rect.height / 2;
+  if (e.clientY >= midY) dstIndex += 1;
+  // Ajuste pq remover o src primeiro muda os índices
+  if (dragSrcIndex < dstIndex) dstIndex -= 1;
+  if (dstIndex !== dragSrcIndex) {
+    const [moved] = files.splice(dragSrcIndex, 1);
+    files.splice(dstIndex, 0, moved);
+    renderList();
+  }
+  dragSrcIndex = null;
+});
+
+// ============ AÇÕES DA BARRA ============
+document.getElementById('btnReverse').addEventListener('click', () => {
+  files.reverse();
+  renderList();
+});
+document.getElementById('btnSortAZ').addEventListener('click', () => {
+  files.sort((a, b) => a.name.localeCompare(b.name, 'pt-BR'));
+  renderList();
+});
+document.getElementById('btnClearAll').addEventListener('click', () => {
+  if (!confirm('Remover todos os PDFs da lista?')) return;
+  files = [];
+  renderList();
+});
 
 function updateBtn() {
   if (files.length < 2) {
